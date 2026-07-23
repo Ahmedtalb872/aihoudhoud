@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
+import '../../core/supabase/auth_exception.dart';
+import '../../core/supabase/auth_repository.dart';
 import '../../providers/app_state_provider.dart';
 import 'customer_register_screen.dart';
 import '../customer/customer_home_screen.dart';
-import '../../models/models.dart';
 
 class CustomerLoginScreen extends StatefulWidget {
   const CustomerLoginScreen({super.key});
@@ -15,40 +16,92 @@ class CustomerLoginScreen extends StatefulWidget {
 
 class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _phoneController = TextEditingController();
+  final _authRepository = AuthRepository();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _phoneController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  void _handleLogin() {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
 
-      // Simulate network request
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-          
-          final provider = Provider.of<AppStateProvider>(context, listen: false);
-          provider.login('+222${_phoneController.text}', UserType.customer);
-          
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const CustomerHomeScreen()),
-            (route) => false,
-          );
-        }
-      });
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final profile = await _authRepository.signIn(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      if (!mounted) return;
+      final provider = Provider.of<AppStateProvider>(context, listen: false);
+      provider.loginFromProfile(profile, _emailController.text.trim());
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const CustomerHomeScreen()),
+        (route) => false,
+      );
+    } on AppAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message, style: const TextStyle(fontFamily: 'Cairo')),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleForgotPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'أدخل بريدك الإلكتروني أولاً ثم اضغط على الرابط.',
+            style: TextStyle(fontFamily: 'Cairo'),
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    try {
+      await _authRepository.resetPasswordForEmail(email);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.',
+            style: TextStyle(fontFamily: 'Cairo'),
+          ),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } on AppAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message, style: const TextStyle(fontFamily: 'Cairo')),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 
@@ -91,10 +144,10 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                
-                // Phone field
+
+                // Email field
                 const Text(
-                  'رقم الهاتف',
+                  'البريد الإلكتروني',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -104,41 +157,30 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
                   textAlign: TextAlign.left,
-                  style: const TextStyle(fontSize: 16, letterSpacing: 1.5, fontWeight: FontWeight.bold),
-                  decoration: InputDecoration(
-                    hintText: '36 00 00 00',
-                    hintStyle: const TextStyle(letterSpacing: 1.0, fontWeight: FontWeight.normal),
-                    prefixIcon: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
-                      margin: const EdgeInsets.only(left: 10),
-                      decoration: const BoxDecoration(
-                        border: Border(left: BorderSide(color: AppColors.border, width: 1)),
-                      ),
-                      child: const Text(
-                        '+222',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.darkText,
-                        ),
-                      ),
+                  decoration: const InputDecoration(
+                    hintText: 'example@email.com',
+                    prefixIcon: Icon(
+                      Icons.email_outlined,
+                      color: AppColors.secondaryText,
                     ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'الرجاء إدخال رقم الهاتف';
+                      return 'الرجاء إدخال البريد الإلكتروني';
                     }
-                    if (value.length < 8) {
-                      return 'رقم الهاتف يجب أن يتكون من 8 أرقام على الأقل';
+                    if (!RegExp(
+                      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                    ).hasMatch(value)) {
+                      return 'الرجاء إدخال بريد إلكتروني صحيح';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 20),
-                
+
                 // Password field
                 const Text(
                   'كلمة المرور',
@@ -155,10 +197,15 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
                     hintText: 'أدخل كلمة المرور الخاصة بك',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.secondaryText),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline_rounded,
+                      color: AppColors.secondaryText,
+                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        _obscurePassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
                         color: AppColors.secondaryText,
                       ),
                       onPressed: () {
@@ -178,27 +225,17 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                     return null;
                   },
                 ),
-                
+
                 // Forgot Password link
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'تم إرسال رمز إعادة تعيين كلمة المرور إلى هاتفك.',
-                            style: TextStyle(fontFamily: 'Cairo'),
-                          ),
-                          backgroundColor: AppColors.success,
-                        ),
-                      );
-                    },
+                    onPressed: _handleForgotPassword,
                     child: const Text('نسيت كلمة المرور؟'),
                   ),
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Submit Button
                 ElevatedButton(
                   onPressed: _isLoading ? null : _handleLogin,
@@ -214,7 +251,7 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                       : const Text('تسجيل الدخول'),
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Create account link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -229,7 +266,10 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                     TextButton(
                       onPressed: () {
                         Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => const CustomerRegisterScreen()),
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const CustomerRegisterScreen(),
+                          ),
                         );
                       },
                       child: const Text('إنشاء حساب جديد'),

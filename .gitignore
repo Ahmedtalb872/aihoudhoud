@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Supabase local secrets (copy env.json.example -> env.json and fill in your own project)
+env.json

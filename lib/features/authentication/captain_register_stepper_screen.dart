@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
+import '../../core/supabase/auth_exception.dart';
+import '../../core/supabase/auth_repository.dart';
 import '../../providers/app_state_provider.dart';
 import '../captain/captain_home_screen.dart';
 
@@ -8,16 +10,22 @@ class CaptainRegisterStepperScreen extends StatefulWidget {
   const CaptainRegisterStepperScreen({super.key});
 
   @override
-  State<CaptainRegisterStepperScreen> createState() => _CaptainRegisterStepperScreenState();
+  State<CaptainRegisterStepperScreen> createState() =>
+      _CaptainRegisterStepperScreenState();
 }
 
-class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScreen> {
+class _CaptainRegisterStepperScreenState
+    extends State<CaptainRegisterStepperScreen> {
+  final _authRepository = AuthRepository();
   int _currentStep = 1;
   bool _isSuccess = false;
+  bool _isSubmitting = false;
   bool _termsApproved = false;
+  Map<String, dynamic>? _registeredProfile;
 
   // Step 1 Controllers
   final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -49,6 +57,7 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -100,7 +109,7 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
     });
   }
 
-  void _submitApplication() {
+  Future<void> _submitApplication() async {
     if (!_termsApproved) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -124,8 +133,38 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
     }
 
     setState(() {
-      _isSuccess = true;
+      _isSubmitting = true;
     });
+
+    try {
+      final profile = await _authRepository.signUp(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        fullName: _nameController.text.trim(),
+        phone: '+222${_phoneController.text}',
+        userType: 'captain',
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _registeredProfile = profile;
+        _isSuccess = true;
+      });
+    } on AppAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message, style: const TextStyle(fontFamily: 'Cairo')),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -136,15 +175,13 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('تسجيل كابتن جديد'),
-      ),
+      appBar: AppBar(title: const Text('تسجيل كابتن جديد')),
       body: SafeArea(
         child: Column(
           children: [
             // Stepper indicator
             _buildStepperIndicator(),
-            
+
             // Step contents
             Expanded(
               child: SingleChildScrollView(
@@ -152,7 +189,7 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
                 child: _buildCurrentStepContent(),
               ),
             ),
-            
+
             // Bottom buttons
             _buildBottomButtons(),
           ],
@@ -195,10 +232,12 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
             color: isCompleted
                 ? AppColors.primary
                 : isActive
-                    ? AppColors.primary
-                    : Colors.white,
+                ? AppColors.primary
+                : Colors.white,
             border: Border.all(
-              color: isCompleted || isActive ? AppColors.primary : AppColors.border,
+              color: isCompleted || isActive
+                  ? AppColors.primary
+                  : AppColors.border,
               width: 2,
             ),
           ),
@@ -223,7 +262,7 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
             color: isActive ? AppColors.primary : AppColors.secondaryText,
             fontFamily: 'Cairo',
           ),
-        )
+        ),
       ],
     );
   }
@@ -260,21 +299,51 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
       children: [
         const Text(
           'المعلومات الشخصية',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.darkText, fontFamily: 'Cairo'),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.darkText,
+            fontFamily: 'Cairo',
+          ),
         ),
         const SizedBox(height: 16),
-        _buildTextField('الاسم الكامل', _nameController, hint: 'أدخل اسمك الكامل كما في الهوية'),
+        _buildTextField(
+          'الاسم الكامل',
+          _nameController,
+          hint: 'أدخل اسمك الكامل كما في الهوية',
+        ),
+        const SizedBox(height: 16),
+        _buildTextField(
+          'البريد الإلكتروني',
+          _emailController,
+          hint: 'example@email.com',
+        ),
         const SizedBox(height: 16),
         _buildPhoneField('رقم الهاتف', _phoneController),
         const SizedBox(height: 16),
-        _buildTextField('كلمة المرور', _passwordController, obscure: true, hint: 'أدخل كلمة المرور لحسابك'),
+        _buildTextField(
+          'كلمة المرور',
+          _passwordController,
+          obscure: true,
+          hint: 'أدخل كلمة المرور لحسابك',
+        ),
         const SizedBox(height: 16),
-        _buildTextField('تأكيد كلمة المرور', _confirmPasswordController, obscure: true, hint: 'أعد كتابة كلمة المرور'),
+        _buildTextField(
+          'تأكيد كلمة المرور',
+          _confirmPasswordController,
+          obscure: true,
+          hint: 'أعد كتابة كلمة المرور',
+        ),
         const SizedBox(height: 16),
         // City dropdown
         const Text(
           'المدينة',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkText, fontFamily: 'Cairo'),
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.darkText,
+            fontFamily: 'Cairo',
+          ),
         ),
         const SizedBox(height: 8),
         Container(
@@ -288,7 +357,11 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
             child: DropdownButton<String>(
               value: _selectedCity,
               isExpanded: true,
-              style: const TextStyle(color: AppColors.darkText, fontSize: 16, fontFamily: 'Cairo'),
+              style: const TextStyle(
+                color: AppColors.darkText,
+                fontSize: 16,
+                fontFamily: 'Cairo',
+              ),
               onChanged: (value) {
                 if (value != null) {
                   setState(() {
@@ -298,16 +371,21 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
               },
               items: <String>['نواكشوط', 'نواذيبو', 'روصو', 'أطار', 'كيفه']
                   .map<DropdownMenuItem<String>>((String val) {
-                return DropdownMenuItem<String>(
-                  value: val,
-                  child: Text(val),
-                );
-              }).toList(),
+                    return DropdownMenuItem<String>(
+                      value: val,
+                      child: Text(val),
+                    );
+                  })
+                  .toList(),
             ),
           ),
         ),
         const SizedBox(height: 16),
-        _buildTextField('العنوان بالتفصيل', _addressController, hint: 'مثال: تفرغ زينة - كارفور موري سانتر'),
+        _buildTextField(
+          'العنوان بالتفصيل',
+          _addressController,
+          hint: 'مثال: تفرغ زينة - كارفور موري سانتر',
+        ),
         const SizedBox(height: 16),
         _buildTextField('تاريخ الميلاد', _dobController, hint: 'YYYY-MM-DD'),
       ],
@@ -320,47 +398,90 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
       children: [
         const Text(
           'معلومات السيارة',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.darkText, fontFamily: 'Cairo'),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.darkText,
+            fontFamily: 'Cairo',
+          ),
         ),
         const SizedBox(height: 4),
         const Text(
           'ملاحظة: الخدمة حالياً مخصصة فقط لنقل الركاب بالسيارات العادية.',
-          style: TextStyle(fontSize: 12, color: AppColors.secondaryText, fontFamily: 'Cairo'),
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.secondaryText,
+            fontFamily: 'Cairo',
+          ),
         ),
         const SizedBox(height: 20),
-        
+
         // Car Type selection (Custom cards)
         const Text(
           'فئة السيارة',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkText, fontFamily: 'Cairo'),
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.darkText,
+            fontFamily: 'Cairo',
+          ),
         ),
         const SizedBox(height: 8),
         Row(
           children: [
-            _buildCarTypeCard('economy', 'إقتصادية', Icons.directions_car_filled_outlined),
+            _buildCarTypeCard(
+              'economy',
+              'إقتصادية',
+              Icons.directions_car_filled_outlined,
+            ),
             const SizedBox(width: 8),
             _buildCarTypeCard('comfort', 'مريحة', Icons.local_taxi_rounded),
             const SizedBox(width: 8),
-            _buildCarTypeCard('family', 'عائلية', Icons.airport_shuttle_rounded),
+            _buildCarTypeCard(
+              'family',
+              'عائلية',
+              Icons.airport_shuttle_rounded,
+            ),
           ],
         ),
         const SizedBox(height: 20),
-        
-        _buildTextField('ماركة السيارة', _carBrandController, hint: 'مثال: تويوتا'),
+
+        _buildTextField(
+          'ماركة السيارة',
+          _carBrandController,
+          hint: 'مثال: تويوتا',
+        ),
         const SizedBox(height: 16),
-        _buildTextField('الموديل', _carModelController, hint: 'مثال: كورولا / أفينسيس'),
+        _buildTextField(
+          'الموديل',
+          _carModelController,
+          hint: 'مثال: كورولا / أفينسيس',
+        ),
         const SizedBox(height: 16),
         _buildTextField('سنة الصنع', _carYearController, hint: 'مثال: 2018'),
         const SizedBox(height: 16),
-        _buildTextField('لون السيارة', _carColorController, hint: 'مثال: رمادي / أبيض'),
+        _buildTextField(
+          'لون السيارة',
+          _carColorController,
+          hint: 'مثال: رمادي / أبيض',
+        ),
         const SizedBox(height: 16),
-        _buildTextField('رقم اللوحة', _carPlateController, hint: 'مثال: 1234 AA 00'),
+        _buildTextField(
+          'رقم اللوحة',
+          _carPlateController,
+          hint: 'مثال: 1234 AA 00',
+        ),
         const SizedBox(height: 16),
-        
+
         // Seats dropdown
         const Text(
           'عدد المقاعد المتاحة للركاب',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkText, fontFamily: 'Cairo'),
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.darkText,
+            fontFamily: 'Cairo',
+          ),
         ),
         const SizedBox(height: 8),
         Container(
@@ -374,7 +495,11 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
             child: DropdownButton<int>(
               value: _carSeats,
               isExpanded: true,
-              style: const TextStyle(color: AppColors.darkText, fontSize: 16, fontFamily: 'Cairo'),
+              style: const TextStyle(
+                color: AppColors.darkText,
+                fontSize: 16,
+                fontFamily: 'Cairo',
+              ),
               onChanged: (value) {
                 if (value != null) {
                   setState(() {
@@ -382,8 +507,7 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
                   });
                 }
               },
-              items: <int>[4, 6, 7]
-                  .map<DropdownMenuItem<int>>((int val) {
+              items: <int>[4, 6, 7].map<DropdownMenuItem<int>>((int val) {
                 return DropdownMenuItem<int>(
                   value: val,
                   child: Text('$val مقاعد'),
@@ -423,7 +547,11 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
           ),
           child: Column(
             children: [
-              Icon(icon, color: isSel ? Colors.white : AppColors.secondaryText, size: 28),
+              Icon(
+                icon,
+                color: isSel ? Colors.white : AppColors.secondaryText,
+                size: 28,
+              ),
               const SizedBox(height: 6),
               Text(
                 label,
@@ -433,7 +561,7 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
                   fontFamily: 'Cairo',
                   fontSize: 13,
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -447,15 +575,24 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
       children: [
         const Text(
           'المستندات والأوراق الرسمية',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.darkText, fontFamily: 'Cairo'),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.darkText,
+            fontFamily: 'Cairo',
+          ),
         ),
         const SizedBox(height: 8),
         const Text(
           'يرجى الضغط على كل مستند لتجربة رفعه من ملفات هاتفك.',
-          style: TextStyle(fontSize: 12, color: AppColors.secondaryText, fontFamily: 'Cairo'),
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.secondaryText,
+            fontFamily: 'Cairo',
+          ),
         ),
         const SizedBox(height: 20),
-        
+
         ListView.separated(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -467,7 +604,9 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
             bool isThisUploading = _uploadingDoc == docName;
 
             return InkWell(
-              onTap: isUploaded || isThisUploading ? null : () => _simulateUpload(docName),
+              onTap: isUploaded || isThisUploading
+                  ? null
+                  : () => _simulateUpload(docName),
               borderRadius: BorderRadius.circular(20),
               child: Container(
                 padding: const EdgeInsets.all(16),
@@ -475,7 +614,9 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isUploaded ? AppColors.success.withOpacity(0.5) : AppColors.border,
+                    color: isUploaded
+                        ? AppColors.success.withOpacity(0.5)
+                        : AppColors.border,
                     width: isUploaded ? 1.5 : 1,
                   ),
                 ),
@@ -490,8 +631,12 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        isUploaded ? Icons.done_rounded : Icons.upload_file_rounded,
-                        color: isUploaded ? AppColors.success : AppColors.secondaryText,
+                        isUploaded
+                            ? Icons.done_rounded
+                            : Icons.upload_file_rounded,
+                        color: isUploaded
+                            ? AppColors.success
+                            : AppColors.secondaryText,
                         size: 24,
                       ),
                     ),
@@ -511,10 +656,14 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            isUploaded ? 'حالة الملف: تم الرفع' : 'حالة الملف: لم يتم الرفع بعد',
+                            isUploaded
+                                ? 'حالة الملف: تم الرفع'
+                                : 'حالة الملف: لم يتم الرفع بعد',
                             style: TextStyle(
                               fontSize: 11,
-                              color: isUploaded ? AppColors.success : AppColors.secondaryText,
+                              color: isUploaded
+                                  ? AppColors.success
+                                  : AppColors.secondaryText,
                               fontFamily: 'Cairo',
                             ),
                           ),
@@ -531,9 +680,15 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
                         ),
                       )
                     else if (isUploaded)
-                      const Icon(Icons.check_circle_outline_rounded, color: AppColors.success)
+                      const Icon(
+                        Icons.check_circle_outline_rounded,
+                        color: AppColors.success,
+                      )
                     else
-                      const Icon(Icons.chevron_left_rounded, color: AppColors.secondaryText),
+                      const Icon(
+                        Icons.chevron_left_rounded,
+                        color: AppColors.secondaryText,
+                      ),
                   ],
                 ),
               ),
@@ -550,10 +705,15 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
       children: [
         const Text(
           'مراجعة وتأكيد البيانات',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.darkText, fontFamily: 'Cairo'),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.darkText,
+            fontFamily: 'Cairo',
+          ),
         ),
         const SizedBox(height: 16),
-        
+
         // Summary Card
         Card(
           child: Padding(
@@ -562,20 +722,38 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildReviewRow('الاسم الكامل', _nameController.text),
+                _buildReviewRow('البريد الإلكتروني', _emailController.text),
                 _buildReviewRow('رقم الهاتف', '+222 ${_phoneController.text}'),
-                _buildReviewRow('المدينة والعنوان', '$_selectedCity - ${_addressController.text}'),
+                _buildReviewRow(
+                  'المدينة والعنوان',
+                  '$_selectedCity - ${_addressController.text}',
+                ),
                 _buildReviewRow('تاريخ الميلاد', _dobController.text),
                 const Divider(height: 24),
-                _buildReviewRow('نوع السيارة', _carType == 'economy' ? 'إقتصادية' : _carType == 'comfort' ? 'مريحة' : 'عائلية'),
-                _buildReviewRow('الماركة والموديل', '${_carBrandController.text} ${_carModelController.text} (${_carYearController.text})'),
+                _buildReviewRow(
+                  'نوع السيارة',
+                  _carType == 'economy'
+                      ? 'إقتصادية'
+                      : _carType == 'comfort'
+                      ? 'مريحة'
+                      : 'عائلية',
+                ),
+                _buildReviewRow(
+                  'الماركة والموديل',
+                  '${_carBrandController.text} ${_carModelController.text} (${_carYearController.text})',
+                ),
                 _buildReviewRow('رقم لوحة السيارة', _carPlateController.text),
                 _buildReviewRow('المقاعد المتاحة', '$_carSeats مقاعد'),
                 const Divider(height: 24),
-                
+
                 // Documents check list
                 const Text(
                   'حالة المستندات المرفوعة:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Cairo', fontSize: 13),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Cairo',
+                    fontSize: 13,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 ..._uploadStates.entries.map((entry) {
@@ -584,14 +762,22 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
                     child: Row(
                       children: [
                         Icon(
-                          entry.value ? Icons.check_circle_outline : Icons.cancel_outlined,
+                          entry.value
+                              ? Icons.check_circle_outline
+                              : Icons.cancel_outlined,
                           size: 16,
-                          color: entry.value ? AppColors.success : AppColors.error,
+                          color: entry.value
+                              ? AppColors.success
+                              : AppColors.error,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           entry.key,
-                          style: const TextStyle(fontSize: 12, fontFamily: 'Cairo', color: AppColors.secondaryText),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'Cairo',
+                            color: AppColors.secondaryText,
+                          ),
                         ),
                       ],
                     ),
@@ -602,7 +788,7 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
           ),
         ),
         const SizedBox(height: 16),
-        
+
         // Edit Button
         OutlinedButton(
           onPressed: () {
@@ -613,7 +799,7 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
           child: const Text('تعديل المعلومات الشخصية والسيارة'),
         ),
         const SizedBox(height: 16),
-        
+
         // Approve Checkbox
         Row(
           children: [
@@ -629,7 +815,11 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
             const Expanded(
               child: Text(
                 'أقر بأن جميع البيانات والمستندات المرفوعة صحيحة وأوافق على شروط كابتن الهدهد.',
-                style: TextStyle(fontSize: 12, color: AppColors.darkText, fontFamily: 'Cairo'),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.darkText,
+                  fontFamily: 'Cairo',
+                ),
               ),
             ),
           ],
@@ -646,12 +836,21 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
         children: [
           Text(
             '$label: ',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.secondaryText, fontFamily: 'Cairo'),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: AppColors.secondaryText,
+              fontFamily: 'Cairo',
+            ),
           ),
           Expanded(
             child: Text(
               value.isNotEmpty ? value : 'غير محدد',
-              style: const TextStyle(fontSize: 13, color: AppColors.darkText, fontFamily: 'Cairo'),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.darkText,
+                fontFamily: 'Cairo',
+              ),
             ),
           ),
         ],
@@ -659,21 +858,29 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, {bool obscure = false, String? hint}) {
+  Widget _buildTextField(
+    String label,
+    TextEditingController controller, {
+    bool obscure = false,
+    String? hint,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkText, fontFamily: 'Cairo'),
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.darkText,
+            fontFamily: 'Cairo',
+          ),
         ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           obscureText: obscure,
-          decoration: InputDecoration(
-            hintText: hint,
-          ),
+          decoration: InputDecoration(hintText: hint),
         ),
       ],
     );
@@ -685,22 +892,36 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkText, fontFamily: 'Cairo'),
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.darkText,
+            fontFamily: 'Cairo',
+          ),
         ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           keyboardType: TextInputType.phone,
           textAlign: TextAlign.left,
-          style: const TextStyle(fontSize: 16, letterSpacing: 1.5, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontSize: 16,
+            letterSpacing: 1.5,
+            fontWeight: FontWeight.bold,
+          ),
           decoration: InputDecoration(
             hintText: '36 00 00 00',
-            hintStyle: const TextStyle(letterSpacing: 1.0, fontWeight: FontWeight.normal),
+            hintStyle: const TextStyle(
+              letterSpacing: 1.0,
+              fontWeight: FontWeight.normal,
+            ),
             prefixIcon: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
               margin: const EdgeInsets.only(left: 10),
               decoration: const BoxDecoration(
-                border: Border(left: BorderSide(color: AppColors.border, width: 1)),
+                border: Border(
+                  left: BorderSide(color: AppColors.border, width: 1),
+                ),
               ),
               child: const Text(
                 '+222',
@@ -736,8 +957,19 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
           Expanded(
             flex: 2,
             child: ElevatedButton(
-              onPressed: _currentStep == 4 ? _submitApplication : _nextStep,
-              child: Text(_currentStep == 4 ? 'إرسال الطلب' : 'التالي'),
+              onPressed: _isSubmitting
+                  ? null
+                  : (_currentStep == 4 ? _submitApplication : _nextStep),
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2.5,
+                      ),
+                    )
+                  : Text(_currentStep == 4 ? 'إرسال الطلب' : 'التالي'),
             ),
           ),
         ],
@@ -771,11 +1003,19 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
               const SizedBox(height: 32),
               const Text(
                 'تم إرسال طلبك بنجاح!',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.darkText, fontFamily: 'Cairo'),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.darkText,
+                  fontFamily: 'Cairo',
+                ),
               ),
               const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.warning.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(30),
@@ -793,27 +1033,39 @@ class _CaptainRegisterStepperScreenState extends State<CaptainRegisterStepperScr
               const SizedBox(height: 20),
               const Text(
                 'سيتم مراجعة حسابك ومستنداتك وتفعيل الحساب من قبل الإدارة في أقرب وقت. ستتلقى إشعاراً فور تفعيل الحساب.',
-                style: TextStyle(fontSize: 14, color: AppColors.secondaryText, fontFamily: 'Cairo'),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.secondaryText,
+                  fontFamily: 'Cairo',
+                ),
                 textAlign: TextAlign.center,
               ),
               const Spacer(),
-              
-              // Simulate proceeding to Captain Dashboard
+
               ElevatedButton(
                 onPressed: () {
-                  final provider = Provider.of<AppStateProvider>(context, listen: false);
-                  provider.registerCaptain(_nameController.text.isNotEmpty ? _nameController.text : 'كابتن هدهد جديد', '+222${_phoneController.text}');
-                  
-                  // Go to Captain Home Screen directly
+                  final provider = Provider.of<AppStateProvider>(
+                    context,
+                    listen: false,
+                  );
+                  if (_registeredProfile != null) {
+                    provider.loginFromProfile(
+                      _registeredProfile!,
+                      _emailController.text.trim(),
+                    );
+                  }
+
                   Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => const CaptainHomeScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const CaptainHomeScreen(),
+                    ),
                     (route) => false,
                   );
                 },
-                child: const Text('دخول لوحة تحكم الكابتن تجريبياً'),
+                child: const Text('دخول لوحة تحكم الكابتن'),
               ),
               const SizedBox(height: 12),
-              
+
               TextButton(
                 onPressed: () {
                   Navigator.of(context).popUntil((route) => route.isFirst);

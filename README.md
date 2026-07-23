@@ -2,6 +2,26 @@
 
 A new Flutter project.
 
+## Supabase setup (authentication + database)
+
+Auth (email + password) and the database schema live in Supabase.
+
+1. Create a project at [supabase.com](https://supabase.com).
+2. Run the SQL in `supabase/migrations/0001_init.sql` in the Supabase SQL editor
+   (or `supabase db push` if you use the Supabase CLI). It creates the tables,
+   the `handle_new_user` trigger that provisions a `profiles` row on sign-up,
+   and the Row Level Security policies.
+3. Copy `env.json.example` to `env.json` and fill in your project's URL and
+   anon/public key (Project Settings -> API). Never commit `env.json` or use
+   the `service_role` key inside the app.
+4. Run the app with the config file:
+   ```bash
+   flutter run --dart-define-from-file=env.json
+   ```
+
+Without `env.json`, the app still builds and runs, but any screen that hits
+Supabase (login, register) will show an Arabic error asking you to configure it.
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.

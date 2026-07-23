@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
+import '../../core/supabase/auth_exception.dart';
+import '../../core/supabase/auth_repository.dart';
 import '../../providers/app_state_provider.dart';
 import '../customer/customer_home_screen.dart';
 
@@ -13,11 +15,13 @@ class CustomerRegisterScreen extends StatefulWidget {
 
 class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _authRepository = AuthRepository();
   final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _acceptTerms = false;
@@ -26,46 +30,64 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  void _handleRegister() {
-    if (_formKey.currentState!.validate()) {
-      if (!_acceptTerms) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'الرجاء الموافقة على الشروط والأحكام للمتابعة',
-              style: TextStyle(fontFamily: 'Cairo'),
-            ),
-            backgroundColor: AppColors.error,
+  Future<void> _handleRegister() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (!_acceptTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'الرجاء الموافقة على الشروط والأحكام للمتابعة',
+            style: TextStyle(fontFamily: 'Cairo'),
           ),
-        );
-        return;
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final profile = await _authRepository.signUp(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        fullName: _nameController.text.trim(),
+        phone: '+222${_phoneController.text}',
+        userType: 'customer',
+      );
+
+      if (!mounted) return;
+      final provider = Provider.of<AppStateProvider>(context, listen: false);
+      provider.loginFromProfile(profile, _emailController.text.trim());
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const CustomerHomeScreen()),
+        (route) => false,
+      );
+    } on AppAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message, style: const TextStyle(fontFamily: 'Cairo')),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
-
-      setState(() {
-        _isLoading = true;
-      });
-
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-          
-          final provider = Provider.of<AppStateProvider>(context, listen: false);
-          provider.registerCustomer(_nameController.text, '+222${_phoneController.text}');
-          
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const CustomerHomeScreen()),
-            (route) => false,
-          );
-        }
-      });
     }
   }
 
@@ -73,9 +95,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('إنشاء حساب زبون'),
-      ),
+      appBar: AppBar(title: const Text('إنشاء حساب زبون')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -104,7 +124,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Name Field
                 const Text(
                   'الاسم الكامل',
@@ -120,7 +140,10 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                   controller: _nameController,
                   decoration: const InputDecoration(
                     hintText: 'أدخل اسمك الكامل',
-                    prefixIcon: Icon(Icons.person_outline_rounded, color: AppColors.secondaryText),
+                    prefixIcon: Icon(
+                      Icons.person_outline_rounded,
+                      color: AppColors.secondaryText,
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -133,7 +156,43 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                
+
+                // Email Field
+                const Text(
+                  'البريد الإلكتروني',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.darkText,
+                    fontFamily: 'Cairo',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  textAlign: TextAlign.left,
+                  decoration: const InputDecoration(
+                    hintText: 'example@email.com',
+                    prefixIcon: Icon(
+                      Icons.email_outlined,
+                      color: AppColors.secondaryText,
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'الرجاء إدخال البريد الإلكتروني';
+                    }
+                    if (!RegExp(
+                      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                    ).hasMatch(value)) {
+                      return 'الرجاء إدخال بريد إلكتروني صحيح';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
                 // Phone Field
                 const Text(
                   'رقم الهاتف',
@@ -149,15 +208,27 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   textAlign: TextAlign.left,
-                  style: const TextStyle(fontSize: 16, letterSpacing: 1.5, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.bold,
+                  ),
                   decoration: InputDecoration(
                     hintText: '36 00 00 00',
-                    hintStyle: const TextStyle(letterSpacing: 1.0, fontWeight: FontWeight.normal),
+                    hintStyle: const TextStyle(
+                      letterSpacing: 1.0,
+                      fontWeight: FontWeight.normal,
+                    ),
                     prefixIcon: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 15,
+                      ),
                       margin: const EdgeInsets.only(left: 10),
                       decoration: const BoxDecoration(
-                        border: Border(left: BorderSide(color: AppColors.border, width: 1)),
+                        border: Border(
+                          left: BorderSide(color: AppColors.border, width: 1),
+                        ),
                       ),
                       child: const Text(
                         '+222',
@@ -180,7 +251,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Password Field
                 const Text(
                   'كلمة المرور',
@@ -197,10 +268,15 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
                     hintText: 'أدخل كلمة المرور (6 أحرف على الأقل)',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.secondaryText),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline_rounded,
+                      color: AppColors.secondaryText,
+                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        _obscurePassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
                         color: AppColors.secondaryText,
                       ),
                       onPressed: () {
@@ -221,7 +297,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Confirm Password Field
                 const Text(
                   'تأكيد كلمة المرور',
@@ -238,10 +314,15 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                   obscureText: _obscureConfirmPassword,
                   decoration: InputDecoration(
                     hintText: 'أعد كتابة كلمة المرور',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.secondaryText),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline_rounded,
+                      color: AppColors.secondaryText,
+                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        _obscureConfirmPassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
                         color: AppColors.secondaryText,
                       ),
                       onPressed: () {
@@ -262,14 +343,16 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Terms Checkbox
                 Row(
                   children: [
                     Checkbox(
                       value: _acceptTerms,
                       activeColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                       onChanged: (value) {
                         setState(() {
                           _acceptTerms = value ?? false;
@@ -296,7 +379,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                   ],
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Register Button
                 ElevatedButton(
                   onPressed: _isLoading ? null : _handleRegister,
@@ -312,7 +395,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                       : const Text('إنشاء الحساب'),
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Login redirect
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
