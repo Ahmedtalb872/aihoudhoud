@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../dummy_data/dummy_data.dart';
 import '../core/supabase/auth_repository.dart';
+import '../core/services/new_trip_alert.dart';
 
 class AppStateProvider extends ChangeNotifier {
   // Auth state
@@ -263,6 +264,7 @@ class AppStateProvider extends ChangeNotifier {
           date: DateTime.now().toString().substring(0, 16),
         );
         notifyListeners();
+        NewTripAlert.play();
 
         // Count down for captain accept
         _countdownTimer?.cancel();
