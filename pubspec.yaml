@@ -60,6 +60,7 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.4
 
 flutter_launcher_icons:
   image_path: "assets/images/logo.jpg"
@@ -73,6 +74,18 @@ flutter_launcher_icons:
     generate: true
   macos:
     generate: true
+
+# Native splash screen (shown before the Flutter engine/Dart code even
+# starts), replacing the default blank Flutter launch screen with our
+# circular logo badge on the app's brand color.
+flutter_native_splash:
+  color: "#0f766e"
+  image: assets/images/logo_splash.png
+  android_12:
+    image: assets/images/logo_icon.png
+    icon_background_color: "#ffffff"
+    color: "#0f766e"
+  web: false
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -88,6 +101,8 @@ flutter:
   assets:
     - assets/images/logo.jpg
     - assets/images/logo.png
+    - assets/images/logo_splash.png
+    - assets/images/logo_icon.png
     - assets/sounds/new_trip_chime.wav
 
   # An image asset can refer to one or more resolution-specific "variants", see

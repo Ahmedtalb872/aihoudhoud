@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_repository.dart';
-import '../../core/widgets/app_logo.dart';
 import '../../providers/app_state_provider.dart';
 import '../authentication/captain_login_screen.dart';
 import '../captain/captain_home_screen.dart';
@@ -122,14 +121,39 @@ class _SplashScreenState extends State<SplashScreen>
                   scale: _scaleAnimation,
                   child: FadeTransition(
                     opacity: _fadeAnimation,
-                    child: const AppLogo(width: 240),
+                    child: Container(
+                      width: 180,
+                      height: 180,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 24,
+                            offset: Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Image.asset('assets/images/logo_splash.png'),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 FadeTransition(
                   opacity: _fadeAnimation,
                   child: Column(
                     children: [
+                      const Text(
+                        'الهدهد',
+                        style: TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          fontFamily: 'Cairo',
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
