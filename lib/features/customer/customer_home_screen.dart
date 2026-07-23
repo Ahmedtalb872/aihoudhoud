@@ -7,7 +7,7 @@ import '../wallet/wallet_screen.dart';
 import '../support/chat_screen.dart';
 import '../profile/profile_screen.dart';
 import '../../core/widgets/real_map_widget.dart';
-import 'location_selection_screen.dart';
+import 'ride_map_selection_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../onboarding/user_type_selection_screen.dart';
 import '../../dummy_data/dummy_data.dart';
@@ -185,7 +185,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 GestureDetector(
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => const LocationSelectionScreen()),
+                      MaterialPageRoute(builder: (context) => const RideMapSelectionScreen()),
                     );
                   },
                   child: Container(
@@ -233,7 +233,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     return InkWell(
       onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (context) => const LocationSelectionScreen()),
+          MaterialPageRoute(builder: (context) => const RideMapSelectionScreen()),
         );
       },
       borderRadius: BorderRadius.circular(16),
