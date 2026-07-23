@@ -19,6 +19,7 @@ class RealMapWidget extends StatefulWidget {
   final List<LatLng>? routePolyline;
   final Function(LatLng)? onMapTap;
   final bool interactive;
+  final bool showControls;
 
   const RealMapWidget({
     super.key,
@@ -34,6 +35,7 @@ class RealMapWidget extends StatefulWidget {
     this.routePolyline,
     this.onMapTap,
     this.interactive = true,
+    this.showControls = true,
   });
 
   @override
@@ -185,32 +187,35 @@ class _RealMapWidgetState extends State<RealMapWidget>
         ),
 
         // Map controls (Compass, location)
-        Positioned(
-          left: 16,
-          bottom: 150, // Keep above bottom sheets
-          child: Column(
-            children: [
-              _buildMapButton(Icons.add, () {
-                _mapController.move(
-                  _mapController.camera.center,
-                  _mapController.camera.zoom + 1,
-                );
-              }),
-              const SizedBox(height: 8),
-              _buildMapButton(Icons.remove, () {
-                _mapController.move(
-                  _mapController.camera.center,
-                  _mapController.camera.zoom - 1,
-                );
-              }),
-              const SizedBox(height: 8),
-              _buildMapButton(
-                _isLoadingLocation ? Icons.hourglass_empty : Icons.my_location,
-                _determinePosition,
-              ),
-            ],
+        if (widget.showControls)
+          Positioned(
+            left: 16,
+            bottom: 150, // Keep above bottom sheets
+            child: Column(
+              children: [
+                _buildMapButton(Icons.add, () {
+                  _mapController.move(
+                    _mapController.camera.center,
+                    _mapController.camera.zoom + 1,
+                  );
+                }),
+                const SizedBox(height: 8),
+                _buildMapButton(Icons.remove, () {
+                  _mapController.move(
+                    _mapController.camera.center,
+                    _mapController.camera.zoom - 1,
+                  );
+                }),
+                const SizedBox(height: 8),
+                _buildMapButton(
+                  _isLoadingLocation
+                      ? Icons.hourglass_empty
+                      : Icons.my_location,
+                  _determinePosition,
+                ),
+              ],
+            ),
           ),
-        ),
       ],
     );
   }

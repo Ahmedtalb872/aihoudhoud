@@ -426,6 +426,24 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 16),
+
+                  // Map preview of pickup & destination points
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: SizedBox(
+                      height: 140,
+                      child: RealMapWidget(
+                        showRoute: true,
+                        pickupLat: trip.pickupLat,
+                        pickupLng: trip.pickupLng,
+                        destLat: trip.destLat,
+                        destLng: trip.destLng,
+                        interactive: false,
+                        showControls: false,
+                      ),
+                    ),
+                  ),
                   const Divider(height: 32),
 
                   // Details Row (fare, distance)
