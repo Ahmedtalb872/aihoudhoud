@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_exception.dart';
 import '../../core/supabase/auth_repository.dart';
+import '../../core/widgets/app_logo.dart';
 import '../../providers/app_state_provider.dart';
 import '../captain/captain_home_screen.dart';
 
@@ -175,7 +176,15 @@ class _CaptainRegisterStepperScreenState
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('تسجيل كابتن جديد')),
+      appBar: AppBar(
+        title: Row(
+          children: [
+            const AppLogo(width: 28),
+            const SizedBox(width: 10),
+            const Text('تسجيل كابتن جديد'),
+          ],
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [

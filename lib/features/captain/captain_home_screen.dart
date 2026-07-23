@@ -4,6 +4,7 @@ import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
 import '../../models/models.dart';
 import '../../core/widgets/real_map_widget.dart';
+import '../../core/widgets/app_logo.dart';
 import '../trips/my_trips_screen.dart';
 import '../wallet/wallet_screen.dart';
 import '../profile/profile_screen.dart';
@@ -569,6 +570,9 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
               backgroundImage: NetworkImage(DummyData.dummyCaptain.user.avatar),
               backgroundColor: Colors.white,
             ),
+            otherAccountsPictures: const [
+              Padding(padding: EdgeInsets.all(6.0), child: AppLogo(width: 40)),
+            ],
             accountName: Text(
               provider.captainName,
               style: const TextStyle(

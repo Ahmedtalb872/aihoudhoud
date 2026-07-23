@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_repository.dart';
+import '../../core/widgets/app_logo.dart';
 import '../../providers/app_state_provider.dart';
 import '../authentication/captain_login_screen.dart';
 import '../captain/captain_home_screen.dart';
@@ -121,25 +122,7 @@ class _SplashScreenState extends State<SplashScreen>
                   scale: _scaleAnimation,
                   child: FadeTransition(
                     opacity: _fadeAnimation,
-                    child: Container(
-                      width: 220,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(32),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 20,
-                            offset: Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Image.asset('assets/images/logo.jpg'),
-                      ),
-                    ),
+                    child: const AppLogo(width: 240),
                   ),
                 ),
                 const SizedBox(height: 24),

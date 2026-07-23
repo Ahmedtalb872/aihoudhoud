@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_exception.dart';
 import '../../core/supabase/auth_repository.dart';
+import '../../core/widgets/app_logo.dart';
 import '../../providers/app_state_provider.dart';
 import 'captain_register_stepper_screen.dart';
 import '../captain/captain_home_screen.dart';
@@ -131,6 +132,8 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SizedBox(height: 12),
+                const Center(child: AppLogo(width: 96)),
                 const SizedBox(height: 20),
                 const Text(
                   'أهلاً بك يا كابتن!',
