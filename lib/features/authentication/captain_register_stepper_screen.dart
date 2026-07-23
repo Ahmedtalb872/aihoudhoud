@@ -6,6 +6,7 @@ import '../../core/supabase/auth_repository.dart';
 import '../../core/widgets/app_logo.dart';
 import '../../providers/app_state_provider.dart';
 import '../captain/captain_home_screen.dart';
+import '../onboarding/permissions_screen.dart';
 
 class CaptainRegisterStepperScreen extends StatefulWidget {
   const CaptainRegisterStepperScreen({super.key});
@@ -1066,7 +1067,9 @@ class _CaptainRegisterStepperScreenState
 
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(
-                      builder: (context) => const CaptainHomeScreen(),
+                      builder: (context) => const PermissionsScreen(
+                        destination: CaptainHomeScreen(),
+                      ),
                     ),
                     (route) => false,
                   );
