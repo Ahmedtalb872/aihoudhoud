@@ -6,6 +6,7 @@ import '../../models/models.dart';
 import '../../core/widgets/real_map_widget.dart';
 import '../support/chat_screen.dart';
 import 'captain_trip_summary_screen.dart';
+import 'open_ride_active_screen.dart';
 
 class CaptainActiveTripScreen extends StatelessWidget {
   const CaptainActiveTripScreen({super.key});
@@ -91,6 +92,12 @@ class CaptainActiveTripScreen extends StatelessWidget {
       });
     }
 
+    // Open rides have no known destination: once the customer boards, hand
+    // off to the live-meter screen instead of "en route to a destination".
+    if (trip.status == TripStatus.started && trip.isOpenRide) {
+      return const OpenRideActiveScreen();
+    }
+
     // Determine state visual details
     String statusTitle = 'توجه إلى نقطة الانطلاق';
     String addressLabel = 'موقع العميل (الالتقاء)';
@@ -110,7 +117,7 @@ class CaptainActiveTripScreen extends StatelessWidget {
     } else if (trip.status == TripStatus.started) {
       statusTitle = 'مشوار جاري الآن نحو الوجهة';
       addressLabel = 'الوجهة المحددة للرحلة';
-      addressValue = trip.destinationLocation;
+      addressValue = trip.destinationLocation ?? 'غير محددة';
       actionLabel = 'إنهاء الرحلة بنجاح';
       actionColor = AppColors.error;
       actionIcon = Icons.flag_rounded;

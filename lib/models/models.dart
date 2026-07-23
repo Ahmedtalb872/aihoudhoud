@@ -111,11 +111,12 @@ class Trip {
   final String? vehiclePlate;
   final String? vehicleName;
   final String pickupLocation;
-  final String destinationLocation;
+  // Null for open rides: no destination is known until the captain ends the trip.
+  final String? destinationLocation;
   final double pickupLat;
   final double pickupLng;
-  final double destLat;
-  final double destLng;
+  final double? destLat;
+  final double? destLng;
   final double distance; // in km
   final int duration; // in minutes
   final double price;
@@ -138,11 +139,11 @@ class Trip {
     this.vehiclePlate,
     this.vehicleName,
     required this.pickupLocation,
-    required this.destinationLocation,
+    this.destinationLocation,
     required this.pickupLat,
     required this.pickupLng,
-    required this.destLat,
-    required this.destLng,
+    this.destLat,
+    this.destLng,
     required this.distance,
     required this.duration,
     required this.price,

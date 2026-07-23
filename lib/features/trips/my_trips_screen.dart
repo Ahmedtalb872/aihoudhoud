@@ -216,7 +216,7 @@ class _TripListTab extends StatelessWidget {
                           ),
                           const SizedBox(height: 18),
                           Text(
-                            trip.destinationLocation,
+                            trip.destinationLocation ?? 'مشوار مفتوح',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14,

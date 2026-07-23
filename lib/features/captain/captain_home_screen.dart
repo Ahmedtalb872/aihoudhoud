@@ -411,11 +411,17 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                             ),
                             const SizedBox(height: 20),
                             Text(
-                              trip.destinationLocation,
-                              style: const TextStyle(
+                              trip.destinationLocation ??
+                                  'مشوار مفتوح (بدون وجهة محددة)',
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
-                                color: AppColors.darkText,
+                                fontStyle: trip.destinationLocation == null
+                                    ? FontStyle.italic
+                                    : FontStyle.normal,
+                                color: trip.destinationLocation == null
+                                    ? AppColors.secondaryText
+                                    : AppColors.darkText,
                                 fontFamily: 'Cairo',
                               ),
                               maxLines: 1,

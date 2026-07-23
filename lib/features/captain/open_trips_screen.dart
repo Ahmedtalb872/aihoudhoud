@@ -29,14 +29,8 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
         'customerName': 'سيدي ولد المختار',
         'customerPhone': '+22246667777',
         'pickup': 'لكصر (كارفور ولد أماه)',
-        'destination': 'تفرغ زينة (سوق طيبة)',
         'pickupLat': 18.0982,
         'pickupLng': -15.9592,
-        'destLat': 18.1065,
-        'destLng': -15.9664,
-        'distance': 4.5,
-        'duration': 12,
-        'price': 180.0,
         'payment': 'نقداً',
         'timeLeft': 38,
       },
@@ -45,14 +39,8 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
         'customerName': 'زينب منت اعل',
         'customerPhone': '+22248889999',
         'pickup': 'عرفات (كارفور مدريد)',
-        'destination': 'دار النعيم (شينقيط)',
         'pickupLat': 18.0435,
         'pickupLng': -15.9521,
-        'destLat': 18.1098,
-        'destLng': -15.9087,
-        'distance': 9.2,
-        'duration': 22,
-        'price': 350.0,
         'payment': 'Bankily',
         'timeLeft': 52,
       },
@@ -83,19 +71,17 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
   void _acceptOpenTrip(Map<String, dynamic> rideData) {
     final provider = Provider.of<AppStateProvider>(context, listen: false);
 
-    // Simulate accepting the open ride
+    // Simulate accepting the open ride. No destination or fixed price: the
+    // fare is metered live once the customer boards (see openRideFare).
     provider.requestTrip(
       customerName: rideData['customerName'],
       customerPhone: rideData['customerPhone'],
       pickup: rideData['pickup'],
-      destination: rideData['destination'],
       pickupLat: rideData['pickupLat'],
       pickupLng: rideData['pickupLng'],
-      destLat: rideData['destLat'],
-      destLng: rideData['destLng'],
-      distance: rideData['distance'],
-      duration: rideData['duration'],
-      price: rideData['price'],
+      distance: 0,
+      duration: 0,
+      price: AppStateProvider.openRideBaseFare,
       carType: VehicleType.economy,
       isOpenRide: true,
       timeoutSeconds: 45,
@@ -222,47 +208,29 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
                         ),
                         const Divider(height: 24),
 
-                        // Route details
+                        // Pickup point (no destination: it's an open ride)
                         Row(
                           children: [
-                            Column(
-                              children: [
-                                const Icon(
-                                  Icons.radio_button_checked_rounded,
-                                  color: AppColors.success,
-                                  size: 16,
-                                ),
-                                Container(
-                                  width: 1,
-                                  height: 20,
-                                  color: AppColors.border,
-                                ),
-                                const Icon(
-                                  Icons.location_on_rounded,
-                                  color: AppColors.error,
-                                  size: 16,
-                                ),
-                              ],
+                            const Icon(
+                              Icons.radio_button_checked_rounded,
+                              color: AppColors.success,
+                              size: 16,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    ride['pickup'],
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                      color: AppColors.darkText,
+                                  const Text(
+                                    'من',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: AppColors.secondaryText,
                                       fontFamily: 'Cairo',
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  const SizedBox(height: 14),
                                   Text(
-                                    ride['destination'],
+                                    ride['pickup'],
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
@@ -279,17 +247,14 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
                         ),
                         const SizedBox(height: 12),
 
-                        // Map preview of pickup & destination points
+                        // Map preview of the pickup point only
                         ClipRRect(
                           borderRadius: BorderRadius.circular(16),
                           child: SizedBox(
                             height: 120,
                             child: RealMapWidget(
-                              showRoute: true,
                               pickupLat: ride['pickupLat'],
                               pickupLng: ride['pickupLng'],
-                              destLat: ride['destLat'],
-                              destLng: ride['destLng'],
                               interactive: false,
                               showControls: false,
                             ),
@@ -297,7 +262,7 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
                         ),
                         const Divider(height: 24),
 
-                        // Pricing & distance info
+                        // Fare & payment info
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -305,7 +270,7 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  'الأرباح الإجمالية',
+                                  'مشوار مفتوح',
                                   style: TextStyle(
                                     fontSize: 10,
                                     color: AppColors.secondaryText,
@@ -313,33 +278,11 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
                                   ),
                                 ),
                                 Text(
-                                  '${ride['price']} أوقية',
+                                  'يبدأ من ${AppStateProvider.openRideBaseFare.toStringAsFixed(0)} أوقية',
                                   style: const TextStyle(
-                                    fontSize: 16,
+                                    fontSize: 14,
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.primary,
-                                    fontFamily: 'Cairo',
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                const Text(
-                                  'المسافة',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: AppColors.secondaryText,
-                                    fontFamily: 'Cairo',
-                                  ),
-                                ),
-                                Text(
-                                  '${ride['distance']} كم',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.darkText,
                                     fontFamily: 'Cairo',
                                   ),
                                 ),
@@ -380,7 +323,7 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        'تفاصيل الرحلة: مسار من ${ride['pickup']} إلى ${ride['destination']} بمسافة ${ride['distance']} كم.',
+                                        'مشوار مفتوح من ${ride['pickup']} — بدون وجهة محددة، السعر يُحسب حسب الوقت.',
                                         style: const TextStyle(
                                           fontFamily: 'Cairo',
                                         ),

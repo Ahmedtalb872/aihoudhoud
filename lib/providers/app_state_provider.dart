@@ -30,6 +30,13 @@ class AppStateProvider extends ChangeNotifier {
   int _countdownSeconds = 45;
   bool _isSearching = false;
 
+  // Open ride live meter: 100 MRU base fare (first 3 km), then 50 MRU/minute
+  // for as long as the trip runs, since an open ride has no fixed destination.
+  static const double openRideBaseFare = 100.0;
+  static const double openRidePerMinuteRate = 50.0;
+  DateTime? _openRideStartTime;
+  Timer? _openRideTicker;
+
   // Chat state
   final List<Message> _chatMessages = List.from(DummyData.dummyMessages);
 
@@ -63,6 +70,14 @@ class AppStateProvider extends ChangeNotifier {
 
   Trip? get incomingRequest => _incomingRequest;
 
+  Duration get openRideElapsed => _openRideStartTime == null
+      ? Duration.zero
+      : DateTime.now().difference(_openRideStartTime!);
+
+  double get openRideFare =>
+      openRideBaseFare +
+      (openRideElapsed.inSeconds / 60.0) * openRidePerMinuteRate;
+
   // Hydrate state from a Supabase `profiles` row after a real sign-in/sign-up.
   // Callers are responsible for verifying profile['user_type'] == 'captain'
   // before calling this, since this app only serves captains.
@@ -85,6 +100,8 @@ class AppStateProvider extends ChangeNotifier {
     _isSearching = false;
     _countdownTimer?.cancel();
     _incomingRequestTimer?.cancel();
+    _openRideTicker?.cancel();
+    _openRideStartTime = null;
     notifyListeners();
     AuthRepository().signOut().catchError((_) {});
   }
@@ -103,15 +120,17 @@ class AppStateProvider extends ChangeNotifier {
   }
 
   // Used when a captain accepts a ride browsed from the open trips list.
+  // Open rides have no destination: the customer didn't specify one, and the
+  // final fare is metered live once the trip starts (see openRideFare).
   void requestTrip({
     required String customerName,
     required String customerPhone,
     required String pickup,
-    required String destination,
+    String? destination,
     required double pickupLat,
     required double pickupLng,
-    required double destLat,
-    required double destLng,
+    double? destLat,
+    double? destLng,
     required double distance,
     required int duration,
     required double price,
@@ -231,11 +250,8 @@ class AppStateProvider extends ChangeNotifier {
           customerName: 'فاطمة منت محمد',
           customerPhone: '+22247777777',
           pickupLocation: 'تفرغ زينة (سوبرماركت النخيل)',
-          destinationLocation: 'تيارت (كارفور عين الطلح)',
           pickupLat: 18.1065,
           pickupLng: -15.9664,
-          destLat: 18.1255,
-          destLng: -15.9288,
           distance: 6.8,
           duration: 15,
           price: 220.0,
@@ -315,74 +331,127 @@ class AppStateProvider extends ChangeNotifier {
   void captainStartActiveTrip() {
     if (_activeTrip != null && _activeTrip!.status == TripStatus.arrived) {
       _activeTrip!.status = TripStatus.started;
+      if (_activeTrip!.isOpenRide) {
+        _openRideStartTime = DateTime.now();
+        _openRideTicker?.cancel();
+        _openRideTicker = Timer.periodic(
+          const Duration(seconds: 1),
+          (_) => notifyListeners(),
+        );
+      }
       notifyListeners();
     }
   }
 
   void captainCompleteActiveTrip() {
-    if (_activeTrip != null && _activeTrip!.status == TripStatus.started) {
-      _activeTrip!.status = TripStatus.completed;
+    if (_activeTrip != null &&
+        _activeTrip!.status == TripStatus.started &&
+        !_activeTrip!.isOpenRide) {
+      _finalizeCompletedTrip(_activeTrip!.price);
+    }
+  }
 
-      // Calculate earnings (85% net, 15% commission)
-      double price = _activeTrip!.price;
-      double commission = double.parse((price * 0.15).toStringAsFixed(1));
-      double net = price - commission;
-
-      Trip finishedTrip = Trip(
+  // Ends an open ride: there's no destination to arrive at, so the captain
+  // decides when it's over and the fare is whatever the live meter shows.
+  void captainCompleteOpenRide({double distanceKm = 0}) {
+    if (_activeTrip != null &&
+        _activeTrip!.status == TripStatus.started &&
+        _activeTrip!.isOpenRide) {
+      final elapsedMinutes = (openRideElapsed.inSeconds / 60.0).round();
+      _activeTrip = Trip(
         id: _activeTrip!.id,
         customerName: _activeTrip!.customerName,
         customerPhone: _activeTrip!.customerPhone,
+        captainName: _activeTrip!.captainName,
+        captainPhone: _activeTrip!.captainPhone,
+        captainAvatar: _activeTrip!.captainAvatar,
+        vehicleName: _activeTrip!.vehicleName,
+        vehiclePlate: _activeTrip!.vehiclePlate,
         pickupLocation: _activeTrip!.pickupLocation,
         destinationLocation: _activeTrip!.destinationLocation,
         pickupLat: _activeTrip!.pickupLat,
         pickupLng: _activeTrip!.pickupLng,
         destLat: _activeTrip!.destLat,
         destLng: _activeTrip!.destLng,
-        distance: _activeTrip!.distance,
-        duration: _activeTrip!.duration,
-        price: price,
+        distance: distanceKm,
+        duration: elapsedMinutes,
+        price: _activeTrip!.price,
         paymentMethod: _activeTrip!.paymentMethod,
-        status: TripStatus.completed,
+        status: _activeTrip!.status,
         carType: _activeTrip!.carType,
         isOpenRide: _activeTrip!.isOpenRide,
         openRideTimeout: _activeTrip!.openRideTimeout,
         date: _activeTrip!.date,
-        netEarnings: net,
-        commission: commission,
       );
-
-      _captainTripHistory.insert(0, finishedTrip);
-
-      _captainWalletBalance += net;
-      _captainTodayEarnings += net;
-      _captainTripsCount += 1;
-
-      _captainTransactions.insert(
-        0,
-        WalletTransaction(
-          id: 'tx_${DateTime.now().millisecondsSinceEpoch}',
-          amount: net,
-          type: TransactionType.charge,
-          title: 'صافي أرباح رحلة إلى ${_activeTrip!.destinationLocation}',
-          date: DateTime.now().toString().substring(0, 16),
-          isCredit: true,
-        ),
-      );
-
-      _captainTransactions.insert(
-        0,
-        WalletTransaction(
-          id: 'tx_comm_${DateTime.now().millisecondsSinceEpoch}',
-          amount: commission,
-          type: TransactionType.commission,
-          title: 'عمولة رحلة إلى ${_activeTrip!.destinationLocation}',
-          date: DateTime.now().toString().substring(0, 16),
-          isCredit: false,
-        ),
-      );
-
-      notifyListeners();
+      _finalizeCompletedTrip(openRideFare);
+      _openRideTicker?.cancel();
+      _openRideTicker = null;
+      _openRideStartTime = null;
     }
+  }
+
+  void _finalizeCompletedTrip(double price) {
+    _activeTrip!.status = TripStatus.completed;
+
+    // Calculate earnings (85% net, 15% commission)
+    double commission = double.parse((price * 0.15).toStringAsFixed(1));
+    double net = price - commission;
+    String destinationLabel = _activeTrip!.destinationLocation ?? 'مشوار مفتوح';
+
+    Trip finishedTrip = Trip(
+      id: _activeTrip!.id,
+      customerName: _activeTrip!.customerName,
+      customerPhone: _activeTrip!.customerPhone,
+      pickupLocation: _activeTrip!.pickupLocation,
+      destinationLocation: _activeTrip!.destinationLocation,
+      pickupLat: _activeTrip!.pickupLat,
+      pickupLng: _activeTrip!.pickupLng,
+      destLat: _activeTrip!.destLat,
+      destLng: _activeTrip!.destLng,
+      distance: _activeTrip!.distance,
+      duration: _activeTrip!.duration,
+      price: price,
+      paymentMethod: _activeTrip!.paymentMethod,
+      status: TripStatus.completed,
+      carType: _activeTrip!.carType,
+      isOpenRide: _activeTrip!.isOpenRide,
+      openRideTimeout: _activeTrip!.openRideTimeout,
+      date: _activeTrip!.date,
+      netEarnings: net,
+      commission: commission,
+    );
+
+    _captainTripHistory.insert(0, finishedTrip);
+
+    _captainWalletBalance += net;
+    _captainTodayEarnings += net;
+    _captainTripsCount += 1;
+
+    _captainTransactions.insert(
+      0,
+      WalletTransaction(
+        id: 'tx_${DateTime.now().millisecondsSinceEpoch}',
+        amount: net,
+        type: TransactionType.charge,
+        title: 'صافي أرباح رحلة إلى $destinationLabel',
+        date: DateTime.now().toString().substring(0, 16),
+        isCredit: true,
+      ),
+    );
+
+    _captainTransactions.insert(
+      0,
+      WalletTransaction(
+        id: 'tx_comm_${DateTime.now().millisecondsSinceEpoch}',
+        amount: commission,
+        type: TransactionType.commission,
+        title: 'عمولة رحلة إلى $destinationLabel',
+        date: DateTime.now().toString().substring(0, 16),
+        isCredit: false,
+      ),
+    );
+
+    notifyListeners();
   }
 
   void confirmCaptainSummary() {
@@ -467,6 +536,7 @@ class AppStateProvider extends ChangeNotifier {
   void dispose() {
     _countdownTimer?.cancel();
     _incomingRequestTimer?.cancel();
+    _openRideTicker?.cancel();
     super.dispose();
   }
 }
