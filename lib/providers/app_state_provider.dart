@@ -454,6 +454,54 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Captain cancels an already-accepted trip (before or during it), with a
+  // reason recorded for the trip history.
+  void captainCancelActiveTrip(String reason) {
+    if (_activeTrip == null) return;
+
+    final cancelledTrip = Trip(
+      id: _activeTrip!.id,
+      customerName: _activeTrip!.customerName,
+      customerPhone: _activeTrip!.customerPhone,
+      captainName: _activeTrip!.captainName,
+      captainPhone: _activeTrip!.captainPhone,
+      captainAvatar: _activeTrip!.captainAvatar,
+      vehicleName: _activeTrip!.vehicleName,
+      vehiclePlate: _activeTrip!.vehiclePlate,
+      pickupLocation: _activeTrip!.pickupLocation,
+      destinationLocation: _activeTrip!.destinationLocation,
+      pickupLat: _activeTrip!.pickupLat,
+      pickupLng: _activeTrip!.pickupLng,
+      destLat: _activeTrip!.destLat,
+      destLng: _activeTrip!.destLng,
+      distance: _activeTrip!.distance,
+      duration: _activeTrip!.duration,
+      price: _activeTrip!.price,
+      paymentMethod: _activeTrip!.paymentMethod,
+      status: TripStatus.cancelled,
+      carType: _activeTrip!.carType,
+      isOpenRide: _activeTrip!.isOpenRide,
+      openRideTimeout: _activeTrip!.openRideTimeout,
+      date: _activeTrip!.date,
+      cancellationReason: reason,
+    );
+
+    _captainTripHistory.insert(0, cancelledTrip);
+
+    _activeTrip = null;
+    _isSearching = false;
+    _countdownTimer?.cancel();
+    _openRideTicker?.cancel();
+    _openRideTicker = null;
+    _openRideStartTime = null;
+    notifyListeners();
+
+    // Ready for the next request if still online
+    if (_isCaptainOnline) {
+      _startSimulatedIncomingRequest();
+    }
+  }
+
   void confirmCaptainSummary() {
     _activeTrip = null;
     notifyListeners();

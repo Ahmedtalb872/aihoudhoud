@@ -128,6 +128,7 @@ class Trip {
   final String date;
   final double? netEarnings;
   final double? commission;
+  final String? cancellationReason;
 
   Trip({
     required this.id,
@@ -155,6 +156,7 @@ class Trip {
     required this.date,
     this.netEarnings,
     this.commission,
+    this.cancellationReason,
   });
 
   String get carTypeNameArabic {

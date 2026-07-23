@@ -7,6 +7,7 @@ import '../../core/widgets/real_map_widget.dart';
 import '../support/chat_screen.dart';
 import 'captain_trip_summary_screen.dart';
 import 'open_ride_active_screen.dart';
+import 'cancel_trip_dialog.dart';
 
 class CaptainActiveTripScreen extends StatelessWidget {
   const CaptainActiveTripScreen({super.key});
@@ -129,6 +130,15 @@ class CaptainActiveTripScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(statusTitle),
         automaticallyImplyLeading: false,
+        actions: [
+          TextButton(
+            onPressed: () => showCancelTripDialog(context),
+            child: const Text(
+              'إلغاء المشوار',
+              style: TextStyle(color: AppColors.error, fontFamily: 'Cairo'),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Column(

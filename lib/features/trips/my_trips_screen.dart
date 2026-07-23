@@ -174,6 +174,17 @@ class _TripListTab extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (trip.cancellationReason != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'سبب الإلغاء: ${trip.cancellationReason}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.error,
+                      fontFamily: 'Cairo',
+                    ),
+                  ),
+                ],
                 const Divider(height: 24),
 
                 // Route details

@@ -6,6 +6,7 @@ import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
 import '../../core/widgets/real_map_widget.dart';
 import '../support/chat_screen.dart';
+import 'cancel_trip_dialog.dart';
 
 /// Shown once a captain is driving an open ride (no known destination): a
 /// live map, a running fare meter, and a manual "end trip" action instead of
@@ -172,6 +173,28 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                             fontFamily: 'Cairo',
                           ),
                         ),
+                      ),
+                    ),
+                  ),
+
+                  // Cancel trip button
+                  Positioned(
+                    right: 16,
+                    top: 16,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(color: Colors.black26, blurRadius: 6),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: AppColors.error,
+                        ),
+                        onPressed: () => showCancelTripDialog(context),
                       ),
                     ),
                   ),
