@@ -7,10 +7,12 @@ class CaptainDocumentsStatusScreen extends StatefulWidget {
   const CaptainDocumentsStatusScreen({super.key});
 
   @override
-  State<CaptainDocumentsStatusScreen> createState() => _CaptainDocumentsStatusScreenState();
+  State<CaptainDocumentsStatusScreen> createState() =>
+      _CaptainDocumentsStatusScreenState();
 }
 
-class _CaptainDocumentsStatusScreenState extends State<CaptainDocumentsStatusScreen> {
+class _CaptainDocumentsStatusScreenState
+    extends State<CaptainDocumentsStatusScreen> {
   String? _updatingDoc;
 
   void _simulateUpdateDoc(String docKey, String docName) {
@@ -28,7 +30,10 @@ class _CaptainDocumentsStatusScreenState extends State<CaptainDocumentsStatusScr
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('تم تحديث $docName بنجاح وهو قيد المراجعة الآن.', style: const TextStyle(fontFamily: 'Cairo')),
+            content: Text(
+              'تم تحديث $docName بنجاح وهو قيد المراجعة الآن.',
+              style: const TextStyle(fontFamily: 'Cairo'),
+            ),
             backgroundColor: AppColors.success,
           ),
         );
@@ -52,9 +57,7 @@ class _CaptainDocumentsStatusScreenState extends State<CaptainDocumentsStatusScr
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('حالة المستندات المرفوعة'),
-      ),
+      appBar: AppBar(title: const Text('حالة المستندات المرفوعة')),
       body: ListView.separated(
         padding: const EdgeInsets.all(24.0),
         itemCount: docsList.length,
@@ -63,7 +66,7 @@ class _CaptainDocumentsStatusScreenState extends State<CaptainDocumentsStatusScr
           final doc = docsList[index];
           final docKey = doc['key']!;
           final docName = doc['name']!;
-          
+
           // Map doc state to visual properties
           // Default mock values if not in state:
           String rawStatus = docStatuses[docKey] ?? 'accepted';
@@ -114,7 +117,10 @@ class _CaptainDocumentsStatusScreenState extends State<CaptainDocumentsStatusScr
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: statusColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(30),
@@ -144,7 +150,10 @@ class _CaptainDocumentsStatusScreenState extends State<CaptainDocumentsStatusScr
                     children: [
                       const Text(
                         'تم الرفع: 2026-07-05',
-                        style: TextStyle(fontSize: 11, color: AppColors.secondaryText),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.secondaryText,
+                        ),
                       ),
                       if (isThisUpdating)
                         const SizedBox(
@@ -155,17 +164,23 @@ class _CaptainDocumentsStatusScreenState extends State<CaptainDocumentsStatusScr
                             color: AppColors.primary,
                           ),
                         )
-                      else if (rawStatus != 'accepted' && rawStatus != 'under_review')
+                      else if (rawStatus != 'accepted' &&
+                          rawStatus != 'under_review')
                         ElevatedButton.icon(
                           onPressed: () => _simulateUpdateDoc(docKey, docName),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             minimumSize: const Size(120, 36),
                             padding: const EdgeInsets.symmetric(horizontal: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
                           icon: const Icon(Icons.refresh_rounded, size: 16),
-                          label: const Text('تحديث المستند', style: TextStyle(fontSize: 11)),
+                          label: const Text(
+                            'تحديث المستند',
+                            style: TextStyle(fontSize: 11),
+                          ),
                         )
                       else
                         const Icon(

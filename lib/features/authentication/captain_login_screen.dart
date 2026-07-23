@@ -42,6 +42,13 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
         password: _passwordController.text,
       );
 
+      if (profile['user_type'] != 'captain') {
+        await _authRepository.signOut();
+        throw AppAuthException(
+          'هذا الحساب غير مسجل ككابتن. الرجاء استخدام تطبيق الزبائن لتسجيل الدخول.',
+        );
+      }
+
       if (!mounted) return;
       final provider = Provider.of<AppStateProvider>(context, listen: false);
       provider.loginFromProfile(profile, _emailController.text.trim());

@@ -40,11 +40,12 @@ class RealMapWidget extends StatefulWidget {
   State<RealMapWidget> createState() => _RealMapWidgetState();
 }
 
-class _RealMapWidgetState extends State<RealMapWidget> with SingleTickerProviderStateMixin {
+class _RealMapWidgetState extends State<RealMapWidget>
+    with SingleTickerProviderStateMixin {
   final MapController _mapController = MapController();
   LatLng _currentCenter = const LatLng(18.0858, -15.9785); // Nouakchott center
   bool _isLoadingLocation = false;
-  
+
   late AnimationController _carController;
   late Animation<double> _carAnimation;
 
@@ -52,21 +53,22 @@ class _RealMapWidgetState extends State<RealMapWidget> with SingleTickerProvider
   void initState() {
     super.initState();
     _determinePosition();
-    
+
     _carController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 15),
     );
 
-    _carAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _carController, curve: Curves.easeInOut),
-    );
+    _carAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _carController, curve: Curves.easeInOut));
 
     if (widget.animateCar) {
       _carController.repeat();
     }
   }
-  
+
   @override
   void didUpdateWidget(covariant RealMapWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -77,11 +79,12 @@ class _RealMapWidgetState extends State<RealMapWidget> with SingleTickerProvider
         _carController.stop();
       }
     }
-    
+
     // Auto-center map if new locations are provided
     if (widget.pickupLat != null && widget.pickupLng != null) {
       LatLng newLoc = LatLng(widget.pickupLat!, widget.pickupLng!);
-      if (oldWidget.pickupLat != widget.pickupLat || oldWidget.pickupLng != widget.pickupLng) {
+      if (oldWidget.pickupLat != widget.pickupLat ||
+          oldWidget.pickupLng != widget.pickupLng) {
         _mapController.move(newLoc, 14.0);
       }
     }
@@ -111,11 +114,11 @@ class _RealMapWidgetState extends State<RealMapWidget> with SingleTickerProvider
           return;
         }
       }
-      
+
       if (permission == LocationPermission.deniedForever) {
         if (mounted) setState(() => _isLoadingLocation = false);
         return;
-      } 
+      }
 
       Position position = await Geolocator.getCurrentPosition();
       if (mounted) {
@@ -134,10 +137,16 @@ class _RealMapWidgetState extends State<RealMapWidget> with SingleTickerProvider
   Widget build(BuildContext context) {
     // If no route provided but we have pickup/destination and want to show route
     List<LatLng> polylinePoints = widget.routePolyline ?? [];
-    if (polylinePoints.isEmpty && widget.showRoute && widget.pickupLat != null && widget.destLat != null) {
-      polylinePoints = [LatLng(widget.pickupLat!, widget.pickupLng!), LatLng(widget.destLat!, widget.destLng!)];
+    if (polylinePoints.isEmpty &&
+        widget.showRoute &&
+        widget.pickupLat != null &&
+        widget.destLat != null) {
+      polylinePoints = [
+        LatLng(widget.pickupLat!, widget.pickupLng!),
+        LatLng(widget.destLat!, widget.destLng!),
+      ];
     }
-    
+
     return Stack(
       children: [
         FlutterMap(
@@ -145,11 +154,13 @@ class _RealMapWidgetState extends State<RealMapWidget> with SingleTickerProvider
           options: MapOptions(
             initialCenter: _currentCenter,
             initialZoom: 13.0,
-            onTap: widget.interactive && widget.onMapTap != null 
-              ? (tapPosition, latLng) => widget.onMapTap!(latLng) 
-              : null,
+            onTap: widget.interactive && widget.onMapTap != null
+                ? (tapPosition, latLng) => widget.onMapTap!(latLng)
+                : null,
             interactionOptions: InteractionOptions(
-              flags: widget.interactive ? InteractiveFlag.all : InteractiveFlag.none,
+              flags: widget.interactive
+                  ? InteractiveFlag.all
+                  : InteractiveFlag.none,
             ),
           ),
           children: [
@@ -157,7 +168,7 @@ class _RealMapWidgetState extends State<RealMapWidget> with SingleTickerProvider
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.alhudhud.app',
             ),
-            
+
             if (polylinePoints.isNotEmpty)
               PolylineLayer(
                 polylines: [
@@ -168,13 +179,11 @@ class _RealMapWidgetState extends State<RealMapWidget> with SingleTickerProvider
                   ),
                 ],
               ),
-              
-            MarkerLayer(
-              markers: _buildMarkers(),
-            ),
+
+            MarkerLayer(markers: _buildMarkers()),
           ],
         ),
-        
+
         // Map controls (Compass, location)
         Positioned(
           left: 16,
@@ -182,16 +191,22 @@ class _RealMapWidgetState extends State<RealMapWidget> with SingleTickerProvider
           child: Column(
             children: [
               _buildMapButton(Icons.add, () {
-                _mapController.move(_mapController.camera.center, _mapController.camera.zoom + 1);
+                _mapController.move(
+                  _mapController.camera.center,
+                  _mapController.camera.zoom + 1,
+                );
               }),
               const SizedBox(height: 8),
               _buildMapButton(Icons.remove, () {
-                _mapController.move(_mapController.camera.center, _mapController.camera.zoom - 1);
+                _mapController.move(
+                  _mapController.camera.center,
+                  _mapController.camera.zoom - 1,
+                );
               }),
               const SizedBox(height: 8),
               _buildMapButton(
-                _isLoadingLocation ? Icons.hourglass_empty : Icons.my_location, 
-                _determinePosition
+                _isLoadingLocation ? Icons.hourglass_empty : Icons.my_location,
+                _determinePosition,
               ),
             ],
           ),
@@ -199,32 +214,40 @@ class _RealMapWidgetState extends State<RealMapWidget> with SingleTickerProvider
       ],
     );
   }
-  
+
   List<Marker> _buildMarkers() {
     List<Marker> markers = [];
-    
+
     if (widget.pickupLat != null && widget.pickupLng != null) {
       markers.add(
         Marker(
           point: LatLng(widget.pickupLat!, widget.pickupLng!),
           width: 40,
           height: 40,
-          child: const Icon(Icons.location_pin, color: AppColors.success, size: 36),
+          child: const Icon(
+            Icons.location_pin,
+            color: AppColors.success,
+            size: 36,
+          ),
         ),
       );
     }
-    
+
     if (widget.destLat != null && widget.destLng != null) {
       markers.add(
         Marker(
           point: LatLng(widget.destLat!, widget.destLng!),
           width: 40,
           height: 40,
-          child: const Icon(Icons.location_pin, color: AppColors.error, size: 36),
+          child: const Icon(
+            Icons.location_pin,
+            color: AppColors.error,
+            size: 36,
+          ),
         ),
       );
     }
-    
+
     if (widget.carLat != null && widget.carLng != null) {
       markers.add(
         Marker(
@@ -234,7 +257,9 @@ class _RealMapWidgetState extends State<RealMapWidget> with SingleTickerProvider
           child: _buildCarIcon(),
         ),
       );
-    } else if (widget.showRoute && widget.pickupLat != null && widget.destLat != null) {
+    } else if (widget.showRoute &&
+        widget.pickupLat != null &&
+        widget.destLat != null) {
       // Animate a simulated car between pickup and destination
       markers.add(
         Marker(
@@ -245,23 +270,26 @@ class _RealMapWidgetState extends State<RealMapWidget> with SingleTickerProvider
         ),
       );
     }
-    
+
     return markers;
   }
-  
+
   LatLng _getSimulatedCarLocation() {
     if (widget.pickupLat == null || widget.destLat == null) {
       return _currentCenter;
     }
-    
+
     double t = _carAnimation.value;
-    
+
     if (widget.status == TripStatus.started) {
       // Move from pickup to destination
-      double lat = widget.pickupLat! + (widget.destLat! - widget.pickupLat!) * t;
-      double lng = widget.pickupLng! + (widget.destLng! - widget.pickupLng!) * t;
+      double lat =
+          widget.pickupLat! + (widget.destLat! - widget.pickupLat!) * t;
+      double lng =
+          widget.pickupLng! + (widget.destLng! - widget.pickupLng!) * t;
       return LatLng(lat, lng);
-    } else if (widget.status == TripStatus.accepted || widget.status == TripStatus.enRoute) {
+    } else if (widget.status == TripStatus.accepted ||
+        widget.status == TripStatus.enRoute) {
       // Simulate coming to pickup
       double fakeStartLat = widget.pickupLat! - 0.01;
       double fakeStartLng = widget.pickupLng! - 0.01;
@@ -269,10 +297,10 @@ class _RealMapWidgetState extends State<RealMapWidget> with SingleTickerProvider
       double lng = fakeStartLng + (widget.pickupLng! - fakeStartLng) * t;
       return LatLng(lat, lng);
     }
-    
+
     return LatLng(widget.pickupLat!, widget.pickupLng!);
   }
-  
+
   Widget _buildCarIcon() {
     return Container(
       padding: const EdgeInsets.all(5),
@@ -280,11 +308,7 @@ class _RealMapWidgetState extends State<RealMapWidget> with SingleTickerProvider
         color: AppColors.accent,
         shape: BoxShape.circle,
         boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          )
+          BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2)),
         ],
       ),
       child: const Icon(
@@ -301,11 +325,7 @@ class _RealMapWidgetState extends State<RealMapWidget> with SingleTickerProvider
         color: Colors.white,
         shape: BoxShape.circle,
         boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          )
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
         ],
       ),
       child: IconButton(

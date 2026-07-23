@@ -6,22 +6,9 @@ import '../core/supabase/auth_repository.dart';
 
 class AppStateProvider extends ChangeNotifier {
   // Auth state
-  UserType _userType = UserType.customer;
   bool _isLoggedIn = false;
-
-  // Profile stats
   String? _userId;
-  String _customerEmail = '';
   String _captainEmail = '';
-  String _customerName = DummyData.dummyCustomer.name;
-  String _customerPhone = DummyData.dummyCustomer.phone;
-  double _customerWalletBalance = 750.0;
-  List<WalletTransaction> _customerTransactions = List.from(
-    DummyData.dummyCustomerTransactions,
-  );
-  List<NotificationModel> _customerNotifications = List.from(
-    DummyData.dummyCustomerNotifications,
-  );
 
   // Captain state
   bool _isCaptainOnline = false;
@@ -30,10 +17,10 @@ class AppStateProvider extends ChangeNotifier {
   double _captainWalletBalance = 1250.0;
   double _captainTodayEarnings = 425.0;
   int _captainTripsCount = DummyData.dummyCaptain.user.tripsCount;
-  List<WalletTransaction> _captainTransactions = List.from(
+  final List<WalletTransaction> _captainTransactions = List.from(
     DummyData.dummyCaptainTransactions,
   );
-  Map<String, String> _captainDocsStatus = Map.from(
+  final Map<String, String> _captainDocsStatus = Map.from(
     DummyData.dummyCaptain.documentsStatus,
   );
 
@@ -44,28 +31,19 @@ class AppStateProvider extends ChangeNotifier {
   bool _isSearching = false;
 
   // Chat state
-  List<Message> _chatMessages = List.from(DummyData.dummyMessages);
+  final List<Message> _chatMessages = List.from(DummyData.dummyMessages);
 
-  // Lists of trips
-  List<Trip> _customerTripHistory = List.from(DummyData.dummyCustomerTrips);
-  List<Trip> _captainTripHistory = List.from(DummyData.dummyCaptainTrips);
+  // Trip history
+  final List<Trip> _captainTripHistory = List.from(DummyData.dummyCaptainTrips);
 
   // Captain incoming request state (when captain is online, show mock incoming requests)
   Trip? _incomingRequest;
   Timer? _incomingRequestTimer;
 
   // Getters
-  UserType get userType => _userType;
   bool get isLoggedIn => _isLoggedIn;
   String? get userId => _userId;
-  String get customerEmail => _customerEmail;
   String get captainEmail => _captainEmail;
-
-  String get customerName => _customerName;
-  String get customerPhone => _customerPhone;
-  double get customerWalletBalance => _customerWalletBalance;
-  List<WalletTransaction> get customerTransactions => _customerTransactions;
-  List<NotificationModel> get customerNotifications => _customerNotifications;
 
   bool get isCaptainOnline => _isCaptainOnline;
   String get captainName => _captainName;
@@ -81,44 +59,27 @@ class AppStateProvider extends ChangeNotifier {
   bool get isSearching => _isSearching;
   List<Message> get chatMessages => _chatMessages;
 
-  List<Trip> get customerTripHistory => _customerTripHistory;
   List<Trip> get captainTripHistory => _captainTripHistory;
 
   Trip? get incomingRequest => _incomingRequest;
 
-  // Setters & Actions
-  void setUserType(UserType type) {
-    _userType = type;
-    notifyListeners();
-  }
-
   // Hydrate state from a Supabase `profiles` row after a real sign-in/sign-up.
+  // Callers are responsible for verifying profile['user_type'] == 'captain'
+  // before calling this, since this app only serves captains.
   void loginFromProfile(Map<String, dynamic> profile, String email) {
     _isLoggedIn = true;
     _userId = profile['id'] as String?;
     final String? fullName = profile['full_name'] as String?;
     final String? phone = profile['phone'] as String?;
-    final type = profile['user_type'] == 'captain'
-        ? UserType.captain
-        : UserType.customer;
-    _userType = type;
-
-    if (type == UserType.customer) {
-      if (fullName != null && fullName.isNotEmpty) _customerName = fullName;
-      if (phone != null && phone.isNotEmpty) _customerPhone = phone;
-      _customerEmail = email;
-    } else {
-      if (fullName != null && fullName.isNotEmpty) _captainName = fullName;
-      if (phone != null && phone.isNotEmpty) _captainPhone = phone;
-      _captainEmail = email;
-    }
+    if (fullName != null && fullName.isNotEmpty) _captainName = fullName;
+    if (phone != null && phone.isNotEmpty) _captainPhone = phone;
+    _captainEmail = email;
     notifyListeners();
   }
 
   void logout() {
     _isLoggedIn = false;
     _userId = null;
-    _customerEmail = '';
     _captainEmail = '';
     _activeTrip = null;
     _isSearching = false;
@@ -141,8 +102,10 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Customer Trip Booking Lifecycle
+  // Used when a captain accepts a ride browsed from the open trips list.
   void requestTrip({
+    required String customerName,
+    required String customerPhone,
     required String pickup,
     required String destination,
     required double pickupLat,
@@ -160,11 +123,10 @@ class AppStateProvider extends ChangeNotifier {
     _isSearching = true;
     _countdownSeconds = timeoutSeconds;
 
-    // Create new Trip
     _activeTrip = Trip(
       id: 'trip_${DateTime.now().millisecondsSinceEpoch}',
-      customerName: _customerName,
-      customerPhone: _customerPhone,
+      customerName: customerName,
+      customerPhone: customerPhone,
       pickupLocation: pickup,
       destinationLocation: destination,
       pickupLat: pickupLat,
@@ -208,49 +170,7 @@ class AppStateProvider extends ChangeNotifier {
     });
   }
 
-  void resetSearchTimer(int newTimeout) {
-    _isSearching = true;
-    _countdownSeconds = newTimeout;
-    if (_activeTrip != null) {
-      _activeTrip!.status = TripStatus.searching;
-    }
-    notifyListeners();
-
-    _countdownTimer?.cancel();
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_countdownSeconds > 0) {
-        _countdownSeconds--;
-        notifyListeners();
-
-        // Auto-accept simulation at 5 seconds after reset
-        if (newTimeout - _countdownSeconds == 6) {
-          _simulateCaptainAccepted();
-        }
-      } else {
-        timer.cancel();
-        _isSearching = false;
-        if (_activeTrip != null &&
-            _activeTrip!.status == TripStatus.searching) {
-          _activeTrip!.status = TripStatus.pending;
-        }
-        notifyListeners();
-      }
-    });
-  }
-
-  void cancelActiveTrip() {
-    _countdownTimer?.cancel();
-    _isSearching = false;
-    if (_activeTrip != null) {
-      _activeTrip!.status = TripStatus.cancelled;
-      _customerTripHistory.insert(0, _activeTrip!);
-      _addCustomerNotification('تم إلغاء الرحلة', 'تم إلغاء طلب رحلتك بنجاح.');
-    }
-    _activeTrip = null;
-    notifyListeners();
-  }
-
-  // Simulator helper: Captain accepts ride
+  // Simulator helper: marks the just-requested open ride as accepted
   void _simulateCaptainAccepted() {
     _countdownTimer?.cancel();
     _isSearching = false;
@@ -259,9 +179,8 @@ class AppStateProvider extends ChangeNotifier {
         id: _activeTrip!.id,
         customerName: _activeTrip!.customerName,
         customerPhone: _activeTrip!.customerPhone,
-        captainName: DummyData.dummyCaptain.user.name,
-        captainPhone: DummyData.dummyCaptain.user.phone,
-        captainAvatar: DummyData.dummyCaptain.user.avatar,
+        captainName: _captainName,
+        captainPhone: _captainPhone,
         vehicleName:
             '${DummyData.dummyCaptain.vehicle.brand} ${DummyData.dummyCaptain.vehicle.model} ${DummyData.dummyCaptain.vehicle.year}',
         vehiclePlate: DummyData.dummyCaptain.vehicle.plate,
@@ -281,22 +200,13 @@ class AppStateProvider extends ChangeNotifier {
         openRideTimeout: _activeTrip!.openRideTimeout,
         date: _activeTrip!.date,
       );
-
-      _addCustomerNotification(
-        'تم قبول رحلتك',
-        'الكابتن ${_activeTrip!.captainName} في الطريق إليك.',
-      );
       notifyListeners();
 
-      // Simulate Captain En Route steps:
-      // accepted -> enRoute (after 5s) -> arrived (after 10s) -> started (after 15s)
+      // Simulate the captain's progress toward pickup:
+      // accepted -> enRoute (after 4s) -> arrived (after 9s)
       Timer(const Duration(seconds: 4), () {
         if (_activeTrip != null && _activeTrip!.status == TripStatus.accepted) {
           _activeTrip!.status = TripStatus.enRoute;
-          _addCustomerNotification(
-            'الكابتن في الطريق',
-            'الكابتن ${_activeTrip!.captainName} يقترب من موقعك.',
-          );
           notifyListeners();
         }
       });
@@ -304,80 +214,13 @@ class AppStateProvider extends ChangeNotifier {
       Timer(const Duration(seconds: 9), () {
         if (_activeTrip != null && _activeTrip!.status == TripStatus.enRoute) {
           _activeTrip!.status = TripStatus.arrived;
-          _addCustomerNotification(
-            'وصل الكابتن',
-            'وصل الكابتن ${_activeTrip!.captainName} إلى موقع الانطلاق.',
-          );
           notifyListeners();
         }
       });
     }
   }
 
-  // Customer triggers to advance simulator once captain has arrived
-  void customerStartTrip() {
-    if (_activeTrip != null && _activeTrip!.status == TripStatus.arrived) {
-      _activeTrip!.status = TripStatus.started;
-      _addCustomerNotification(
-        'تم بدء الرحلة',
-        'رحلتك إلى ${_activeTrip!.destinationLocation} بدأت الآن. نتمنى لك مشواراً ممتعاً.',
-      );
-      notifyListeners();
-    }
-  }
-
-  void customerCompleteTrip() {
-    if (_activeTrip != null && _activeTrip!.status == TripStatus.started) {
-      _activeTrip!.status = TripStatus.completed;
-      _customerTripHistory.insert(0, _activeTrip!);
-
-      // Deduct from wallet if wallet payment
-      if (_activeTrip!.paymentMethod == 'المحفظة') {
-        _customerWalletBalance -= _activeTrip!.price;
-        _customerTransactions.insert(
-          0,
-          WalletTransaction(
-            id: 'tx_${DateTime.now().millisecondsSinceEpoch}',
-            amount: _activeTrip!.price,
-            type: TransactionType.payment,
-            title: 'دفع قيمة رحلة إلى ${_activeTrip!.destinationLocation}',
-            date: DateTime.now().toString().substring(0, 16),
-            isCredit: false,
-          ),
-        );
-      }
-
-      _addCustomerNotification(
-        'تم إنهاء الرحلة',
-        'تم الوصول بنجاح. تكلفة الرحلة: ${_activeTrip!.price} أوقية.',
-      );
-      notifyListeners();
-    }
-  }
-
-  void submitRating(double stars, String comment, double tip) {
-    if (_activeTrip != null) {
-      // Add tip if positive
-      if (tip > 0) {
-        _customerWalletBalance -= tip;
-        _customerTransactions.insert(
-          0,
-          WalletTransaction(
-            id: 'tx_${DateTime.now().millisecondsSinceEpoch}',
-            amount: tip,
-            type: TransactionType.payment,
-            title: 'إكرامية للكابتن ${_activeTrip!.captainName}',
-            date: DateTime.now().toString().substring(0, 16),
-            isCredit: false,
-          ),
-        );
-      }
-      _activeTrip = null; // Close active trip flow
-      notifyListeners();
-    }
-  }
-
-  // Captain Trip Booking Lifecycle (When logged in as Captain)
+  // Captain Trip Booking Lifecycle (incoming requests while online)
   void _startSimulatedIncomingRequest() {
     _incomingRequestTimer?.cancel();
     _incomingRequestTimer = Timer(const Duration(seconds: 4), () {
@@ -428,6 +271,11 @@ class AppStateProvider extends ChangeNotifier {
         id: _incomingRequest!.id,
         customerName: _incomingRequest!.customerName,
         customerPhone: _incomingRequest!.customerPhone,
+        captainName: _captainName,
+        captainPhone: _captainPhone,
+        vehicleName:
+            '${DummyData.dummyCaptain.vehicle.brand} ${DummyData.dummyCaptain.vehicle.model} ${DummyData.dummyCaptain.vehicle.year}',
+        vehiclePlate: DummyData.dummyCaptain.vehicle.plate,
         pickupLocation: _incomingRequest!.pickupLocation,
         destinationLocation: _incomingRequest!.destinationLocation,
         pickupLat: _incomingRequest!.pickupLat,
@@ -505,7 +353,6 @@ class AppStateProvider extends ChangeNotifier {
 
       _captainTripHistory.insert(0, finishedTrip);
 
-      // Update wallet if paid online, or charge commission
       _captainWalletBalance += net;
       _captainTodayEarnings += net;
       _captainTripsCount += 1;
@@ -549,37 +396,18 @@ class AppStateProvider extends ChangeNotifier {
 
   // Wallet operations
   void rechargeWallet(double amount, String method) {
-    if (_userType == UserType.customer) {
-      _customerWalletBalance += amount;
-      _customerTransactions.insert(
-        0,
-        WalletTransaction(
-          id: 'tx_rch_${DateTime.now().millisecondsSinceEpoch}',
-          amount: amount,
-          type: TransactionType.charge,
-          title: 'شحن رصيد بواسطة $method',
-          date: DateTime.now().toString().substring(0, 16),
-          isCredit: true,
-        ),
-      );
-      _addCustomerNotification(
-        'تم شحن الرصيد',
-        'لقد تم إضافة $amount أوقية إلى محفظتك بنجاح عبر $method.',
-      );
-    } else {
-      _captainWalletBalance += amount;
-      _captainTransactions.insert(
-        0,
-        WalletTransaction(
-          id: 'tx_rch_${DateTime.now().millisecondsSinceEpoch}',
-          amount: amount,
-          type: TransactionType.charge,
-          title: 'شحن رصيد الكابتن بواسطة $method',
-          date: DateTime.now().toString().substring(0, 16),
-          isCredit: true,
-        ),
-      );
-    }
+    _captainWalletBalance += amount;
+    _captainTransactions.insert(
+      0,
+      WalletTransaction(
+        id: 'tx_rch_${DateTime.now().millisecondsSinceEpoch}',
+        amount: amount,
+        type: TransactionType.charge,
+        title: 'شحن رصيد الكابتن بواسطة $method',
+        date: DateTime.now().toString().substring(0, 16),
+        isCredit: true,
+      ),
+    );
     notifyListeners();
   }
 
@@ -601,36 +429,12 @@ class AppStateProvider extends ChangeNotifier {
     }
   }
 
-  void transferBalance(double amount, String phone) {
-    if (_userType == UserType.customer) {
-      if (_customerWalletBalance >= amount) {
-        _customerWalletBalance -= amount;
-        _customerTransactions.insert(
-          0,
-          WalletTransaction(
-            id: 'tx_trf_${DateTime.now().millisecondsSinceEpoch}',
-            amount: amount,
-            type: TransactionType.transfer,
-            title: 'تحويل رصيد إلى $phone',
-            date: DateTime.now().toString().substring(0, 16),
-            isCredit: false,
-          ),
-        );
-        _addCustomerNotification(
-          'تم تحويل الرصيد',
-          'لقد قمت بتحويل $amount أوقية إلى $phone.',
-        );
-        notifyListeners();
-      }
-    }
-  }
-
-  // Messaging / Chatting
+  // Messaging / Chatting with the customer on the active trip
   void sendChatMessage(String content) {
     final newMessage = Message(
       id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-      senderId: _userType == UserType.customer ? 'cust_1' : 'cap_1',
-      senderName: _userType == UserType.customer ? _customerName : _captainName,
+      senderId: 'cap_1',
+      senderName: _captainName,
       content: content,
       time: 'الآن',
       isMe: true,
@@ -638,17 +442,13 @@ class AppStateProvider extends ChangeNotifier {
     _chatMessages.add(newMessage);
     notifyListeners();
 
-    // Mock an automatic reply from the other side after 2 seconds
+    // Mock an automatic reply from the customer after 2 seconds
     Timer(const Duration(seconds: 2), () {
       final replyMessage = Message(
         id: 'msg_rep_${DateTime.now().millisecondsSinceEpoch}',
-        senderId: _userType == UserType.customer ? 'cap_1' : 'cust_1',
-        senderName: _userType == UserType.customer
-            ? 'سيد محمد ولد بونا'
-            : 'أحمد سالم ولد محمد',
-        content: _userType == UserType.customer
-            ? 'تمام يا طيب، أنا متابع معك على الخريطة.'
-            : 'بإذن الله، أنا في مكان الاتفاق.',
+        senderId: 'cust_1',
+        senderName: _activeTrip?.customerName ?? 'الزبون',
+        content: 'بإذن الله، أنا في مكان الاتفاق.',
         time: 'الآن',
         isMe: false,
       );
@@ -661,19 +461,6 @@ class AppStateProvider extends ChangeNotifier {
   void updateCaptainDoc(String docKey, String newStatus) {
     _captainDocsStatus[docKey] = newStatus;
     notifyListeners();
-  }
-
-  // Helper
-  void _addCustomerNotification(String title, String body) {
-    _customerNotifications.insert(
-      0,
-      NotificationModel(
-        id: 'notif_${DateTime.now().millisecondsSinceEpoch}',
-        title: title,
-        body: body,
-        time: 'الآن',
-      ),
-    );
   }
 
   @override

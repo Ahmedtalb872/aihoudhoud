@@ -1,6 +1,9 @@
-# alhudhud
+# alhudhud (Captain app)
 
-A new Flutter project.
+This is the captain/driver app for الهدهد. It shares its Supabase backend
+(auth + database) with a separate customer-facing app, but this codebase only
+implements the captain-side screens and flows — there is no customer login
+or booking UI here.
 
 ## Supabase setup (authentication + database)
 

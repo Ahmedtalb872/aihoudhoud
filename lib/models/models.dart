@@ -1,4 +1,3 @@
-
 enum UserType { customer, captain }
 
 enum VehicleType { economy, comfort, family }
@@ -11,7 +10,7 @@ enum TripStatus {
   arrived,
   started,
   completed,
-  cancelled
+  cancelled,
 }
 
 enum TransactionType {
@@ -21,7 +20,7 @@ enum TransactionType {
   reward,
   withdraw,
   commission,
-  transfer
+  transfer,
 }
 
 class AppUser {
@@ -188,22 +187,6 @@ class Trip {
         return 'ملغاة';
     }
   }
-}
-
-class NotificationModel {
-  final String id;
-  final String title;
-  final String body;
-  final String time;
-  final bool isRead;
-
-  NotificationModel({
-    required this.id,
-    required this.title,
-    required this.body,
-    required this.time,
-    this.isRead = false,
-  });
 }
 
 class Message {

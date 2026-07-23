@@ -5,7 +5,6 @@ import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
 import '../../models/models.dart';
 
-
 class OpenTripsScreen extends StatefulWidget {
   final bool showAppBar;
   const OpenTripsScreen({super.key, this.showAppBar = false});
@@ -27,6 +26,7 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
       {
         'id': 'open_t1',
         'customerName': 'سيدي ولد المختار',
+        'customerPhone': '+22246667777',
         'pickup': 'لكصر (كارفور ولد أماه)',
         'destination': 'تفرغ زينة (سوق طيبة)',
         'distance': 4.5,
@@ -38,6 +38,7 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
       {
         'id': 'open_t2',
         'customerName': 'زينب منت اعل',
+        'customerPhone': '+22248889999',
         'pickup': 'عرفات (كارفور مدريد)',
         'destination': 'دار النعيم (شينقيط)',
         'distance': 9.2,
@@ -72,9 +73,11 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
 
   void _acceptOpenTrip(Map<String, dynamic> rideData) {
     final provider = Provider.of<AppStateProvider>(context, listen: false);
-    
+
     // Simulate accepting the open ride
     provider.requestTrip(
+      customerName: rideData['customerName'],
+      customerPhone: rideData['customerPhone'],
       pickup: rideData['pickup'],
       destination: rideData['destination'],
       pickupLat: 18.0982, // لكصر
@@ -89,13 +92,16 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
       timeoutSeconds: 45,
       paymentMethod: rideData['payment'],
     );
-    
+
     // Switch state from customer searching to accepted immediately
     provider.acceptIncomingRequest();
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('تم قبول المشوار بنجاح! جاري التوجه إلى الزبون: ${rideData['customerName']}', style: const TextStyle(fontFamily: 'Cairo')),
+        content: Text(
+          'تم قبول المشوار بنجاح! جاري التوجه إلى الزبون: ${rideData['customerName']}',
+          style: const TextStyle(fontFamily: 'Cairo'),
+        ),
         backgroundColor: AppColors.success,
       ),
     );
@@ -106,9 +112,7 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: widget.showAppBar
-          ? AppBar(
-              title: const Text('المشاوير المفتوحة للجميع'),
-            )
+          ? AppBar(title: const Text('المشاوير المفتوحة للجميع'))
           : AppBar(
               title: const Text('المشاوير المفتوحة'),
               automaticallyImplyLeading: false,
@@ -143,7 +147,11 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
                   const SizedBox(height: 6),
                   const Text(
                     'انتظر، ستظهر الطلبات الجديدة هنا فوراً.',
-                    style: TextStyle(fontSize: 12, color: AppColors.secondaryText, fontFamily: 'Cairo'),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.secondaryText,
+                      fontFamily: 'Cairo',
+                    ),
                   ),
                 ],
               ),
@@ -166,21 +174,37 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
                           children: [
                             Text(
                               'الزبون: ${ride['customerName']}',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.darkText, fontFamily: 'Cairo'),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: AppColors.darkText,
+                                fontFamily: 'Cairo',
+                              ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.error.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(30),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.timer_outlined, color: AppColors.error, size: 12),
+                                  const Icon(
+                                    Icons.timer_outlined,
+                                    color: AppColors.error,
+                                    size: 12,
+                                  ),
                                   const SizedBox(width: 4),
                                   Text(
                                     'تبقي ${ride['timeLeft']} ثانية',
-                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.error),
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.error,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -188,15 +212,27 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
                           ],
                         ),
                         const Divider(height: 24),
-                        
+
                         // Route details
                         Row(
                           children: [
                             Column(
                               children: [
-                                const Icon(Icons.radio_button_checked_rounded, color: AppColors.success, size: 16),
-                                Container(width: 1, height: 20, color: AppColors.border),
-                                const Icon(Icons.location_on_rounded, color: AppColors.error, size: 16),
+                                const Icon(
+                                  Icons.radio_button_checked_rounded,
+                                  color: AppColors.success,
+                                  size: 16,
+                                ),
+                                Container(
+                                  width: 1,
+                                  height: 20,
+                                  color: AppColors.border,
+                                ),
+                                const Icon(
+                                  Icons.location_on_rounded,
+                                  color: AppColors.error,
+                                  size: 16,
+                                ),
                               ],
                             ),
                             const SizedBox(width: 12),
@@ -206,14 +242,24 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
                                 children: [
                                   Text(
                                     ride['pickup'],
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.darkText, fontFamily: 'Cairo'),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: AppColors.darkText,
+                                      fontFamily: 'Cairo',
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 14),
                                   Text(
                                     ride['destination'],
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.darkText, fontFamily: 'Cairo'),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: AppColors.darkText,
+                                      fontFamily: 'Cairo',
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -223,7 +269,7 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
                           ],
                         ),
                         const Divider(height: 24),
-                        
+
                         // Pricing & distance info
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -231,28 +277,73 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('الأرباح الإجمالية', style: TextStyle(fontSize: 10, color: AppColors.secondaryText, fontFamily: 'Cairo')),
-                                Text('${ride['price']} أوقية', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary, fontFamily: 'Cairo')),
+                                const Text(
+                                  'الأرباح الإجمالية',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: AppColors.secondaryText,
+                                    fontFamily: 'Cairo',
+                                  ),
+                                ),
+                                Text(
+                                  '${ride['price']} أوقية',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                    fontFamily: 'Cairo',
+                                  ),
+                                ),
                               ],
                             ),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                const Text('المسافة', style: TextStyle(fontSize: 10, color: AppColors.secondaryText, fontFamily: 'Cairo')),
-                                Text('${ride['distance']} كم', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.darkText, fontFamily: 'Cairo')),
+                                const Text(
+                                  'المسافة',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: AppColors.secondaryText,
+                                    fontFamily: 'Cairo',
+                                  ),
+                                ),
+                                Text(
+                                  '${ride['distance']} كم',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.darkText,
+                                    fontFamily: 'Cairo',
+                                  ),
+                                ),
                               ],
                             ),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                const Text('الدفع', style: TextStyle(fontSize: 10, color: AppColors.secondaryText, fontFamily: 'Cairo')),
-                                Text(ride['payment'], style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.darkText, fontFamily: 'Cairo')),
+                                const Text(
+                                  'الدفع',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: AppColors.secondaryText,
+                                    fontFamily: 'Cairo',
+                                  ),
+                                ),
+                                Text(
+                                  ride['payment'],
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.darkText,
+                                    fontFamily: 'Cairo',
+                                  ),
+                                ),
                               ],
                             ),
                           ],
                         ),
                         const Divider(height: 24),
-                        
+
                         // Action buttons
                         Row(
                           children: [
@@ -261,7 +352,12 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
                                 onPressed: () {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text('تفاصيل الرحلة: مسار من ${ride['pickup']} إلى ${ride['destination']} بمسافة ${ride['distance']} كم.', style: const TextStyle(fontFamily: 'Cairo')),
+                                      content: Text(
+                                        'تفاصيل الرحلة: مسار من ${ride['pickup']} إلى ${ride['destination']} بمسافة ${ride['distance']} كم.',
+                                        style: const TextStyle(
+                                          fontFamily: 'Cairo',
+                                        ),
+                                      ),
                                       backgroundColor: AppColors.primary,
                                     ),
                                   );
@@ -269,9 +365,14 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
                                 style: OutlinedButton.styleFrom(
                                   minimumSize: const Size(double.infinity, 40),
                                   padding: EdgeInsets.zero,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
                                 ),
-                                child: const Text('عرض التفاصيل', style: TextStyle(fontSize: 12)),
+                                child: const Text(
+                                  'عرض التفاصيل',
+                                  style: TextStyle(fontSize: 12),
+                                ),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -282,9 +383,14 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
                                   backgroundColor: AppColors.success,
                                   minimumSize: const Size(double.infinity, 40),
                                   padding: EdgeInsets.zero,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
                                 ),
-                                child: const Text('قبول المشوار', style: TextStyle(fontSize: 12)),
+                                child: const Text(
+                                  'قبول المشوار',
+                                  style: TextStyle(fontSize: 12),
+                                ),
                               ),
                             ),
                           ],
