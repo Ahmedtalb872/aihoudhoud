@@ -122,11 +122,12 @@ class _SplashScreenState extends State<SplashScreen>
                   child: FadeTransition(
                     opacity: _fadeAnimation,
                     child: Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: const BoxDecoration(
+                      width: 220,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
                         color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
+                        borderRadius: BorderRadius.circular(32),
+                        boxShadow: const [
                           BoxShadow(
                             color: Colors.black12,
                             blurRadius: 20,
@@ -134,10 +135,9 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        Icons.local_taxi_rounded,
-                        size: 80,
-                        color: AppColors.primary,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset('assets/images/logo.jpg'),
                       ),
                     ),
                   ),
@@ -147,17 +147,6 @@ class _SplashScreenState extends State<SplashScreen>
                   opacity: _fadeAnimation,
                   child: Column(
                     children: [
-                      const Text(
-                        'الهدهد',
-                        style: TextStyle(
-                          fontSize: 42,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          fontFamily: 'Cairo',
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
