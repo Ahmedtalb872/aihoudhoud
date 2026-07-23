@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
 import '../../models/models.dart';
+import '../../core/widgets/real_map_widget.dart';
 
 class OpenTripsScreen extends StatefulWidget {
   final bool showAppBar;
@@ -29,6 +30,10 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
         'customerPhone': '+22246667777',
         'pickup': 'لكصر (كارفور ولد أماه)',
         'destination': 'تفرغ زينة (سوق طيبة)',
+        'pickupLat': 18.0982,
+        'pickupLng': -15.9592,
+        'destLat': 18.1065,
+        'destLng': -15.9664,
         'distance': 4.5,
         'duration': 12,
         'price': 180.0,
@@ -41,6 +46,10 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
         'customerPhone': '+22248889999',
         'pickup': 'عرفات (كارفور مدريد)',
         'destination': 'دار النعيم (شينقيط)',
+        'pickupLat': 18.0435,
+        'pickupLng': -15.9521,
+        'destLat': 18.1098,
+        'destLng': -15.9087,
         'distance': 9.2,
         'duration': 22,
         'price': 350.0,
@@ -80,10 +89,10 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
       customerPhone: rideData['customerPhone'],
       pickup: rideData['pickup'],
       destination: rideData['destination'],
-      pickupLat: 18.0982, // لكصر
-      pickupLng: -15.9592,
-      destLat: 18.1065, // تفرغ زينة
-      destLng: -15.9664,
+      pickupLat: rideData['pickupLat'],
+      pickupLng: rideData['pickupLng'],
+      destLat: rideData['destLat'],
+      destLng: rideData['destLng'],
       distance: rideData['distance'],
       duration: rideData['duration'],
       price: rideData['price'],
@@ -267,6 +276,24 @@ class _OpenTripsScreenState extends State<OpenTripsScreen> {
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Map preview of pickup & destination points
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: SizedBox(
+                            height: 120,
+                            child: RealMapWidget(
+                              showRoute: true,
+                              pickupLat: ride['pickupLat'],
+                              pickupLng: ride['pickupLng'],
+                              destLat: ride['destLat'],
+                              destLng: ride['destLng'],
+                              interactive: false,
+                              showControls: false,
+                            ),
+                          ),
                         ),
                         const Divider(height: 24),
 
