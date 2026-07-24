@@ -74,11 +74,42 @@ class _CaptainRegisterStepperScreenState
   }
 
   void _nextStep() {
+    if (_currentStep == 1 && !_validateStep1()) return;
     if (_currentStep < 4) {
       setState(() {
         _currentStep++;
       });
     }
+  }
+
+  bool _validateStep1() {
+    String? error;
+    if (_nameController.text.trim().isEmpty) {
+      error = 'الرجاء إدخال الاسم الكامل';
+    } else if (_emailController.text.trim().isEmpty) {
+      error = 'الرجاء إدخال البريد الإلكتروني';
+    } else if (!RegExp(
+      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+    ).hasMatch(_emailController.text.trim())) {
+      error = 'الرجاء إدخال بريد إلكتروني صحيح';
+    } else if (_phoneController.text.trim().isEmpty) {
+      error = 'الرجاء إدخال رقم الهاتف';
+    } else if (_passwordController.text.length < 6) {
+      error = 'كلمة المرور يجب أن لا تقل عن 6 أحرف';
+    } else if (_confirmPasswordController.text != _passwordController.text) {
+      error = 'كلمة المرور وتأكيدها غير متطابقين';
+    }
+
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error, style: const TextStyle(fontFamily: 'Cairo')),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return false;
+    }
+    return true;
   }
 
   void _prevStep() {
@@ -112,6 +143,10 @@ class _CaptainRegisterStepperScreenState
   }
 
   Future<void> _submitApplication() async {
+    if (!_validateStep1()) {
+      setState(() => _currentStep = 1);
+      return;
+    }
     if (!_termsApproved) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
