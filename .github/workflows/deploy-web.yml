@@ -1,0 +1,60 @@
+name: Deploy Web Build to GitHub Pages
+
+on:
+  push:
+    branches:
+      - claude/project-details-o5qgzr
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.6'
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Write Supabase config
+        run: |
+          cat > env.json <<'EOF'
+          {
+            "SUPABASE_URL": "https://hdjxtnzwxqkrihhvssej.supabase.co",
+            "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhkanh0bnp3eHFrcmloaHZzc2VqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4MzkyOTAsImV4cCI6MjA5OTQxNTI5MH0.1bDOUcN5g6I4VWTA4HE8wXhSz30CsAXyCOAkSRvgnhs"
+          }
+          EOF
+
+      - name: Build web release
+        run: flutter build web --release --dart-define-from-file=env.json --base-href /aihoudhoud/
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
