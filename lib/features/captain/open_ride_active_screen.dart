@@ -69,6 +69,12 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
               _carLat = position.latitude;
               _carLng = position.longitude;
             });
+            if (mounted) {
+              Provider.of<AppStateProvider>(
+                context,
+                listen: false,
+              ).updateOpenRideDistance(_distanceKm);
+            }
           });
     } catch (_) {
       // No GPS available in this environment; distance just stays at 0.

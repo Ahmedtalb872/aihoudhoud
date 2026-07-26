@@ -31,11 +31,17 @@ class AppStateProvider extends ChangeNotifier {
   int _countdownSeconds = 45;
   bool _isSearching = false;
 
-  // Open ride live meter: 100 MRU base fare (first 3 km), then 50 MRU/minute
-  // for as long as the trip runs, since an open ride has no fixed destination.
+  // Open ride live meter: flat 100 MRU covers the first 3 km. The 50
+  // MRU/minute counter only starts once the captain either exceeds 3 km, or
+  // sits idle (no GPS movement) for more than 5 minutes - not from second one.
   static const double openRideBaseFare = 100.0;
   static const double openRidePerMinuteRate = 50.0;
+  static const double openRideFreeDistanceKm = 3.0;
+  static const Duration openRideIdleThreshold = Duration(minutes: 5);
   DateTime? _openRideStartTime;
+  DateTime? _openRideLastMovementTime;
+  DateTime? _openRideMeterActivatedAt;
+  double _openRideDistanceKm = 0.0;
   Timer? _openRideTicker;
 
   // Chat state
@@ -75,9 +81,38 @@ class AppStateProvider extends ChangeNotifier {
       ? Duration.zero
       : DateTime.now().difference(_openRideStartTime!);
 
-  double get openRideFare =>
-      openRideBaseFare +
-      (openRideElapsed.inSeconds / 60.0) * openRidePerMinuteRate;
+  bool get isOpenRideMeterActive => _openRideMeterActivatedAt != null;
+
+  double get openRideFare {
+    if (_openRideMeterActivatedAt == null) return openRideBaseFare;
+    final minutesSinceActivation =
+        DateTime.now().difference(_openRideMeterActivatedAt!).inSeconds /
+        60.0;
+    return openRideBaseFare + minutesSinceActivation * openRidePerMinuteRate;
+  }
+
+  // Called whenever fresh GPS movement is reported, and once a second while
+  // idle, so idle time (not just distance) can trigger the meter.
+  void _checkOpenRideMeterActivation() {
+    if (_openRideMeterActivatedAt != null) return;
+    if (_openRideDistanceKm > openRideFreeDistanceKm) {
+      _openRideMeterActivatedAt = DateTime.now();
+      return;
+    }
+    if (_openRideLastMovementTime != null &&
+        DateTime.now().difference(_openRideLastMovementTime!) >
+            openRideIdleThreshold) {
+      _openRideMeterActivatedAt = DateTime.now();
+    }
+  }
+
+  // Reported by OpenRideActiveScreen on every real GPS position update.
+  void updateOpenRideDistance(double totalDistanceKm) {
+    _openRideDistanceKm = totalDistanceKm;
+    _openRideLastMovementTime = DateTime.now();
+    _checkOpenRideMeterActivation();
+    notifyListeners();
+  }
 
   // Hydrate state from a Supabase `profiles` row after a real sign-in/sign-up.
   // Callers are responsible for verifying profile['role'] == 'captain'
@@ -103,6 +138,9 @@ class AppStateProvider extends ChangeNotifier {
     _incomingRequestTimer?.cancel();
     _openRideTicker?.cancel();
     _openRideStartTime = null;
+    _openRideLastMovementTime = null;
+    _openRideMeterActivatedAt = null;
+    _openRideDistanceKm = 0.0;
     notifyListeners();
     AuthRepository().signOut().catchError((_) {});
   }
@@ -335,11 +373,14 @@ class AppStateProvider extends ChangeNotifier {
       _activeTrip!.status = TripStatus.started;
       if (_activeTrip!.isOpenRide) {
         _openRideStartTime = DateTime.now();
+        _openRideLastMovementTime = DateTime.now();
+        _openRideMeterActivatedAt = null;
+        _openRideDistanceKm = 0.0;
         _openRideTicker?.cancel();
-        _openRideTicker = Timer.periodic(
-          const Duration(seconds: 1),
-          (_) => notifyListeners(),
-        );
+        _openRideTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+          _checkOpenRideMeterActivation();
+          notifyListeners();
+        });
       }
       notifyListeners();
     }
@@ -389,6 +430,9 @@ class AppStateProvider extends ChangeNotifier {
       _openRideTicker?.cancel();
       _openRideTicker = null;
       _openRideStartTime = null;
+      _openRideLastMovementTime = null;
+      _openRideMeterActivatedAt = null;
+      _openRideDistanceKm = 0.0;
     }
   }
 
@@ -496,6 +540,9 @@ class AppStateProvider extends ChangeNotifier {
     _openRideTicker?.cancel();
     _openRideTicker = null;
     _openRideStartTime = null;
+    _openRideLastMovementTime = null;
+    _openRideMeterActivatedAt = null;
+    _openRideDistanceKm = 0.0;
     notifyListeners();
 
     // Ready for the next request if still online
