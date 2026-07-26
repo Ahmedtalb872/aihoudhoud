@@ -130,12 +130,12 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<AppStateProvider>(context);
+    // Read (not listen): the live fare/time ticker fires every second, and
+    // listening here would rebuild the whole screen - including the map -
+    // on every tick, which is what made the map look like it was jittering.
+    final provider = Provider.of<AppStateProvider>(context, listen: false);
     final trip = provider.activeTrip;
     if (trip == null) return const SizedBox.shrink();
-
-    final fare = provider.openRideFare;
-    final elapsed = provider.openRideElapsed;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -152,31 +152,34 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                     carLng: _carLng,
                   ),
 
-                  // Live fare badge
+                  // Live fare badge - the only part that needs to redraw
+                  // every second, so it's isolated from the map above.
                   Positioned(
                     top: 16,
                     left: 0,
                     right: 0,
                     child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.darkText,
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow: const [
-                            BoxShadow(color: Colors.black26, blurRadius: 8),
-                          ],
-                        ),
-                        child: Text(
-                          '${fare.toStringAsFixed(0)} أوقية',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            fontFamily: 'Cairo',
+                      child: Consumer<AppStateProvider>(
+                        builder: (context, provider, _) => Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.darkText,
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: const [
+                              BoxShadow(color: Colors.black26, blurRadius: 8),
+                            ],
+                          ),
+                          child: Text(
+                            '${provider.openRideFare.toStringAsFixed(0)} أوقية',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              fontFamily: 'Cairo',
+                            ),
                           ),
                         ),
                       ),
@@ -205,18 +208,26 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                     ),
                   ),
 
-                  // Live stats stack
+                  // Live stats stack - same isolation as the fare badge above.
                   Positioned(
                     left: 16,
                     top: 72,
-                    child: Column(
-                      children: [
-                        _buildStatChip(fare.toStringAsFixed(0), 'أوقية'),
-                        const SizedBox(height: 8),
-                        _buildStatChip(_distanceKm.toStringAsFixed(1), 'كم'),
-                        const SizedBox(height: 8),
-                        _buildStatChip(_formatElapsed(elapsed), 'الوقت'),
-                      ],
+                    child: Consumer<AppStateProvider>(
+                      builder: (context, provider, _) => Column(
+                        children: [
+                          _buildStatChip(
+                            provider.openRideFare.toStringAsFixed(0),
+                            'أوقية',
+                          ),
+                          const SizedBox(height: 8),
+                          _buildStatChip(_distanceKm.toStringAsFixed(1), 'كم'),
+                          const SizedBox(height: 8),
+                          _buildStatChip(
+                            _formatElapsed(provider.openRideElapsed),
+                            'الوقت',
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
