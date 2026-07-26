@@ -6,6 +6,10 @@
 		<true/>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>نحتاج موقعك لعرض المشاوير القريبة منك وتتبع مسار الرحلة.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>نحتاج الكاميرا لتصوير مستنداتك الرسمية عند التسجيل ككابتن.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>نحتاج الوصول لصورك لاختيار مستنداتك الرسمية عند التسجيل ككابتن.</string>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>

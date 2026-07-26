@@ -1,4 +1,6 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_exception.dart';
@@ -7,6 +9,17 @@ import '../../core/widgets/app_logo.dart';
 import '../../providers/app_state_provider.dart';
 import '../captain/captain_home_screen.dart';
 import '../onboarding/permissions_screen.dart';
+
+/// Arabic document label -> short slug used as the storage path / `doc_key`.
+const Map<String, String> _kDocKeys = {
+  'الصورة الشخصية': 'profile_photo',
+  'بطاقة الهوية الوطنية': 'national_id',
+  'رخصة السياقة': 'driving_license',
+  'البطاقة الرمادية': 'gray_card',
+  'صورة السيارة': 'car_photo',
+  'تأمين السيارة': 'car_insurance',
+  'تصريح العمل الإضافي': 'extra_work_permit',
+};
 
 class CaptainRegisterStepperScreen extends StatefulWidget {
   const CaptainRegisterStepperScreen({super.key});
@@ -55,6 +68,7 @@ class _CaptainRegisterStepperScreenState
     'تصريح العمل الإضافي': false,
   };
   String? _uploadingDoc;
+  final Map<String, Uint8List> _pickedFileBytes = {};
 
   @override
   void dispose() {
@@ -75,11 +89,26 @@ class _CaptainRegisterStepperScreenState
 
   void _nextStep() {
     if (_currentStep == 1 && !_validateStep1()) return;
+    if (_currentStep == 3 && !_validateStep3()) return;
     if (_currentStep < 4) {
       setState(() {
         _currentStep++;
       });
     }
+  }
+
+  bool _validateStep3() {
+    if (_uploadStates.values.every((uploaded) => uploaded)) return true;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'يرجى رفع جميع المستندات المطلوبة أولاً',
+          style: TextStyle(fontFamily: 'Cairo'),
+        ),
+        backgroundColor: AppColors.error,
+      ),
+    );
+    return false;
   }
 
   bool _validateStep1() {
@@ -120,26 +149,90 @@ class _CaptainRegisterStepperScreenState
     }
   }
 
-  void _simulateUpload(String docName) {
-    setState(() {
-      _uploadingDoc = docName;
-    });
+  Future<void> _pickDocument(String docName) async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 18, 20, 8),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  'إرفاق المستند',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    fontFamily: 'Cairo',
+                    color: AppColors.darkText,
+                  ),
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.camera_alt_rounded,
+                color: AppColors.primary,
+              ),
+              title: const Text(
+                'التقاط صورة',
+                style: TextStyle(fontFamily: 'Cairo'),
+              ),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.photo_library_rounded,
+                color: AppColors.primary,
+              ),
+              title: const Text(
+                'اختيار من المعرض',
+                style: TextStyle(fontFamily: 'Cairo'),
+              ),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
 
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (mounted) {
-        setState(() {
-          _uploadStates[docName] = true;
-          _uploadingDoc = null;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('تم رفع $docName بنجاح'),
-            backgroundColor: AppColors.success,
-            duration: const Duration(seconds: 1),
-          ),
-        );
+    setState(() => _uploadingDoc = docName);
+    try {
+      final file = await ImagePicker().pickImage(
+        source: source,
+        imageQuality: 80,
+      );
+      if (file == null) {
+        if (mounted) setState(() => _uploadingDoc = null);
+        return;
       }
-    });
+      final bytes = await file.readAsBytes();
+      if (!mounted) return;
+      setState(() {
+        _pickedFileBytes[docName] = bytes;
+        _uploadStates[docName] = true;
+        _uploadingDoc = null;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _uploadingDoc = null);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'تعذر الوصول للكاميرا أو المعرض. تحقق من صلاحيات التطبيق.',
+            style: TextStyle(fontFamily: 'Cairo'),
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   Future<void> _submitApplication() async {
@@ -157,15 +250,8 @@ class _CaptainRegisterStepperScreenState
       return;
     }
 
-    // Check if documents are uploaded
-    bool allDocsUploaded = _uploadStates.values.every((uploaded) => uploaded);
-    if (!allDocsUploaded) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('يرجى رفع جميع المستندات المطلوبة أولاً'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+    if (!_validateStep3()) {
+      setState(() => _currentStep = 3);
       return;
     }
 
@@ -182,11 +268,41 @@ class _CaptainRegisterStepperScreenState
         userType: 'captain',
       );
 
+      String? documentsWarning;
+      try {
+        await _authRepository.uploadCaptainDocuments(
+          profile['id'] as String,
+          _pickedFileBytes.entries
+              .map(
+                (e) => CaptainDocumentFile(
+                  docKey: _kDocKeys[e.key] ?? e.key,
+                  docName: e.key,
+                  bytes: e.value,
+                ),
+              )
+              .toList(),
+        );
+      } on AppAuthException catch (e) {
+        documentsWarning = e.message;
+      }
+
       if (!mounted) return;
       setState(() {
         _registeredProfile = profile;
         _isSuccess = true;
       });
+      if (documentsWarning != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              documentsWarning,
+              style: const TextStyle(fontFamily: 'Cairo'),
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     } on AppAuthException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -629,7 +745,7 @@ class _CaptainRegisterStepperScreenState
         ),
         const SizedBox(height: 8),
         const Text(
-          'يرجى الضغط على كل مستند لتجربة رفعه من ملفات هاتفك.',
+          'اضغط على كل مستند لالتقاط صورة له بالكاميرا أو اختياره من هاتفك. جميع المستندات إلزامية لإكمال التسجيل.',
           style: TextStyle(
             fontSize: 12,
             color: AppColors.secondaryText,
@@ -647,11 +763,10 @@ class _CaptainRegisterStepperScreenState
             String docName = _uploadStates.keys.elementAt(index);
             bool isUploaded = _uploadStates[docName]!;
             bool isThisUploading = _uploadingDoc == docName;
+            Uint8List? preview = _pickedFileBytes[docName];
 
             return InkWell(
-              onTap: isUploaded || isThisUploading
-                  ? null
-                  : () => _simulateUpload(docName),
+              onTap: isThisUploading ? null : () => _pickDocument(docName),
               borderRadius: BorderRadius.circular(20),
               child: Container(
                 padding: const EdgeInsets.all(16),
@@ -667,23 +782,28 @@ class _CaptainRegisterStepperScreenState
                 ),
                 child: Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: isUploaded
-                            ? AppColors.success.withOpacity(0.1)
-                            : AppColors.background,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        isUploaded
-                            ? Icons.done_rounded
-                            : Icons.upload_file_rounded,
-                        color: isUploaded
-                            ? AppColors.success
-                            : AppColors.secondaryText,
-                        size: 24,
-                      ),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: preview != null
+                          ? Image.memory(
+                              preview,
+                              width: 44,
+                              height: 44,
+                              fit: BoxFit.cover,
+                            )
+                          : Container(
+                              width: 44,
+                              height: 44,
+                              decoration: const BoxDecoration(
+                                color: AppColors.background,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.upload_file_rounded,
+                                color: AppColors.secondaryText,
+                                size: 24,
+                              ),
+                            ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -702,8 +822,8 @@ class _CaptainRegisterStepperScreenState
                           const SizedBox(height: 2),
                           Text(
                             isUploaded
-                                ? 'حالة الملف: تم الرفع'
-                                : 'حالة الملف: لم يتم الرفع بعد',
+                                ? 'تم إرفاق الصورة (اضغط لتغييرها)'
+                                : 'لم يتم إرفاق صورة بعد',
                             style: TextStyle(
                               fontSize: 11,
                               color: isUploaded
