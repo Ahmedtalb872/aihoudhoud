@@ -51,7 +51,7 @@ class _SplashScreenState extends State<SplashScreen>
     if (currentUser != null) {
       try {
         final profile = await AuthRepository().getProfile(currentUser.id);
-        if (profile['user_type'] == 'captain' && mounted) {
+        if (profile['role'] == 'captain' && mounted) {
           Provider.of<AppStateProvider>(
             context,
             listen: false,

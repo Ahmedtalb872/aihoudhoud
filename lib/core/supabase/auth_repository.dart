@@ -38,14 +38,14 @@ class AuthRepository {
     required String password,
     required String fullName,
     required String phone,
-    required String userType, // 'customer' or 'captain'
+    required String role, // 'customer' or 'captain'
   }) async {
     _requireConfigured();
     try {
       final response = await _client.auth.signUp(
         email: email,
         password: password,
-        data: {'full_name': fullName, 'phone': phone, 'user_type': userType},
+        data: {'full_name': fullName, 'phone': phone, 'role': role},
       );
 
       final user = response.user;

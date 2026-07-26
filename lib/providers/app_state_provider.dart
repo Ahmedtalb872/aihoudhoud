@@ -80,7 +80,7 @@ class AppStateProvider extends ChangeNotifier {
       (openRideElapsed.inSeconds / 60.0) * openRidePerMinuteRate;
 
   // Hydrate state from a Supabase `profiles` row after a real sign-in/sign-up.
-  // Callers are responsible for verifying profile['user_type'] == 'captain'
+  // Callers are responsible for verifying profile['role'] == 'captain'
   // before calling this, since this app only serves captains.
   void loginFromProfile(Map<String, dynamic> profile, String email) {
     _isLoggedIn = true;

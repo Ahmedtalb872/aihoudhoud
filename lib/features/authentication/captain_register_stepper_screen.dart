@@ -266,7 +266,7 @@ class _CaptainRegisterStepperScreenState
         password: _passwordController.text,
         fullName: _nameController.text.trim(),
         phone: '+222${_phoneController.text}',
-        userType: 'captain',
+        role: 'captain',
       );
 
       String? documentsWarning;
