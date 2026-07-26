@@ -8,6 +8,7 @@ import '../../core/supabase/auth_repository.dart';
 import '../../core/widgets/app_logo.dart';
 import '../../providers/app_state_provider.dart';
 import '../captain/captain_home_screen.dart';
+import '../onboarding/pending_review_screen.dart';
 import '../onboarding/permissions_screen.dart';
 
 /// Arabic document label -> short slug used as the storage path / `doc_key`.
@@ -1220,16 +1221,20 @@ class _CaptainRegisterStepperScreenState
                     );
                   }
 
+                  final approved =
+                      _registeredProfile?['is_approved'] as bool? ?? false;
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(
-                      builder: (context) => const PermissionsScreen(
-                        destination: CaptainHomeScreen(),
-                      ),
+                      builder: (context) => approved
+                          ? const PermissionsScreen(
+                              destination: CaptainHomeScreen(),
+                            )
+                          : const PendingReviewScreen(),
                     ),
                     (route) => false,
                   );
                 },
-                child: const Text('دخول لوحة تحكم الكابتن'),
+                child: const Text('متابعة'),
               ),
               const SizedBox(height: 12),
 

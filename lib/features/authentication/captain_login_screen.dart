@@ -7,6 +7,7 @@ import '../../core/widgets/app_logo.dart';
 import '../../providers/app_state_provider.dart';
 import 'captain_register_stepper_screen.dart';
 import '../captain/captain_home_screen.dart';
+import '../onboarding/pending_review_screen.dart';
 import '../onboarding/permissions_screen.dart';
 
 class CaptainLoginScreen extends StatefulWidget {
@@ -55,10 +56,12 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
       final provider = Provider.of<AppStateProvider>(context, listen: false);
       provider.loginFromProfile(profile, _emailController.text.trim());
 
+      final approved = profile['is_approved'] as bool? ?? false;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
-          builder: (context) =>
-              const PermissionsScreen(destination: CaptainHomeScreen()),
+          builder: (context) => approved
+              ? const PermissionsScreen(destination: CaptainHomeScreen())
+              : const PendingReviewScreen(),
         ),
         (route) => false,
       );

@@ -6,6 +6,7 @@ import '../../core/supabase/auth_repository.dart';
 import '../../providers/app_state_provider.dart';
 import '../authentication/captain_login_screen.dart';
 import '../captain/captain_home_screen.dart';
+import 'pending_review_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -55,7 +56,10 @@ class _SplashScreenState extends State<SplashScreen>
             context,
             listen: false,
           ).loginFromProfile(profile, currentUser.email ?? '');
-          destination = const CaptainHomeScreen();
+          final approved = profile['is_approved'] as bool? ?? false;
+          destination = approved
+              ? const CaptainHomeScreen()
+              : const PendingReviewScreen();
         }
       } catch (_) {
         // No usable session/profile; fall back to the login screen.
