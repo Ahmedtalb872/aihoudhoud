@@ -453,23 +453,43 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                   ),
                   const Divider(height: 32),
 
-                  // Details Row (fare, distance)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildSummaryItem(
-                        'الأرباح المقدرة',
-                        '${trip.price} أوقية',
-                      ),
-                      Container(width: 1, height: 24, color: AppColors.border),
-                      _buildSummaryItem('مسافة المشوار', '${trip.distance} كم'),
-                      Container(width: 1, height: 24, color: AppColors.border),
-                      _buildSummaryItem(
-                        'المدة المتوقعة',
-                        '${trip.duration} دقيقة',
-                      ),
-                    ],
-                  ),
+                  // Details Row - an open ride has no known destination, so
+                  // there's no real fare/distance/duration estimate to show
+                  // yet (it's metered live once the trip starts); just say
+                  // what the meter starts at instead of a fake fixed number.
+                  if (trip.isOpenRide)
+                    _buildSummaryItem(
+                      'مشوار مفتوح',
+                      'يبدأ من ${AppStateProvider.openRideBaseFare.toStringAsFixed(0)} أوقية',
+                    )
+                  else
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildSummaryItem(
+                          'الأرباح المقدرة',
+                          '${trip.price} أوقية',
+                        ),
+                        Container(
+                          width: 1,
+                          height: 24,
+                          color: AppColors.border,
+                        ),
+                        _buildSummaryItem(
+                          'مسافة المشوار',
+                          '${trip.distance} كم',
+                        ),
+                        Container(
+                          width: 1,
+                          height: 24,
+                          color: AppColors.border,
+                        ),
+                        _buildSummaryItem(
+                          'المدة المتوقعة',
+                          '${trip.duration} دقيقة',
+                        ),
+                      ],
+                    ),
                   const Divider(height: 32),
 
                   // Ticking Countdown
@@ -537,6 +557,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
 
   Widget _buildSummaryItem(String label, String value) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           label,

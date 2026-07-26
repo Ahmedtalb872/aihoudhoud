@@ -54,7 +54,14 @@ class _RealMapWidgetState extends State<RealMapWidget>
   @override
   void initState() {
     super.initState();
-    _determinePosition();
+    // If a pickup point was given, center on it directly - don't fetch the
+    // device's own GPS position and jump there instead, which pushed the
+    // pickup pin off-screen a moment after this first rendered.
+    if (widget.pickupLat != null && widget.pickupLng != null) {
+      _currentCenter = LatLng(widget.pickupLat!, widget.pickupLng!);
+    } else {
+      _determinePosition();
+    }
 
     _carController = AnimationController(
       vsync: this,
