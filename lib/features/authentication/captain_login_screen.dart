@@ -10,6 +10,7 @@ import '../captain/captain_home_screen.dart';
 import '../onboarding/pending_review_screen.dart';
 import '../onboarding/permissions_screen.dart';
 
+/// Captain login by phone number + SMS one-time code (no email/password).
 class CaptainLoginScreen extends StatefulWidget {
   const CaptainLoginScreen({super.key});
 
@@ -18,31 +19,69 @@ class CaptainLoginScreen extends StatefulWidget {
 }
 
 class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _authRepository = AuthRepository();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
+  final _phoneController = TextEditingController();
+  final _codeController = TextEditingController();
+
+  // 1 = enter phone, 2 = enter the SMS code sent to it.
+  int _step = 1;
   bool _isLoading = false;
+  String? _errorText;
+
+  String get _fullPhone => '+222${_phoneController.text.trim()}';
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    _phoneController.dispose();
+    _codeController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _sendCode() async {
+    final phone = _phoneController.text.trim();
+    if (phone.length < 8) {
+      setState(() => _errorText = 'الرجاء إدخال رقم هاتف صحيح');
+      return;
+    }
 
     setState(() {
       _isLoading = true;
+      _errorText = null;
     });
-
     try {
-      final profile = await _authRepository.signIn(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
+      await _authRepository.sendPhoneOtp(phone: _fullPhone);
+      if (!mounted) return;
+      setState(() => _step = 2);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'تم إرسال رمز التحقق عبر رسالة نصية.',
+            style: TextStyle(fontFamily: 'Cairo'),
+          ),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } on AppAuthException catch (e) {
+      setState(() => _errorText = e.message);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _verifyCode() async {
+    if (_codeController.text.trim().length < 4) {
+      setState(() => _errorText = 'الرجاء إدخال رمز التحقق كاملاً');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorText = null;
+    });
+    try {
+      final profile = await _authRepository.verifyPhoneOtp(
+        phone: _fullPhone,
+        code: _codeController.text.trim(),
       );
 
       if (profile['role'] != 'captain') {
@@ -54,7 +93,7 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
 
       if (!mounted) return;
       final provider = Provider.of<AppStateProvider>(context, listen: false);
-      provider.loginFromProfile(profile, _emailController.text.trim());
+      provider.loginFromProfile(profile, _fullPhone);
 
       final approved = profile['is_approved'] as bool? ?? false;
       Navigator.of(context).pushAndRemoveUntil(
@@ -66,57 +105,9 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
         (route) => false,
       );
     } on AppAuthException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message, style: const TextStyle(fontFamily: 'Cairo')),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      setState(() => _errorText = e.message);
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _handleForgotPassword() async {
-    final email = _emailController.text.trim();
-    if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'أدخل بريدك الإلكتروني أولاً ثم اضغط على الرابط.',
-            style: TextStyle(fontFamily: 'Cairo'),
-          ),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
-    try {
-      await _authRepository.resetPasswordForEmail(email);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.',
-            style: TextStyle(fontFamily: 'Cairo'),
-          ),
-          backgroundColor: AppColors.success,
-        ),
-      );
-    } on AppAuthException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message, style: const TextStyle(fontFamily: 'Cairo')),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -127,44 +118,53 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            if (_step == 2) {
+              setState(() {
+                _step = 1;
+                _errorText = null;
+              });
+            } else {
+              Navigator.of(context).pop();
+            }
+          },
         ),
         title: const Text('تسجيل دخول الكابتن'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 12),
-                const Center(child: AppLogo(width: 96)),
-                const SizedBox(height: 20),
-                const Text(
-                  'أهلاً بك يا كابتن!',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.darkText,
-                    fontFamily: 'Cairo',
-                  ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 12),
+              const Center(child: AppLogo(width: 96)),
+              const SizedBox(height: 20),
+              Text(
+                _step == 1 ? 'أهلاً بك يا كابتن!' : 'أدخل رمز التحقق',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.darkText,
+                  fontFamily: 'Cairo',
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'سجل دخولك لبدء استقبال طلبات الركاب وتحقيق أرباح يومية.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.secondaryText,
-                    fontFamily: 'Cairo',
-                  ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _step == 1
+                    ? 'سجل دخولك برقم هاتفك لبدء استقبال طلبات الركاب وتحقيق أرباح يومية.'
+                    : 'أرسلنا رمزًا مكوّنًا من عدة أرقام برسالة نصية إلى $_fullPhone',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.secondaryText,
+                  fontFamily: 'Cairo',
                 ),
-                const SizedBox(height: 32),
+              ),
+              const SizedBox(height: 32),
 
-                // Email field
+              if (_step == 1) ...[
                 const Text(
-                  'البريد الإلكتروني',
+                  'رقم الهاتف',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -173,34 +173,29 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
+                TextField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
                   textAlign: TextAlign.left,
                   decoration: const InputDecoration(
-                    hintText: 'example@email.com',
-                    prefixIcon: Icon(
-                      Icons.email_outlined,
-                      color: AppColors.secondaryText,
+                    hintText: '2XXXXXXXX',
+                    prefixIcon: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        '+222',
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.darkText,
+                        ),
+                      ),
                     ),
+                    prefixIconConstraints: BoxConstraints(minWidth: 0),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'الرجاء إدخال البريد الإلكتروني';
-                    }
-                    if (!RegExp(
-                      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                    ).hasMatch(value)) {
-                      return 'الرجاء إدخال بريد إلكتروني صحيح';
-                    }
-                    return null;
-                  },
                 ),
-                const SizedBox(height: 20),
-
-                // Password field
+              ] else ...[
                 const Text(
-                  'كلمة المرور',
+                  'رمز التحقق',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -209,67 +204,57 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  decoration: InputDecoration(
-                    hintText: 'أدخل كلمة المرور الخاصة بك',
-                    prefixIcon: const Icon(
-                      Icons.lock_outline_rounded,
-                      color: AppColors.secondaryText,
-                    ),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                        color: AppColors.secondaryText,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
+                TextField(
+                  controller: _codeController,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    letterSpacing: 8,
+                    fontWeight: FontWeight.bold,
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'الرجاء إدخال كلمة المرور';
-                    }
-                    if (value.length < 6) {
-                      return 'كلمة المرور يجب أن لا تقل عن 6 أحرف';
-                    }
-                    return null;
-                  },
+                  decoration: const InputDecoration(hintText: '- - - - - -'),
                 ),
-
-                // Forgot Password link
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton(
-                    onPressed: _handleForgotPassword,
-                    child: const Text('نسيت كلمة المرور؟'),
+                    onPressed: _isLoading ? null : _sendCode,
+                    child: const Text('إعادة إرسال الرمز'),
                   ),
                 ),
-                const SizedBox(height: 24),
+              ],
 
-                // Submit Button
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _handleLogin,
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2.5,
-                          ),
-                        )
-                      : const Text('تسجيل الدخول ككابتن'),
+              if (_errorText != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _errorText!,
+                  style: const TextStyle(
+                    color: AppColors.error,
+                    fontSize: 13,
+                    fontFamily: 'Cairo',
+                  ),
                 ),
-                const SizedBox(height: 24),
+              ],
+              const SizedBox(height: 24),
 
-                // Create account link
+              ElevatedButton(
+                onPressed: _isLoading
+                    ? null
+                    : (_step == 1 ? _sendCode : _verifyCode),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: AppColors.darkText,
+                          strokeWidth: 2.5,
+                        ),
+                      )
+                    : Text(_step == 1 ? 'إرسال رمز التحقق' : 'تسجيل الدخول ككابتن'),
+              ),
+              const SizedBox(height: 24),
+
+              if (_step == 1)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -293,8 +278,7 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
                     ),
                   ],
                 ),
-              ],
-            ),
+            ],
           ),
         ),
       ),

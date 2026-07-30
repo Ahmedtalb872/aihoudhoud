@@ -15,8 +15,8 @@ class CaptainDocumentFile {
   });
 }
 
-/// Wraps Supabase Auth (email + password) and the matching `profiles` row
-/// created automatically by the `handle_new_user` DB trigger.
+/// Wraps Supabase Auth (phone number + SMS OTP) and the matching `profiles`
+/// row created automatically by the `handle_new_user` DB trigger.
 class AuthRepository {
   SupabaseClient get _client => SupabaseConfig.client;
 
@@ -33,46 +33,48 @@ class AuthRepository {
     }
   }
 
-  Future<Map<String, dynamic>> signUp({
-    required String email,
-    required String password,
-    required String fullName,
+  /// Sends a 6-digit SMS code to [phone] (e.g. "+22234567890"). Works for
+  /// both new registrations and existing-account logins - Supabase creates
+  /// the auth user on first verification if one doesn't exist yet, using
+  /// [fullName]/[role] as its initial profile metadata.
+  Future<void> sendPhoneOtp({
     required String phone,
-    required String role, // 'customer' or 'captain'
+    String? fullName,
+    String? role,
   }) async {
     _requireConfigured();
     try {
-      final response = await _client.auth.signUp(
-        email: email,
-        password: password,
-        data: {'full_name': fullName, 'phone': phone, 'role': role},
+      await _client.auth.signInWithOtp(
+        phone: phone,
+        data: fullName == null && role == null
+            ? null
+            : {
+                if (fullName != null) 'full_name': fullName,
+                'phone': phone,
+                if (role != null) 'role': role,
+              },
       );
-
-      final user = response.user;
-      if (user == null) {
-        throw AppAuthException('تعذر إنشاء الحساب، حاول مرة أخرى.');
-      }
-
-      return await getProfile(user.id);
     } on AuthException catch (e) {
       throw AppAuthException(_translateAuthError(e));
     }
   }
 
-  Future<Map<String, dynamic>> signIn({
-    required String email,
-    required String password,
+  /// Verifies the code sent by [sendPhoneOtp], completing sign-up/sign-in.
+  Future<Map<String, dynamic>> verifyPhoneOtp({
+    required String phone,
+    required String code,
   }) async {
     _requireConfigured();
     try {
-      final response = await _client.auth.signInWithPassword(
-        email: email,
-        password: password,
+      final response = await _client.auth.verifyOTP(
+        phone: phone,
+        token: code,
+        type: OtpType.sms,
       );
 
       final user = response.user;
       if (user == null) {
-        throw AppAuthException('بيانات الدخول غير صحيحة.');
+        throw AppAuthException('رمز التحقق غير صحيح.');
       }
 
       return await getProfile(user.id);
@@ -134,26 +136,16 @@ class AuthRepository {
     await _client.auth.signOut();
   }
 
-  Future<void> resetPasswordForEmail(String email) async {
-    _requireConfigured();
-    try {
-      await _client.auth.resetPasswordForEmail(email);
-    } on AuthException catch (e) {
-      throw AppAuthException(_translateAuthError(e));
-    }
-  }
-
   String _translateAuthError(AuthException e) {
     final msg = e.message.toLowerCase();
-    if (msg.contains('invalid login credentials')) {
-      return 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+    if (msg.contains('invalid otp') || msg.contains('token has expired')) {
+      return 'رمز التحقق غير صحيح أو انتهت صلاحيته، اطلب رمزًا جديدًا.';
     }
-    if (msg.contains('already registered') ||
-        msg.contains('user already exists')) {
-      return 'هذا البريد الإلكتروني مسجل بالفعل، جرّب تسجيل الدخول.';
+    if (msg.contains('sms rate limit') || msg.contains('rate limit')) {
+      return 'تم إرسال عدة رموز مؤخرًا، انتظر قليلاً قبل طلب رمز جديد.';
     }
-    if (msg.contains('email not confirmed')) {
-      return 'يرجى تأكيد بريدك الإلكتروني أولاً قبل تسجيل الدخول.';
+    if (msg.contains('invalid phone')) {
+      return 'رقم الهاتف غير صحيح.';
     }
     return e.message;
   }

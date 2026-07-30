@@ -37,14 +37,12 @@ class _CaptainRegisterStepperScreenState
   bool _isSuccess = false;
   bool _isSubmitting = false;
   bool _termsApproved = false;
+  bool _phoneVerified = false;
   Map<String, dynamic>? _registeredProfile;
 
   // Step 1 Controllers
   final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
   String _selectedCity = 'نواكشوط';
   final _addressController = TextEditingController();
   final _dobController = TextEditingController(text: '1990-01-01');
@@ -71,13 +69,12 @@ class _CaptainRegisterStepperScreenState
   String? _uploadingDoc;
   final Map<String, Uint8List> _pickedFileBytes = {};
 
+  String get _fullPhone => '+222${_phoneController.text.trim()}';
+
   @override
   void dispose() {
     _nameController.dispose();
-    _emailController.dispose();
     _phoneController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
     _addressController.dispose();
     _dobController.dispose();
     _carBrandController.dispose();
@@ -88,14 +85,189 @@ class _CaptainRegisterStepperScreenState
     super.dispose();
   }
 
-  void _nextStep() {
-    if (_currentStep == 1 && !_validateStep1()) return;
+  Future<void> _nextStep() async {
+    if (_currentStep == 1) {
+      if (!_validateStep1()) return;
+      if (_phoneVerified) {
+        setState(() => _currentStep = 2);
+        return;
+      }
+      await _sendOtpAndVerify();
+      return;
+    }
     if (_currentStep == 3 && !_validateStep3()) return;
     if (_currentStep < 4) {
       setState(() {
         _currentStep++;
       });
     }
+  }
+
+  Future<void> _sendOtpAndVerify() async {
+    setState(() => _isSubmitting = true);
+    try {
+      await _authRepository.sendPhoneOtp(
+        phone: _fullPhone,
+        fullName: _nameController.text.trim(),
+        role: 'captain',
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'تم إرسال رمز التحقق عبر رسالة نصية.',
+            style: TextStyle(fontFamily: 'Cairo'),
+          ),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      final verified = await _showOtpSheet();
+      if (verified && mounted) {
+        setState(() {
+          _phoneVerified = true;
+          _currentStep = 2;
+        });
+      }
+    } on AppAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message, style: const TextStyle(fontFamily: 'Cairo')),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  /// Shows the SMS code entry sheet, returns true once verified (and stores
+  /// the now-created/logged-in profile in [_registeredProfile]).
+  Future<bool> _showOtpSheet() async {
+    final codeController = TextEditingController();
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        bool isVerifying = false;
+        String? error;
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'أدخل رمز التحقق',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      fontFamily: 'Cairo',
+                      color: AppColors.darkText,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'أرسلنا رمزًا برسالة نصية إلى $_fullPhone',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.secondaryText,
+                      fontFamily: 'Cairo',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: codeController,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    autofocus: true,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      letterSpacing: 8,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    decoration: const InputDecoration(hintText: '- - - - - -'),
+                  ),
+                  if (error != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      error!,
+                      style: const TextStyle(
+                        color: AppColors.error,
+                        fontSize: 12,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: isVerifying
+                        ? null
+                        : () async {
+                            if (codeController.text.trim().length < 4) {
+                              setSheetState(
+                                () => error = 'أدخل رمز التحقق كاملاً',
+                              );
+                              return;
+                            }
+                            setSheetState(() {
+                              isVerifying = true;
+                              error = null;
+                            });
+                            try {
+                              final profile = await _authRepository
+                                  .verifyPhoneOtp(
+                                    phone: _fullPhone,
+                                    code: codeController.text.trim(),
+                                  );
+                              _registeredProfile = profile;
+                              if (sheetContext.mounted) {
+                                Navigator.pop(sheetContext, true);
+                              }
+                            } on AppAuthException catch (e) {
+                              setSheetState(() {
+                                isVerifying = false;
+                                error = e.message;
+                              });
+                            }
+                          },
+                    child: isVerifying
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              color: AppColors.darkText,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                        : const Text('تحقق'),
+                  ),
+                  TextButton(
+                    onPressed: isVerifying
+                        ? null
+                        : () => Navigator.pop(sheetContext, false),
+                    child: const Text('إلغاء'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+    return result ?? false;
   }
 
   bool _validateStep3() {
@@ -116,18 +288,8 @@ class _CaptainRegisterStepperScreenState
     String? error;
     if (_nameController.text.trim().isEmpty) {
       error = 'الرجاء إدخال الاسم الكامل';
-    } else if (_emailController.text.trim().isEmpty) {
-      error = 'الرجاء إدخال البريد الإلكتروني';
-    } else if (!RegExp(
-      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-    ).hasMatch(_emailController.text.trim())) {
-      error = 'الرجاء إدخال بريد إلكتروني صحيح';
-    } else if (_phoneController.text.trim().isEmpty) {
-      error = 'الرجاء إدخال رقم الهاتف';
-    } else if (_passwordController.text.length < 6) {
-      error = 'كلمة المرور يجب أن لا تقل عن 6 أحرف';
-    } else if (_confirmPasswordController.text != _passwordController.text) {
-      error = 'كلمة المرور وتأكيدها غير متطابقين';
+    } else if (_phoneController.text.trim().length < 8) {
+      error = 'الرجاء إدخال رقم هاتف صحيح';
     }
 
     if (error != null) {
@@ -237,7 +399,7 @@ class _CaptainRegisterStepperScreenState
   }
 
   Future<void> _submitApplication() async {
-    if (!_validateStep1()) {
+    if (!_phoneVerified || _registeredProfile == null) {
       setState(() => _currentStep = 1);
       return;
     }
@@ -261,14 +423,7 @@ class _CaptainRegisterStepperScreenState
     });
 
     try {
-      final profile = await _authRepository.signUp(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        fullName: _nameController.text.trim(),
-        phone: '+222${_phoneController.text}',
-        role: 'captain',
-      );
-
+      final profile = _registeredProfile!;
       String? documentsWarning;
       try {
         await _authRepository.uploadCaptainDocuments(
@@ -288,10 +443,7 @@ class _CaptainRegisterStepperScreenState
       }
 
       if (!mounted) return;
-      setState(() {
-        _registeredProfile = profile;
-        _isSuccess = true;
-      });
+      setState(() => _isSuccess = true);
       if (documentsWarning != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -304,14 +456,6 @@ class _CaptainRegisterStepperScreenState
           ),
         );
       }
-    } on AppAuthException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message, style: const TextStyle(fontFamily: 'Cairo')),
-          backgroundColor: AppColors.error,
-        ),
-      );
     } finally {
       if (mounted) {
         setState(() {
@@ -475,27 +619,33 @@ class _CaptainRegisterStepperScreenState
           hint: 'أدخل اسمك الكامل كما في الهوية',
         ),
         const SizedBox(height: 16),
-        _buildTextField(
-          'البريد الإلكتروني',
-          _emailController,
-          hint: 'example@email.com',
-        ),
         const SizedBox(height: 16),
-        _buildPhoneField('رقم الهاتف', _phoneController),
-        const SizedBox(height: 16),
-        _buildTextField(
-          'كلمة المرور',
-          _passwordController,
-          obscure: true,
-          hint: 'أدخل كلمة المرور لحسابك',
+        _buildPhoneField(
+          'رقم الهاتف',
+          _phoneController,
+          readOnly: _phoneVerified,
         ),
-        const SizedBox(height: 16),
-        _buildTextField(
-          'تأكيد كلمة المرور',
-          _confirmPasswordController,
-          obscure: true,
-          hint: 'أعد كتابة كلمة المرور',
-        ),
+        if (_phoneVerified) ...[
+          const SizedBox(height: 8),
+          const Row(
+            children: [
+              Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.success,
+                size: 16,
+              ),
+              SizedBox(width: 6),
+              Text(
+                'تم التحقق من هذا الرقم',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.success,
+                  fontFamily: 'Cairo',
+                ),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: 16),
         // City dropdown
         const Text(
@@ -888,8 +1038,7 @@ class _CaptainRegisterStepperScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildReviewRow('الاسم الكامل', _nameController.text),
-                _buildReviewRow('البريد الإلكتروني', _emailController.text),
-                _buildReviewRow('رقم الهاتف', '+222 ${_phoneController.text}'),
+                _buildReviewRow('رقم الهاتف', _fullPhone),
                 _buildReviewRow(
                   'المدينة والعنوان',
                   '$_selectedCity - ${_addressController.text}',
@@ -1052,7 +1201,11 @@ class _CaptainRegisterStepperScreenState
     );
   }
 
-  Widget _buildPhoneField(String label, TextEditingController controller) {
+  Widget _buildPhoneField(
+    String label,
+    TextEditingController controller, {
+    bool readOnly = false,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1068,6 +1221,7 @@ class _CaptainRegisterStepperScreenState
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
+          readOnly: readOnly,
           keyboardType: TextInputType.phone,
           textAlign: TextAlign.left,
           style: const TextStyle(
@@ -1215,10 +1369,7 @@ class _CaptainRegisterStepperScreenState
                     listen: false,
                   );
                   if (_registeredProfile != null) {
-                    provider.loginFromProfile(
-                      _registeredProfile!,
-                      _emailController.text.trim(),
-                    );
+                    provider.loginFromProfile(_registeredProfile!, _fullPhone);
                   }
 
                   final approved =

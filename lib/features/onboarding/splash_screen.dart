@@ -55,7 +55,7 @@ class _SplashScreenState extends State<SplashScreen>
           Provider.of<AppStateProvider>(
             context,
             listen: false,
-          ).loginFromProfile(profile, currentUser.email ?? '');
+          ).loginFromProfile(profile, currentUser.phone ?? '');
           final approved = profile['is_approved'] as bool? ?? false;
           destination = approved
               ? const CaptainHomeScreen()
