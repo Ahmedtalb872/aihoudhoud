@@ -8,7 +8,6 @@ import '../../core/widgets/app_logo.dart';
 import '../trips/my_trips_screen.dart';
 import '../wallet/wallet_screen.dart';
 import '../profile/profile_screen.dart';
-import 'open_trips_screen.dart';
 import 'captain_active_trip_screen.dart';
 import 'leaderboard_screen.dart';
 import '../authentication/captain_login_screen.dart';
@@ -32,7 +31,6 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
     // List of screens for bottom navigation
     final List<Widget> screens = [
       _buildDashboardView(provider),
-      const OpenTripsScreen(showAppBar: false),
       const MyTripsScreen(showAppBar: false),
       const WalletScreen(showAppBar: false),
       const ProfileScreen(showAppBar: false),
@@ -663,22 +661,6 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
             },
           ),
           ListTile(
-            leading: const Icon(
-              Icons.explore_rounded,
-              color: AppColors.primary,
-            ),
-            title: const Text(
-              'المشاوير المفتوحة للجميع',
-              style: TextStyle(fontFamily: 'Cairo'),
-            ),
-            onTap: () {
-              Navigator.of(context).pop();
-              setState(() {
-                _currentIndex = 1; // Open trips tab
-              });
-            },
-          ),
-          ListTile(
             leading: const Icon(Icons.wallet_rounded, color: AppColors.primary),
             title: const Text(
               'الأرباح والمحفظة',
@@ -687,7 +669,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
             onTap: () {
               Navigator.of(context).pop();
               setState(() {
-                _currentIndex = 3; // Wallet tab
+                _currentIndex = 2; // Wallet tab
               });
             },
           ),
@@ -721,7 +703,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
             onTap: () {
               Navigator.of(context).pop();
               setState(() {
-                _currentIndex = 2; // Trips tab
+                _currentIndex = 1; // Trips tab
               });
             },
           ),
@@ -773,10 +755,6 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
         BottomNavigationBarItem(
           icon: Icon(Icons.dashboard_rounded),
           label: 'الرئيسية',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.explore_rounded),
-          label: 'المفتوحة',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.history_rounded),

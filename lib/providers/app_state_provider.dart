@@ -59,6 +59,39 @@ class AppStateProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _lastPendingRides = [];
   final Set<String> _ignoredRideIds = {};
 
+  // Demo "open ride" requests: no customer app support for these yet (see
+  // the `rides` table's NOT NULL dropoff columns), so they're still
+  // fabricated locally - but shown through the exact same popup as real
+  // requests, and only when there's no real request waiting.
+  Timer? _demoOpenRideTimer;
+  int _demoOpenRideIndex = 0;
+  static const List<Map<String, dynamic>> _demoOpenRides = [
+    {
+      'customerName': 'فاطمة منت محمد',
+      'customerPhone': '+22247777777',
+      'pickup': 'تفرغ زينة (سوبرماركت النخيل)',
+      'pickupLat': 18.1065,
+      'pickupLng': -15.9664,
+      'payment': 'نقداً',
+    },
+    {
+      'customerName': 'سيدي ولد المختار',
+      'customerPhone': '+22246667777',
+      'pickup': 'لكصر (كارفور ولد أماه)',
+      'pickupLat': 18.0982,
+      'pickupLng': -15.9592,
+      'payment': 'نقداً',
+    },
+    {
+      'customerName': 'زينب منت اعل',
+      'customerPhone': '+22248889999',
+      'pickup': 'عرفات (كارفور مدريد)',
+      'pickupLat': 18.0435,
+      'pickupLng': -15.9521,
+      'payment': 'Bankily',
+    },
+  ];
+
   // Getters
   bool get isLoggedIn => _isLoggedIn;
   String? get userId => _userId;
@@ -142,6 +175,7 @@ class AppStateProvider extends ChangeNotifier {
     _isCaptainOnline = false;
     _countdownTimer?.cancel();
     _unsubscribeFromPendingRides();
+    _demoOpenRideTimer?.cancel();
     _openRideTicker?.cancel();
     _openRideStartTime = null;
     _openRideLastMovementTime = null;
@@ -158,8 +192,10 @@ class AppStateProvider extends ChangeNotifier {
       _incomingRequest = null;
       _countdownTimer?.cancel();
       _unsubscribeFromPendingRides();
+      _demoOpenRideTimer?.cancel();
     } else {
       _subscribeToPendingRides();
+      _scheduleDemoOpenRide();
     }
     notifyListeners();
   }
@@ -319,6 +355,68 @@ class AppStateProvider extends ChangeNotifier {
     }
   }
 
+  bool get _hasRealPendingRide => _lastPendingRides.any(
+    (row) => row['driver_id'] == null && !_ignoredRideIds.contains(row['id']),
+  );
+
+  // Schedules the next demo "open ride" popup. Real requests always win: if
+  // one is (or becomes) available first, this keeps deferring instead of
+  // interrupting it.
+  void _scheduleDemoOpenRide() {
+    _demoOpenRideTimer?.cancel();
+    _demoOpenRideTimer = Timer(const Duration(seconds: 10), () {
+      if (!_isCaptainOnline) return;
+      if (_activeTrip != null || _incomingRequest != null || _hasRealPendingRide) {
+        _scheduleDemoOpenRide();
+        return;
+      }
+      _showDemoOpenRide();
+    });
+  }
+
+  void _showDemoOpenRide() {
+    final ride = _demoOpenRides[_demoOpenRideIndex % _demoOpenRides.length];
+    _demoOpenRideIndex++;
+
+    _countdownSeconds = 45;
+    _incomingRequest = Trip(
+      id: 'demo_open_${DateTime.now().millisecondsSinceEpoch}',
+      customerName: ride['customerName'] as String,
+      customerPhone: ride['customerPhone'] as String,
+      pickupLocation: ride['pickup'] as String,
+      pickupLat: ride['pickupLat'] as double,
+      pickupLng: ride['pickupLng'] as double,
+      distance: 0,
+      duration: 0,
+      price: openRideBaseFare,
+      paymentMethod: ride['payment'] as String,
+      status: TripStatus.searching,
+      carType: VehicleType.economy,
+      isOpenRide: true,
+      openRideTimeout: 45,
+      date: DateTime.now().toString().substring(0, 16),
+    );
+    notifyListeners();
+    NewTripAlert.play(
+      customerName: _incomingRequest!.customerName,
+      pickup: _incomingRequest!.pickupLocation,
+    );
+
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_countdownSeconds > 0) {
+        _countdownSeconds--;
+        notifyListeners();
+      } else {
+        timer.cancel();
+        _incomingRequest = null;
+        notifyListeners();
+        _maybeShowNextPendingRide();
+        _scheduleDemoOpenRide();
+      }
+    });
+  }
+
   Future<void> _showPendingRide(Map<String, dynamic> row) async {
     final String rideId = row['id'] as String;
     String customerName = 'زبون جديد';
@@ -419,10 +517,12 @@ class AppStateProvider extends ChangeNotifier {
         if (claimed.isEmpty) {
           // Another captain claimed it first; move on to the next request.
           _maybeShowNextPendingRide();
+          _scheduleDemoOpenRide();
           return;
         }
       } catch (_) {
         _maybeShowNextPendingRide();
+        _scheduleDemoOpenRide();
         return;
       }
     }
@@ -464,6 +564,7 @@ class AppStateProvider extends ChangeNotifier {
     _incomingRequest = null;
     notifyListeners();
     _maybeShowNextPendingRide();
+    _scheduleDemoOpenRide();
   }
 
   void captainArriveAtPickup() {
@@ -673,6 +774,7 @@ class AppStateProvider extends ChangeNotifier {
 
     // Ready for the next request if still online
     _maybeShowNextPendingRide();
+    _scheduleDemoOpenRide();
   }
 
   void confirmCaptainSummary() {
@@ -680,6 +782,7 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
     // Ready for next request if online
     _maybeShowNextPendingRide();
+    _scheduleDemoOpenRide();
   }
 
   // Wallet operations
@@ -755,6 +858,7 @@ class AppStateProvider extends ChangeNotifier {
   void dispose() {
     _countdownTimer?.cancel();
     _pendingRidesSubscription?.cancel();
+    _demoOpenRideTimer?.cancel();
     _openRideTicker?.cancel();
     super.dispose();
   }
