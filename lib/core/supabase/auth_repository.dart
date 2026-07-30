@@ -15,8 +15,9 @@ class CaptainDocumentFile {
   });
 }
 
-/// Wraps Supabase Auth (phone number + SMS OTP) and the matching `profiles`
-/// row created automatically by the `handle_new_user` DB trigger.
+/// Wraps Supabase Auth (phone number + password, with a one-time SMS code to
+/// confirm the phone at sign-up) and the matching `profiles` row created
+/// automatically by the `handle_new_user` DB trigger.
 class AuthRepository {
   SupabaseClient get _client => SupabaseConfig.client;
 
@@ -33,34 +34,29 @@ class AuthRepository {
     }
   }
 
-  /// Sends a 6-digit SMS code to [phone] (e.g. "+22234567890"). Works for
-  /// both new registrations and existing-account logins - Supabase creates
-  /// the auth user on first verification if one doesn't exist yet, using
-  /// [fullName]/[role] as its initial profile metadata.
-  Future<void> sendPhoneOtp({
+  /// Creates a new captain account with [phone] + [password], and (if phone
+  /// confirmations are enabled in Supabase) sends a 6-digit SMS code that
+  /// must be confirmed with [verifySignUpOtp] before the account is usable.
+  Future<void> signUpWithPassword({
     required String phone,
-    String? fullName,
-    String? role,
+    required String password,
+    required String fullName,
   }) async {
     _requireConfigured();
     try {
-      await _client.auth.signInWithOtp(
+      await _client.auth.signUp(
         phone: phone,
-        data: fullName == null && role == null
-            ? null
-            : {
-                if (fullName != null) 'full_name': fullName,
-                'phone': phone,
-                if (role != null) 'role': role,
-              },
+        password: password,
+        data: {'full_name': fullName, 'phone': phone, 'role': 'captain'},
       );
     } on AuthException catch (e) {
       throw AppAuthException(_translateAuthError(e));
     }
   }
 
-  /// Verifies the code sent by [sendPhoneOtp], completing sign-up/sign-in.
-  Future<Map<String, dynamic>> verifyPhoneOtp({
+  /// Confirms the phone number for an account created by
+  /// [signUpWithPassword], completing the sign-up.
+  Future<Map<String, dynamic>> verifySignUpOtp({
     required String phone,
     required String code,
   }) async {
@@ -77,6 +73,27 @@ class AuthRepository {
         throw AppAuthException('رمز التحقق غير صحيح.');
       }
 
+      return await getProfile(user.id);
+    } on AuthException catch (e) {
+      throw AppAuthException(_translateAuthError(e));
+    }
+  }
+
+  /// Logs an existing captain in with their phone + password. No SMS needed.
+  Future<Map<String, dynamic>> signInWithPassword({
+    required String phone,
+    required String password,
+  }) async {
+    _requireConfigured();
+    try {
+      final response = await _client.auth.signInWithPassword(
+        phone: phone,
+        password: password,
+      );
+      final user = response.user;
+      if (user == null) {
+        throw AppAuthException('تعذر تسجيل الدخول.');
+      }
       return await getProfile(user.id);
     } on AuthException catch (e) {
       throw AppAuthException(_translateAuthError(e));
@@ -146,6 +163,16 @@ class AuthRepository {
     }
     if (msg.contains('invalid phone')) {
       return 'رقم الهاتف غير صحيح.';
+    }
+    if (msg.contains('invalid login credentials')) {
+      return 'رقم الهاتف أو كلمة المرور غير صحيحة.';
+    }
+    if (msg.contains('user already registered') ||
+        msg.contains('already been registered')) {
+      return 'هذا الرقم مسجل بالفعل. سجل الدخول بدلاً من إنشاء حساب جديد.';
+    }
+    if (msg.contains('password') && msg.contains('at least')) {
+      return 'كلمة المرور قصيرة جدًا، استخدم 6 أحرف على الأقل.';
     }
     return e.message;
   }

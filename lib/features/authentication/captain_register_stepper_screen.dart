@@ -43,6 +43,8 @@ class _CaptainRegisterStepperScreenState
   // Step 1 Controllers
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   String _selectedCity = 'نواكشوط';
   final _addressController = TextEditingController();
   final _dobController = TextEditingController(text: '1990-01-01');
@@ -75,6 +77,8 @@ class _CaptainRegisterStepperScreenState
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _addressController.dispose();
     _dobController.dispose();
     _carBrandController.dispose();
@@ -106,10 +110,10 @@ class _CaptainRegisterStepperScreenState
   Future<void> _sendOtpAndVerify() async {
     setState(() => _isSubmitting = true);
     try {
-      await _authRepository.sendPhoneOtp(
+      await _authRepository.signUpWithPassword(
         phone: _fullPhone,
+        password: _passwordController.text,
         fullName: _nameController.text.trim(),
-        role: 'captain',
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -228,7 +232,7 @@ class _CaptainRegisterStepperScreenState
                             });
                             try {
                               final profile = await _authRepository
-                                  .verifyPhoneOtp(
+                                  .verifySignUpOtp(
                                     phone: _fullPhone,
                                     code: codeController.text.trim(),
                                   );
@@ -290,6 +294,11 @@ class _CaptainRegisterStepperScreenState
       error = 'الرجاء إدخال الاسم الكامل';
     } else if (_phoneController.text.trim().length < 8) {
       error = 'الرجاء إدخال رقم هاتف صحيح';
+    } else if (!_phoneVerified && _passwordController.text.length < 6) {
+      error = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+    } else if (!_phoneVerified &&
+        _passwordController.text != _confirmPasswordController.text) {
+      error = 'كلمتا المرور غير متطابقتين';
     }
 
     if (error != null) {
@@ -644,6 +653,29 @@ class _CaptainRegisterStepperScreenState
                 ),
               ),
             ],
+          ),
+        ] else ...[
+          const SizedBox(height: 16),
+          _buildTextField(
+            'كلمة المرور',
+            _passwordController,
+            obscure: true,
+            hint: '6 أحرف على الأقل',
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(
+            'تأكيد كلمة المرور',
+            _confirmPasswordController,
+            obscure: true,
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'ستستخدم رقم هاتفك وكلمة المرور هذه لتسجيل الدخول لاحقًا.',
+            style: TextStyle(
+              fontSize: 11,
+              color: AppColors.secondaryText,
+              fontFamily: 'Cairo',
+            ),
           ),
         ],
         const SizedBox(height: 16),
