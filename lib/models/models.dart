@@ -129,6 +129,10 @@ class Trip {
   final double? netEarnings;
   final double? commission;
   final String? cancellationReason;
+  // True when this trip was claimed from a real customer request in the
+  // `rides` Supabase table (as opposed to the local demo/browse flows), so
+  // status changes should be written back to that row.
+  final bool isRemote;
 
   Trip({
     required this.id,
@@ -157,6 +161,7 @@ class Trip {
     this.netEarnings,
     this.commission,
     this.cancellationReason,
+    this.isRemote = false,
   });
 
   String get carTypeNameArabic {

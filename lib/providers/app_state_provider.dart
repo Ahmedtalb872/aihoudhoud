@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
 import '../dummy_data/dummy_data.dart';
 import '../core/supabase/auth_repository.dart';
@@ -50,9 +52,12 @@ class AppStateProvider extends ChangeNotifier {
   // Trip history
   final List<Trip> _captainTripHistory = List.from(DummyData.dummyCaptainTrips);
 
-  // Captain incoming request state (when captain is online, show mock incoming requests)
+  // Captain incoming request state: sourced live from the `rides` table
+  // (real requests created by the customer app), while the captain is online.
   Trip? _incomingRequest;
-  Timer? _incomingRequestTimer;
+  StreamSubscription<List<Map<String, dynamic>>>? _pendingRidesSubscription;
+  List<Map<String, dynamic>> _lastPendingRides = [];
+  final Set<String> _ignoredRideIds = {};
 
   // Getters
   bool get isLoggedIn => _isLoggedIn;
@@ -134,8 +139,9 @@ class AppStateProvider extends ChangeNotifier {
     _captainEmail = '';
     _activeTrip = null;
     _isSearching = false;
+    _isCaptainOnline = false;
     _countdownTimer?.cancel();
-    _incomingRequestTimer?.cancel();
+    _unsubscribeFromPendingRides();
     _openRideTicker?.cancel();
     _openRideStartTime = null;
     _openRideLastMovementTime = null;
@@ -150,10 +156,10 @@ class AppStateProvider extends ChangeNotifier {
     _isCaptainOnline = !_isCaptainOnline;
     if (!_isCaptainOnline) {
       _incomingRequest = null;
-      _incomingRequestTimer?.cancel();
+      _countdownTimer?.cancel();
+      _unsubscribeFromPendingRides();
     } else {
-      // Simulate an incoming request after 5 seconds if online
-      _startSimulatedIncomingRequest();
+      _subscribeToPendingRides();
     }
     notifyListeners();
   }
@@ -278,90 +284,186 @@ class AppStateProvider extends ChangeNotifier {
     }
   }
 
-  // Captain Trip Booking Lifecycle (incoming requests while online)
-  void _startSimulatedIncomingRequest() {
-    _incomingRequestTimer?.cancel();
-    _incomingRequestTimer = Timer(const Duration(seconds: 4), () {
-      if (_isCaptainOnline && _activeTrip == null && _incomingRequest == null) {
-        _countdownSeconds = 45;
-        _incomingRequest = Trip(
-          id: 'trip_incoming_${DateTime.now().millisecondsSinceEpoch}',
-          customerName: 'فاطمة منت محمد',
-          customerPhone: '+22247777777',
-          pickupLocation: 'تفرغ زينة (سوبرماركت النخيل)',
-          pickupLat: 18.1065,
-          pickupLng: -15.9664,
-          distance: 6.8,
-          duration: 15,
-          price: 220.0,
-          paymentMethod: 'نقداً',
-          status: TripStatus.searching,
-          carType: VehicleType.economy,
-          isOpenRide: true,
-          openRideTimeout: 45,
-          date: DateTime.now().toString().substring(0, 16),
-        );
-        notifyListeners();
-        NewTripAlert.play(
-          customerName: _incomingRequest!.customerName,
-          pickup: _incomingRequest!.pickupLocation,
-        );
-
-        // Count down for captain accept
-        _countdownTimer?.cancel();
-        _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-          if (_countdownSeconds > 0) {
-            _countdownSeconds--;
-            notifyListeners();
-          } else {
-            timer.cancel();
-            _incomingRequest = null;
-            notifyListeners();
-          }
+  // Captain Trip Booking Lifecycle (real incoming requests while online,
+  // sourced live from the `rides` table via Supabase Realtime).
+  void _subscribeToPendingRides() {
+    _pendingRidesSubscription?.cancel();
+    _pendingRidesSubscription = Supabase.instance.client
+        .from('rides')
+        .stream(primaryKey: ['id'])
+        .eq('status', 'pending')
+        .order('created_at', ascending: true)
+        .listen((rows) {
+          _lastPendingRides = rows;
+          _maybeShowNextPendingRide();
         });
+  }
+
+  void _unsubscribeFromPendingRides() {
+    _pendingRidesSubscription?.cancel();
+    _pendingRidesSubscription = null;
+    _lastPendingRides = [];
+    _ignoredRideIds.clear();
+  }
+
+  void _maybeShowNextPendingRide() {
+    if (!_isCaptainOnline || _activeTrip != null || _incomingRequest != null) {
+      return;
+    }
+    for (final row in _lastPendingRides) {
+      final id = row['id'] as String;
+      if (row['driver_id'] == null && !_ignoredRideIds.contains(id)) {
+        _showPendingRide(row);
+        return;
+      }
+    }
+  }
+
+  Future<void> _showPendingRide(Map<String, dynamic> row) async {
+    final String rideId = row['id'] as String;
+    String customerName = 'زبون جديد';
+    String customerPhone = '';
+    try {
+      final profile = await Supabase.instance.client
+          .from('profiles')
+          .select('full_name, phone')
+          .eq('id', row['customer_id'])
+          .single();
+      final name = profile['full_name'] as String?;
+      final phone = profile['phone'] as String?;
+      if (name != null && name.isNotEmpty) customerName = name;
+      if (phone != null && phone.isNotEmpty) customerPhone = phone;
+    } catch (_) {
+      // Fall back to the generic label if the profile can't be read.
+    }
+
+    // The captain may have gone offline, or picked up another trip, while
+    // the profile lookup above was in flight.
+    if (!_isCaptainOnline || _activeTrip != null || _incomingRequest != null) {
+      return;
+    }
+
+    final pickupLat = (row['pickup_lat'] as num).toDouble();
+    final pickupLng = (row['pickup_lng'] as num).toDouble();
+    final dropLat = (row['dropoff_lat'] as num).toDouble();
+    final dropLng = (row['dropoff_lng'] as num).toDouble();
+    final distanceKm =
+        Geolocator.distanceBetween(pickupLat, pickupLng, dropLat, dropLng) /
+        1000;
+    // No routing engine available yet: roughly estimate 2 minutes per km.
+    final durationMin = (distanceKm * 2).round().clamp(1, 999);
+    final price = (row['price_estimate'] as num?)?.toDouble() ?? 0.0;
+
+    _countdownSeconds = 45;
+    _incomingRequest = Trip(
+      id: rideId,
+      customerName: customerName,
+      customerPhone: customerPhone,
+      pickupLocation: row['pickup_address'] as String? ?? 'موقع الانطلاق',
+      destinationLocation: row['dropoff_address'] as String?,
+      pickupLat: pickupLat,
+      pickupLng: pickupLng,
+      destLat: dropLat,
+      destLng: dropLng,
+      distance: distanceKm,
+      duration: durationMin,
+      price: price,
+      paymentMethod: 'نقداً',
+      status: TripStatus.searching,
+      carType: VehicleType.economy,
+      isOpenRide: false,
+      openRideTimeout: 45,
+      date: DateTime.now().toString().substring(0, 16),
+      isRemote: true,
+    );
+    notifyListeners();
+    NewTripAlert.play(
+      customerName: customerName,
+      pickup: _incomingRequest!.pickupLocation,
+    );
+
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_countdownSeconds > 0) {
+        _countdownSeconds--;
+        notifyListeners();
+      } else {
+        timer.cancel();
+        if (_incomingRequest?.id == rideId) {
+          _ignoredRideIds.add(rideId);
+          _incomingRequest = null;
+          notifyListeners();
+          _maybeShowNextPendingRide();
+        }
       }
     });
   }
 
-  void acceptIncomingRequest() {
+  Future<void> acceptIncomingRequest() async {
     _countdownTimer?.cancel();
-    if (_incomingRequest != null) {
-      _activeTrip = Trip(
-        id: _incomingRequest!.id,
-        customerName: _incomingRequest!.customerName,
-        customerPhone: _incomingRequest!.customerPhone,
-        captainName: _captainName,
-        captainPhone: _captainPhone,
-        vehicleName:
-            '${DummyData.dummyCaptain.vehicle.brand} ${DummyData.dummyCaptain.vehicle.model} ${DummyData.dummyCaptain.vehicle.year}',
-        vehiclePlate: DummyData.dummyCaptain.vehicle.plate,
-        pickupLocation: _incomingRequest!.pickupLocation,
-        destinationLocation: _incomingRequest!.destinationLocation,
-        pickupLat: _incomingRequest!.pickupLat,
-        pickupLng: _incomingRequest!.pickupLng,
-        destLat: _incomingRequest!.destLat,
-        destLng: _incomingRequest!.destLng,
-        distance: _incomingRequest!.distance,
-        duration: _incomingRequest!.duration,
-        price: _incomingRequest!.price,
-        paymentMethod: _incomingRequest!.paymentMethod,
-        status: TripStatus.accepted,
-        carType: _incomingRequest!.carType,
-        isOpenRide: _incomingRequest!.isOpenRide,
-        openRideTimeout: _incomingRequest!.openRideTimeout,
-        date: _incomingRequest!.date,
-      );
-      _incomingRequest = null;
-      notifyListeners();
+    final request = _incomingRequest;
+    if (request == null) return;
+    _incomingRequest = null;
+    notifyListeners();
+
+    if (request.isRemote) {
+      final uid = _userId;
+      if (uid == null) return;
+      try {
+        final claimed = await Supabase.instance.client
+            .from('rides')
+            .update({'driver_id': uid, 'status': 'accepted'})
+            .eq('id', request.id)
+            .eq('status', 'pending')
+            .select();
+        if (claimed.isEmpty) {
+          // Another captain claimed it first; move on to the next request.
+          _maybeShowNextPendingRide();
+          return;
+        }
+      } catch (_) {
+        _maybeShowNextPendingRide();
+        return;
+      }
     }
+
+    _activeTrip = Trip(
+      id: request.id,
+      customerName: request.customerName,
+      customerPhone: request.customerPhone,
+      captainName: _captainName,
+      captainPhone: _captainPhone,
+      vehicleName:
+          '${DummyData.dummyCaptain.vehicle.brand} ${DummyData.dummyCaptain.vehicle.model} ${DummyData.dummyCaptain.vehicle.year}',
+      vehiclePlate: DummyData.dummyCaptain.vehicle.plate,
+      pickupLocation: request.pickupLocation,
+      destinationLocation: request.destinationLocation,
+      pickupLat: request.pickupLat,
+      pickupLng: request.pickupLng,
+      destLat: request.destLat,
+      destLng: request.destLng,
+      distance: request.distance,
+      duration: request.duration,
+      price: request.price,
+      paymentMethod: request.paymentMethod,
+      status: TripStatus.accepted,
+      carType: request.carType,
+      isOpenRide: request.isOpenRide,
+      openRideTimeout: request.openRideTimeout,
+      date: request.date,
+      isRemote: request.isRemote,
+    );
+    notifyListeners();
   }
 
   void ignoreIncomingRequest() {
     _countdownTimer?.cancel();
+    if (_incomingRequest != null) {
+      _ignoredRideIds.add(_incomingRequest!.id);
+    }
     _incomingRequest = null;
     notifyListeners();
-    // Simulate another request later
-    _startSimulatedIncomingRequest();
+    _maybeShowNextPendingRide();
   }
 
   void captainArriveAtPickup() {
@@ -374,6 +476,9 @@ class AppStateProvider extends ChangeNotifier {
   void captainStartActiveTrip() {
     if (_activeTrip != null && _activeTrip!.status == TripStatus.arrived) {
       _activeTrip!.status = TripStatus.started;
+      if (_activeTrip!.isRemote) {
+        _updateRemoteRideStatus(_activeTrip!.id, 'in_progress');
+      }
       if (_activeTrip!.isOpenRide) {
         _openRideStartTime = DateTime.now();
         _openRideLastMovementTime = DateTime.now();
@@ -393,8 +498,22 @@ class AppStateProvider extends ChangeNotifier {
     if (_activeTrip != null &&
         _activeTrip!.status == TripStatus.started &&
         !_activeTrip!.isOpenRide) {
+      if (_activeTrip!.isRemote) {
+        _updateRemoteRideStatus(_activeTrip!.id, 'completed');
+      }
       _finalizeCompletedTrip(_activeTrip!.price);
     }
+  }
+
+  // Fire-and-forget: keeps the customer app's copy of the ride in sync.
+  // Local captain state has already moved on by the time this resolves, so
+  // failures here don't need to roll anything back - just log and continue.
+  void _updateRemoteRideStatus(String rideId, String status) {
+    Supabase.instance.client
+        .from('rides')
+        .update({'status': status})
+        .eq('id', rideId)
+        .catchError((_) {});
   }
 
   // Ends an open ride: there's no destination to arrive at, so the captain
@@ -508,6 +627,10 @@ class AppStateProvider extends ChangeNotifier {
   void captainCancelActiveTrip(String reason) {
     if (_activeTrip == null) return;
 
+    if (_activeTrip!.isRemote) {
+      _updateRemoteRideStatus(_activeTrip!.id, 'cancelled');
+    }
+
     final cancelledTrip = Trip(
       id: _activeTrip!.id,
       customerName: _activeTrip!.customerName,
@@ -549,18 +672,14 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
 
     // Ready for the next request if still online
-    if (_isCaptainOnline) {
-      _startSimulatedIncomingRequest();
-    }
+    _maybeShowNextPendingRide();
   }
 
   void confirmCaptainSummary() {
     _activeTrip = null;
     notifyListeners();
     // Ready for next request if online
-    if (_isCaptainOnline) {
-      _startSimulatedIncomingRequest();
-    }
+    _maybeShowNextPendingRide();
   }
 
   // Wallet operations
@@ -635,7 +754,7 @@ class AppStateProvider extends ChangeNotifier {
   @override
   void dispose() {
     _countdownTimer?.cancel();
-    _incomingRequestTimer?.cancel();
+    _pendingRidesSubscription?.cancel();
     _openRideTicker?.cancel();
     super.dispose();
   }
