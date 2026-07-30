@@ -3,12 +3,14 @@ import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'core/supabase/supabase_config.dart';
+import 'core/services/new_trip_alert.dart';
 import 'providers/app_state_provider.dart';
 import 'features/onboarding/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SupabaseConfig.initialize();
+  await NewTripAlert.initialize();
   runApp(
     MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => AppStateProvider())],

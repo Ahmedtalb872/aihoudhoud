@@ -302,7 +302,10 @@ class AppStateProvider extends ChangeNotifier {
           date: DateTime.now().toString().substring(0, 16),
         );
         notifyListeners();
-        NewTripAlert.play();
+        NewTripAlert.play(
+          customerName: _incomingRequest!.customerName,
+          pickup: _incomingRequest!.pickupLocation,
+        );
 
         // Count down for captain accept
         _countdownTimer?.cancel();
