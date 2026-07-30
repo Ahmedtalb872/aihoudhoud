@@ -121,6 +121,13 @@ class AppStateProvider extends ChangeNotifier {
 
   bool get isOpenRideMeterActive => _openRideMeterActivatedAt != null;
 
+  // Time shown on the live "الوقت" stat: stays at zero until the meter
+  // actually activates (>3km or >5min idle), so nothing appears to be
+  // ticking/billing before that threshold is really met.
+  Duration get openRideMeterElapsed => _openRideMeterActivatedAt == null
+      ? Duration.zero
+      : DateTime.now().difference(_openRideMeterActivatedAt!);
+
   double get openRideFare {
     if (_openRideMeterActivatedAt == null) return openRideBaseFare;
     final minutesSinceActivation =

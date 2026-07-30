@@ -189,7 +189,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                           _buildStatChip(_distanceKm.toStringAsFixed(1), 'كم'),
                           const SizedBox(height: 8),
                           _buildStatChip(
-                            _formatElapsed(provider.openRideElapsed),
+                            _formatElapsed(provider.openRideMeterElapsed),
                             'الوقت',
                           ),
                         ],
