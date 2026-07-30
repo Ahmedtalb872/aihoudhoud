@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_repository.dart';
 import '../../providers/app_state_provider.dart';
-import '../authentication/captain_login_screen.dart';
 import '../captain/captain_home_screen.dart';
+import 'auth_choice_screen.dart';
 import 'pending_review_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -45,7 +45,7 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _resumeSessionOrLogin() async {
-    Widget destination = const CaptainLoginScreen();
+    Widget destination = const AuthChoiceScreen();
 
     final currentUser = AuthRepository().currentUser;
     if (currentUser != null) {

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
-import '../authentication/captain_login_screen.dart';
+import '../onboarding/auth_choice_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -62,7 +62,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final provider = Provider.of<AppStateProvider>(context, listen: false);
     provider.logout();
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const CaptainLoginScreen()),
+      MaterialPageRoute(builder: (context) => const AuthChoiceScreen()),
       (route) => false,
     );
   }

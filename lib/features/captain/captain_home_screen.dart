@@ -10,7 +10,7 @@ import '../wallet/wallet_screen.dart';
 import '../profile/profile_screen.dart';
 import 'captain_active_trip_screen.dart';
 import 'leaderboard_screen.dart';
-import '../authentication/captain_login_screen.dart';
+import '../onboarding/auth_choice_screen.dart';
 import '../../dummy_data/dummy_data.dart';
 
 class CaptainHomeScreen extends StatefulWidget {
@@ -719,7 +719,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
               provider.logout();
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(
-                  builder: (context) => const CaptainLoginScreen(),
+                  builder: (context) => const AuthChoiceScreen(),
                 ),
                 (route) => false,
               );
