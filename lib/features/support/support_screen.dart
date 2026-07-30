@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/colors.dart';
+import '../../core/services/phone_caller.dart';
+import '../../core/services/whatsapp_support.dart';
 
 class SupportScreen extends StatelessWidget {
   final bool showAppBar;
@@ -80,17 +82,8 @@ class SupportScreen extends StatelessWidget {
                           icon: Icons.call_outlined,
                           label: 'اتصال هاتفي',
                           color: AppColors.success,
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'جاري الاتصال بخدمة العملاء الموحدة...',
-                                  style: TextStyle(fontFamily: 'Cairo'),
-                                ),
-                                backgroundColor: AppColors.success,
-                              ),
-                            );
-                          },
+                          onTap: () =>
+                              PhoneCaller.call('+${WhatsAppSupport.supportPhone}'),
                         ),
                         const SizedBox(width: 12),
                         _buildContactChannel(

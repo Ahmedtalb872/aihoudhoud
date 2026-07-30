@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
+import '../../core/services/phone_caller.dart';
 
 class ChatScreen extends StatefulWidget {
   final bool showAppBar;
@@ -54,67 +55,12 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollToBottom();
   }
 
-  void _simulateCall() {
+  void _call() {
     final provider = Provider.of<AppStateProvider>(context, listen: false);
-    final targetName = provider.activeTrip?.customerName ?? 'الزبون';
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
-          ),
-          title: const Text(
-            'اتصال هاتفي',
-            style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircleAvatar(
-                radius: 36,
-                backgroundColor: AppColors.primary,
-                child: Icon(Icons.person, size: 40, color: Colors.white),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'جاري الاتصال بـ $targetName...',
-                style: const TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'سيتم فتح تطبيق الاتصال الافتراضي في جهازك.',
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 12,
-                  color: AppColors.secondaryText,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-          actions: [
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: () => Navigator.of(context).pop(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error,
-                ),
-                icon: const Icon(Icons.call_end_rounded),
-                label: const Text('إنهاء المكالمة'),
-              ),
-            ),
-          ],
-        );
-      },
-    );
+    final phone = provider.activeTrip?.customerPhone;
+    if (phone != null && phone.isNotEmpty) {
+      PhoneCaller.call(phone);
+    }
   }
 
   @override
@@ -165,7 +111,7 @@ class _ChatScreenState extends State<ChatScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.call_rounded, color: AppColors.primary),
-            onPressed: _simulateCall,
+            onPressed: _call,
           ),
           const SizedBox(width: 8),
         ],

@@ -4,6 +4,7 @@ import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
 import '../../models/models.dart';
 import '../../core/widgets/real_map_widget.dart';
+import '../../core/services/phone_caller.dart';
 import '../support/chat_screen.dart';
 import 'captain_trip_summary_screen.dart';
 import 'open_ride_active_screen.dart';
@@ -11,41 +12,6 @@ import 'cancel_trip_dialog.dart';
 
 class CaptainActiveTripScreen extends StatelessWidget {
   const CaptainActiveTripScreen({super.key});
-
-  void _simulateCall(BuildContext context, String name) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
-          ),
-          title: const Text(
-            'اتصال هاتفي',
-            style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
-          ),
-          content: Text(
-            'جاري الاتصال بـ $name...\n(+222 44444444)',
-            style: const TextStyle(fontFamily: 'Cairo', fontSize: 14),
-            textAlign: TextAlign.center,
-          ),
-          actions: [
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: () => Navigator.of(context).pop(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error,
-                ),
-                icon: const Icon(Icons.call_end_rounded),
-                label: const Text('إنهاء المكالمة'),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -309,8 +275,7 @@ class CaptainActiveTripScreen extends StatelessWidget {
                           color: AppColors.primary,
                           size: 20,
                         ),
-                        onPressed: () =>
-                            _simulateCall(context, trip.customerName),
+                        onPressed: () => PhoneCaller.call(trip.customerPhone),
                       ),
                     ],
                   ),

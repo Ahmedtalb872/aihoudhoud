@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
 import '../../core/widgets/real_map_widget.dart';
+import '../../core/services/phone_caller.dart';
 import '../support/chat_screen.dart';
 import 'cancel_trip_dialog.dart';
 
@@ -85,41 +86,6 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
   void dispose() {
     _positionSub?.cancel();
     super.dispose();
-  }
-
-  void _simulateCall(String name) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
-          ),
-          title: const Text(
-            'اتصال هاتفي',
-            style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
-          ),
-          content: Text(
-            'جاري الاتصال بـ $name...',
-            style: const TextStyle(fontFamily: 'Cairo', fontSize: 14),
-            textAlign: TextAlign.center,
-          ),
-          actions: [
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: () => Navigator.of(context).pop(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error,
-                ),
-                icon: const Icon(Icons.call_end_rounded),
-                label: const Text('إنهاء المكالمة'),
-              ),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   String _formatElapsed(Duration d) {
@@ -371,7 +337,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                           color: AppColors.primary,
                           size: 20,
                         ),
-                        onPressed: () => _simulateCall(trip.customerName),
+                        onPressed: () => PhoneCaller.call(trip.customerPhone),
                       ),
                     ],
                   ),
