@@ -600,11 +600,12 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                 fontFamily: 'Cairo',
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
+                color: AppColors.darkText,
               ),
             ),
             accountEmail: Text(
               provider.captainPhone,
-              style: const TextStyle(fontSize: 13),
+              style: const TextStyle(fontSize: 13, color: AppColors.darkText),
             ),
           ),
 

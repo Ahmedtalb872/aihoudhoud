@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const Color primary = Color(0xFF0B8F87);
-  static const Color primaryDark = Color(0xFF086B65);
+  // Brand gold from the الهدهد logo. Text/icons placed on top of a primary
+  // fill use darkText (not white) for contrast - gold is too light for white
+  // text to read well on. primaryDark is a deeper gold for text/borders/
+  // icons sitting on white backgrounds, where the bright primary itself
+  // would be too low-contrast.
+  static const Color primary = Color(0xFFED9E35);
+  static const Color primaryDark = Color(0xFFA6650C);
   static const Color secondary = Color(0xFF14B8A6);
   static const Color accent = Color(0xFFFFC107);
   static const Color background = Color(0xFFF8FAFC);
