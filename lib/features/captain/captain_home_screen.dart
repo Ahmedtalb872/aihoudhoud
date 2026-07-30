@@ -10,6 +10,7 @@ import '../wallet/wallet_screen.dart';
 import '../profile/profile_screen.dart';
 import 'open_trips_screen.dart';
 import 'captain_active_trip_screen.dart';
+import 'leaderboard_screen.dart';
 import '../authentication/captain_login_screen.dart';
 import '../../dummy_data/dummy_data.dart';
 
@@ -688,6 +689,24 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
               setState(() {
                 _currentIndex = 3; // Wallet tab
               });
+            },
+          ),
+          ListTile(
+            leading: const Icon(
+              Icons.emoji_events_rounded,
+              color: AppColors.primary,
+            ),
+            title: const Text(
+              'المسابقات وترتيب الكباتنة',
+              style: TextStyle(fontFamily: 'Cairo'),
+            ),
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const LeaderboardScreen(),
+                ),
+              );
             },
           ),
           ListTile(
