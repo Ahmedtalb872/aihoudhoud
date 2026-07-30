@@ -34,7 +34,6 @@ class _CaptainRegisterStepperScreenState
     extends State<CaptainRegisterStepperScreen> {
   final _authRepository = AuthRepository();
   int _currentStep = 1;
-  bool _isSuccess = false;
   bool _isSubmitting = false;
   bool _termsApproved = false;
   bool _phoneVerified = false;
@@ -452,19 +451,21 @@ class _CaptainRegisterStepperScreenState
       }
 
       if (!mounted) return;
-      setState(() => _isSuccess = true);
-      if (documentsWarning != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              documentsWarning,
-              style: const TextStyle(fontFamily: 'Cairo'),
-            ),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
+      final provider = Provider.of<AppStateProvider>(context, listen: false);
+      provider.loginFromProfile(profile, _fullPhone);
+
+      // A brand-new captain is never pre-approved, so this always lands on
+      // the pending-review screen - there is no "continue into the app"
+      // button to skip past admin approval.
+      final approved = profile['is_approved'] as bool? ?? false;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => approved
+              ? const PermissionsScreen(destination: CaptainHomeScreen())
+              : PendingReviewScreen(uploadWarning: documentsWarning),
+        ),
+        (route) => false,
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -476,10 +477,6 @@ class _CaptainRegisterStepperScreenState
 
   @override
   Widget build(BuildContext context) {
-    if (_isSuccess) {
-      return _buildSuccessScreen();
-    }
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -1329,108 +1326,4 @@ class _CaptainRegisterStepperScreenState
     );
   }
 
-  Widget _buildSuccessScreen() {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check_circle_rounded,
-                  color: AppColors.success,
-                  size: 80,
-                ),
-              ),
-              const SizedBox(height: 32),
-              const Text(
-                'تم إرسال طلبك بنجاح!',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.darkText,
-                  fontFamily: 'Cairo',
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: const Text(
-                  'حالة الطلب: قيد المراجعة',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.warning,
-                    fontFamily: 'Cairo',
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'سيتم مراجعة حسابك ومستنداتك وتفعيل الحساب من قبل الإدارة في أقرب وقت. ستتلقى إشعاراً فور تفعيل الحساب.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.secondaryText,
-                  fontFamily: 'Cairo',
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const Spacer(),
-
-              ElevatedButton(
-                onPressed: () {
-                  final provider = Provider.of<AppStateProvider>(
-                    context,
-                    listen: false,
-                  );
-                  if (_registeredProfile != null) {
-                    provider.loginFromProfile(_registeredProfile!, _fullPhone);
-                  }
-
-                  final approved =
-                      _registeredProfile?['is_approved'] as bool? ?? false;
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(
-                      builder: (context) => approved
-                          ? const PermissionsScreen(
-                              destination: CaptainHomeScreen(),
-                            )
-                          : const PendingReviewScreen(),
-                    ),
-                    (route) => false,
-                  );
-                },
-                child: const Text('متابعة'),
-              ),
-              const SizedBox(height: 12),
-
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                },
-                child: const Text('الرجوع إلى البداية'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

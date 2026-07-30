@@ -3,17 +3,20 @@ import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_exception.dart';
 import '../../core/supabase/auth_repository.dart';
+import '../../core/services/whatsapp_support.dart';
 import '../../providers/app_state_provider.dart';
 import '../captain/captain_home_screen.dart';
 import 'permissions_screen.dart';
 import 'splash_screen.dart';
 
 /// Shown after registration (and on every login) while a captain's account
-/// is not yet approved by an admin. Lets the captain re-check their status
-/// without needing an email from Supabase - approval happens by an admin
+/// is not yet approved by an admin. There is deliberately no way to skip
+/// past this screen into the app - only a status refresh, a WhatsApp
+/// contact button for delays, and logout. Approval happens by an admin
 /// flipping `profiles.is_approved` from the Supabase Table Editor.
 class PendingReviewScreen extends StatefulWidget {
-  const PendingReviewScreen({super.key});
+  final String? uploadWarning;
+  const PendingReviewScreen({super.key, this.uploadWarning});
 
   @override
   State<PendingReviewScreen> createState() => _PendingReviewScreenState();
@@ -22,6 +25,26 @@ class PendingReviewScreen extends StatefulWidget {
 class _PendingReviewScreenState extends State<PendingReviewScreen> {
   final _authRepository = AuthRepository();
   bool _isChecking = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.uploadWarning != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.uploadWarning!,
+              style: const TextStyle(fontFamily: 'Cairo'),
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      });
+    }
+  }
 
   Future<void> _checkStatus() async {
     setState(() => _isChecking = true);
@@ -98,7 +121,7 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
               ),
               const SizedBox(height: 28),
               const Text(
-                'طلبك قيد المراجعة',
+                'جاري تأكد من حسابك',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -130,6 +153,18 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
                       )
                     : const Icon(Icons.refresh_rounded),
                 label: const Text('تحديث الحالة'),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () => WhatsAppSupport.contactSupport(
+                  message: 'السلام عليكم، تأخر تفعيل حساب الكابتن الخاص بي.',
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF25D366),
+                  side: const BorderSide(color: Color(0xFF25D366)),
+                ),
+                icon: const Icon(Icons.chat_rounded),
+                label: const Text('تأخر التفعيل؟ تواصل معنا على واتساب'),
               ),
               const SizedBox(height: 8),
               TextButton(
