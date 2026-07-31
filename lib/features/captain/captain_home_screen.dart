@@ -32,6 +32,12 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
   String? _distanceTripId;
   double? _distanceFromCaptainKm;
 
+  // Tracks which active trip we've already pushed CaptainActiveTripScreen
+  // for, so a rebuild (e.g. every second from the open-ride fare ticker)
+  // doesn't push a new copy of the screen on top of the navigation stack
+  // each time.
+  String? _pushedActiveTripId;
+
   Future<void> _loadDistanceFromCaptain(Trip trip) async {
     _distanceTripId = trip.id;
     try {
@@ -71,12 +77,16 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
       const ProfileScreen(showAppBar: false),
     ];
 
-    // Auto navigate to active trip screen if captain has accepted a trip
+    // Auto navigate to active trip screen if captain has accepted a trip -
+    // only once per trip, not on every rebuild (the fare ticker alone
+    // notifies listeners once a second while an open ride is running).
     if (provider.activeTrip != null &&
+        _pushedActiveTripId != provider.activeTrip!.id &&
         (provider.activeTrip!.status == TripStatus.accepted ||
             provider.activeTrip!.status == TripStatus.enRoute ||
             provider.activeTrip!.status == TripStatus.arrived ||
             provider.activeTrip!.status == TripStatus.started)) {
+      _pushedActiveTripId = provider.activeTrip!.id;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.of(context).push(
           MaterialPageRoute(
@@ -84,6 +94,8 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
           ),
         );
       });
+    } else if (provider.activeTrip == null) {
+      _pushedActiveTripId = null;
     }
 
     return Scaffold(
