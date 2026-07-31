@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
 import '../../models/models.dart';
@@ -24,6 +25,38 @@ class CaptainHomeScreen extends StatefulWidget {
 class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
   int _currentIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // Captain's live distance to the pickup point of the current incoming
+  // request, fetched once per request (not on every rebuild).
+  String? _distanceTripId;
+  double? _distanceFromCaptainKm;
+
+  Future<void> _loadDistanceFromCaptain(Trip trip) async {
+    _distanceTripId = trip.id;
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return;
+      }
+      final position = await Geolocator.getCurrentPosition();
+      final meters = Geolocator.distanceBetween(
+        position.latitude,
+        position.longitude,
+        trip.pickupLat,
+        trip.pickupLng,
+      );
+      if (!mounted || _distanceTripId != trip.id) return;
+      setState(() => _distanceFromCaptainKm = meters / 1000);
+    } catch (_) {
+      // No GPS available; the distance line just stays hidden.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -365,6 +398,10 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
 
   Widget _buildIncomingRequestOverlay(AppStateProvider provider) {
     final trip = provider.incomingRequest!;
+    if (_distanceTripId != trip.id) {
+      _distanceFromCaptainKm = null;
+      _loadDistanceFromCaptain(trip);
+    }
 
     return Positioned.fill(
       child: Container(
@@ -411,6 +448,9 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                   _buildRouteRow(
                     AppColors.success,
                     trip.pickupLocation,
+                    trailing: _distanceFromCaptainKm == null
+                        ? null
+                        : 'يبعد عنك ${_distanceFromCaptainKm!.toStringAsFixed(1)} كم',
                   ),
                   const SizedBox(height: 6),
                   _buildRouteRow(
@@ -527,7 +567,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
     );
   }
 
-  Widget _buildRouteRow(Color dotColor, String text) {
+  Widget _buildRouteRow(Color dotColor, String text, {String? trailing}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -550,6 +590,17 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
             overflow: TextOverflow.ellipsis,
           ),
         ),
+        if (trailing != null) ...[
+          const SizedBox(width: 8),
+          Text(
+            trailing,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.secondaryText,
+              fontFamily: 'Cairo',
+            ),
+          ),
+        ],
       ],
     );
   }
