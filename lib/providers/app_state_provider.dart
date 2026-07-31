@@ -343,18 +343,27 @@ class AppStateProvider extends ChangeNotifier {
     final String tripId = row['id'] as String;
     String customerName = 'زبون جديد';
     String customerPhone = '';
-    try {
-      final profile = await Supabase.instance.client
-          .from('profiles')
-          .select('full_name, phone')
-          .eq('id', row['customer_id'])
-          .single();
-      final name = profile['full_name'] as String?;
-      final phone = profile['phone'] as String?;
-      if (name != null && name.isNotEmpty) customerName = name;
-      if (phone != null && phone.isNotEmpty) customerPhone = phone;
-    } catch (_) {
-      // Fall back to the generic label if the profile can't be read.
+    if (row['customer_id'] != null) {
+      try {
+        final profile = await Supabase.instance.client
+            .from('profiles')
+            .select('full_name, phone')
+            .eq('id', row['customer_id'])
+            .single();
+        final name = profile['full_name'] as String?;
+        final phone = profile['phone'] as String?;
+        if (name != null && name.isNotEmpty) customerName = name;
+        if (phone != null && phone.isNotEmpty) customerPhone = phone;
+      } catch (_) {
+        // Fall back to the generic label if the profile can't be read.
+      }
+    }
+    // Guest customers (no account) have their number on the trip itself.
+    if (customerPhone.isEmpty) {
+      final guestPhone = row['guest_customer_phone'] as String?;
+      if (guestPhone != null && guestPhone.isNotEmpty) {
+        customerPhone = guestPhone;
+      }
     }
 
     // The captain may have gone offline, or picked up another trip, while
