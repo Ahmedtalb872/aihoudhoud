@@ -7,6 +7,7 @@ import '../../models/models.dart';
 import '../../core/widgets/real_map_widget.dart';
 import '../../core/widgets/app_logo.dart';
 import '../../core/widgets/trip_progress_rail.dart';
+import '../../core/widgets/route_row.dart';
 import '../trips/my_trips_screen.dart';
 import '../wallet/wallet_screen.dart';
 import '../profile/profile_screen.dart';
@@ -445,17 +446,17 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                   const SizedBox(height: 16),
 
                   // Pickup & Destination
-                  _buildRouteRow(
-                    AppColors.success,
-                    trip.pickupLocation,
+                  RouteRow(
+                    dotColor: AppColors.success,
+                    text: trip.pickupLocation,
                     trailing: _distanceFromCaptainKm == null
                         ? null
                         : 'يبعد عنك ${_distanceFromCaptainKm!.toStringAsFixed(1)} كم',
                   ),
                   const SizedBox(height: 6),
-                  _buildRouteRow(
-                    AppColors.error,
-                    trip.destinationLocation ??
+                  RouteRow(
+                    dotColor: AppColors.error,
+                    text: trip.destinationLocation ??
                         'مشوار مفتوح (بدون وجهة محددة)',
                   ),
                   const SizedBox(height: 14),
@@ -564,44 +565,6 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
         color: emphasize ? AppColors.darkText : AppColors.secondaryText,
         fontFamily: 'Cairo',
       ),
-    );
-  }
-
-  Widget _buildRouteRow(Color dotColor, String text, {String? trailing}) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          margin: const EdgeInsets.only(left: 10),
-          decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
-        ),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: AppColors.darkText,
-              fontFamily: 'Cairo',
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        if (trailing != null) ...[
-          const SizedBox(width: 8),
-          Text(
-            trailing,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.secondaryText,
-              fontFamily: 'Cairo',
-            ),
-          ),
-        ],
-      ],
     );
   }
 

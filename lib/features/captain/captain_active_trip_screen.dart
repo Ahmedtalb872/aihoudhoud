@@ -5,6 +5,7 @@ import '../../providers/app_state_provider.dart';
 import '../../models/models.dart';
 import '../../core/widgets/real_map_widget.dart';
 import '../../core/widgets/trip_progress_rail.dart';
+import '../../core/widgets/route_row.dart';
 import '../../core/services/phone_caller.dart';
 import '../support/chat_screen.dart';
 import 'captain_trip_summary_screen.dart';
@@ -68,8 +69,6 @@ class CaptainActiveTripScreen extends StatelessWidget {
 
     // Determine state visual details
     String statusTitle = 'توجه إلى نقطة الانطلاق';
-    String addressLabel = 'موقع العميل (الالتقاء)';
-    String addressValue = trip.pickupLocation;
     String actionLabel = 'وصلت للزبون';
     IconData actionIcon = Icons.sports_motorsports_rounded;
     VoidCallback onAction = () => provider.captainArriveAtPickup();
@@ -77,15 +76,12 @@ class CaptainActiveTripScreen extends StatelessWidget {
 
     if (trip.status == TripStatus.arrived) {
       statusTitle = 'وصلت لموقع العميل';
-      addressLabel = 'موقع العميل (الانتظار)';
       actionLabel = 'بدء الرحلة الجارية';
       actionIcon = Icons.play_arrow_rounded;
       onAction = () => provider.captainStartActiveTrip();
       progressStep = 3;
     } else if (trip.status == TripStatus.started) {
       statusTitle = 'مشوار جاري الآن نحو الوجهة';
-      addressLabel = 'الوجهة المحددة للرحلة';
-      addressValue = trip.destinationLocation ?? 'غير محددة';
       actionLabel = 'إنهاء الرحلة بنجاح';
       actionIcon = Icons.flag_rounded;
       onAction = () => provider.captainCompleteActiveTrip();
@@ -180,46 +176,12 @@ class CaptainActiveTripScreen extends StatelessWidget {
                   TripProgressRail(step: progressStep),
                   const SizedBox(height: 20),
 
-                  // Address text box
-                  Row(
-                    children: [
-                      Icon(
-                        trip.status == TripStatus.started
-                            ? Icons.flag_rounded
-                            : Icons.radio_button_checked_rounded,
-                        color: trip.status == TripStatus.started
-                            ? AppColors.error
-                            : AppColors.success,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              addressLabel,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: AppColors.secondaryText,
-                                fontFamily: 'Cairo',
-                              ),
-                            ),
-                            Text(
-                              addressValue,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                                color: AppColors.darkText,
-                                fontFamily: 'Cairo',
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                  // Pickup & destination, each on its own line.
+                  RouteRow(dotColor: AppColors.success, text: trip.pickupLocation),
+                  const SizedBox(height: 6),
+                  RouteRow(
+                    dotColor: AppColors.error,
+                    text: trip.destinationLocation ?? 'غير محددة',
                   ),
                   const Divider(height: 24),
 
