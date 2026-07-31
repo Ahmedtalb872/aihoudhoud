@@ -450,6 +450,26 @@ class _CaptainRegisterStepperScreenState
         documentsWarning = e.message;
       }
 
+      final captainId = profile['id'] as String;
+      try {
+        await _authRepository.updateCaptainVehicleInfo(
+          captainId: captainId,
+          city: _selectedCity,
+          address: _addressController.text.trim(),
+          dateOfBirth: _dobController.text.trim(),
+          vehicleType: _carType,
+          vehicleBrand: _carBrandController.text.trim(),
+          vehicleModel: _carModelController.text.trim(),
+          vehicleYear: int.tryParse(_carYearController.text.trim()) ?? 2018,
+          vehicleColor: _carColorController.text.trim(),
+          vehiclePlate: _carPlateController.text.trim(),
+          vehicleSeats: _carSeats,
+        );
+      } on AppAuthException catch (_) {
+        // Non-fatal: the captain row still exists (bare) from sign-up: the
+        // vehicle details can be corrected later from the profile screen.
+      }
+
       if (!mounted) return;
       final provider = Provider.of<AppStateProvider>(context, listen: false);
       provider.loginFromProfile(profile, _fullPhone);
@@ -457,7 +477,14 @@ class _CaptainRegisterStepperScreenState
       // A brand-new captain is never pre-approved, so this always lands on
       // the pending-review screen - there is no "continue into the app"
       // button to skip past admin approval.
-      final approved = profile['is_approved'] as bool? ?? false;
+      bool approved = false;
+      try {
+        final captain = await _authRepository.getCaptain(captainId);
+        approved = captain['status'] == 'approved';
+      } on AppAuthException catch (_) {
+        // Fall back to "not approved" if the captain row can't be read yet.
+      }
+      if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => approved

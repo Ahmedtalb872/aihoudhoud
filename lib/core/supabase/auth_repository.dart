@@ -148,6 +148,69 @@ class AuthRepository {
     }
   }
 
+  /// The `captains` row for [captainId] - created automatically (bare) by
+  /// the sign-up trigger. `status` ('pending'/'approved'/'rejected'/
+  /// 'suspended') is the real approval gate, separate from
+  /// `profiles.is_approved`.
+  Future<Map<String, dynamic>> getCaptain(String captainId) async {
+    try {
+      return await _client
+          .from('captains')
+          .select()
+          .eq('id', captainId)
+          .single();
+    } on PostgrestException {
+      throw AppAuthException('تعذر تحميل بيانات حساب الكابتن.');
+    }
+  }
+
+  /// Fills in the vehicle/city/address/birth-date details collected during
+  /// registration on the bare `captains` row the sign-up trigger created.
+  Future<void> updateCaptainVehicleInfo({
+    required String captainId,
+    required String city,
+    required String address,
+    required String dateOfBirth,
+    required String vehicleType,
+    required String vehicleBrand,
+    required String vehicleModel,
+    required int vehicleYear,
+    required String vehicleColor,
+    required String vehiclePlate,
+    required int vehicleSeats,
+  }) async {
+    try {
+      await _client
+          .from('captains')
+          .update({
+            'city': city,
+            'address': address,
+            'date_of_birth': dateOfBirth,
+            'vehicle_type': vehicleType,
+            'vehicle_brand': vehicleBrand,
+            'vehicle_model': vehicleModel,
+            'vehicle_year': vehicleYear,
+            'vehicle_color': vehicleColor,
+            'vehicle_plate': vehiclePlate,
+            'vehicle_seats': vehicleSeats,
+          })
+          .eq('id', captainId);
+    } on PostgrestException {
+      throw AppAuthException('تعذر حفظ بيانات السيارة.');
+    }
+  }
+
+  Future<void> setCaptainOnline(String captainId, bool isOnline) async {
+    try {
+      await _client
+          .from('captains')
+          .update({'is_online': isOnline})
+          .eq('id', captainId);
+    } catch (_) {
+      // Best-effort - local online state still works even if this fails.
+    }
+  }
+
   Future<void> signOut() async {
     if (!SupabaseConfig.isReady) return;
     await _client.auth.signOut();

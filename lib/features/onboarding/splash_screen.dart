@@ -56,7 +56,13 @@ class _SplashScreenState extends State<SplashScreen>
             context,
             listen: false,
           ).loginFromProfile(profile, currentUser.phone ?? '');
-          final approved = profile['is_approved'] as bool? ?? false;
+          bool approved = false;
+          try {
+            final captain = await AuthRepository().getCaptain(currentUser.id);
+            approved = captain['status'] == 'approved';
+          } catch (_) {
+            // Fall back to "not approved".
+          }
           destination = approved
               ? const CaptainHomeScreen()
               : const PendingReviewScreen();

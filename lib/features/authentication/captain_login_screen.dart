@@ -69,7 +69,14 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
       final provider = Provider.of<AppStateProvider>(context, listen: false);
       provider.loginFromProfile(profile, _fullPhone);
 
-      final approved = profile['is_approved'] as bool? ?? false;
+      bool approved = false;
+      try {
+        final captain = await _authRepository.getCaptain(profile['id'] as String);
+        approved = captain['status'] == 'approved';
+      } on AppAuthException catch (_) {
+        // Fall back to "not approved".
+      }
+      if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => approved

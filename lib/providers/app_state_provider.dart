@@ -52,7 +52,7 @@ class AppStateProvider extends ChangeNotifier {
   // Trip history
   final List<Trip> _captainTripHistory = List.from(DummyData.dummyCaptainTrips);
 
-  // Captain incoming request state: sourced live from the `rides` table
+  // Captain incoming request state: sourced live from the `trips` table
   // (real requests created by the customer app), while the captain is online.
   Trip? _incomingRequest;
   StreamSubscription<List<Map<String, dynamic>>>? _pendingRidesSubscription;
@@ -167,6 +167,9 @@ class AppStateProvider extends ChangeNotifier {
       _unsubscribeFromPendingRides();
     } else {
       _subscribeToPendingRides();
+    }
+    if (_userId != null) {
+      AuthRepository().setCaptainOnline(_userId!, _isCaptainOnline);
     }
     notifyListeners();
   }
@@ -292,14 +295,15 @@ class AppStateProvider extends ChangeNotifier {
   }
 
   // Captain Trip Booking Lifecycle (real incoming requests while online,
-  // sourced live from the `rides` table via Supabase Realtime).
+  // sourced live from the `trips` table via Supabase Realtime - this is
+  // the table the customer app actually writes to; `rides` is unused).
   void _subscribeToPendingRides() {
     _pendingRidesSubscription?.cancel();
     _pendingRidesSubscription = Supabase.instance.client
-        .from('rides')
+        .from('trips')
         .stream(primaryKey: ['id'])
-        .eq('status', 'pending')
-        .order('created_at', ascending: true)
+        .eq('status', 'searching')
+        .order('requested_at', ascending: true)
         .listen((rows) {
           _lastPendingRides = rows;
           _maybeShowNextPendingRide();
@@ -313,13 +317,22 @@ class AppStateProvider extends ChangeNotifier {
     _ignoredRideIds.clear();
   }
 
+  bool _isIgnoredByMe(Map<String, dynamic> row) {
+    final ignoredBy = row['ignored_by'];
+    final uid = _userId;
+    if (uid == null || ignoredBy is! List) return false;
+    return ignoredBy.contains(uid);
+  }
+
   void _maybeShowNextPendingRide() {
     if (!_isCaptainOnline || _activeTrip != null || _incomingRequest != null) {
       return;
     }
     for (final row in _lastPendingRides) {
       final id = row['id'] as String;
-      if (row['driver_id'] == null && !_ignoredRideIds.contains(id)) {
+      if (row['captain_id'] == null &&
+          !_ignoredRideIds.contains(id) &&
+          !_isIgnoredByMe(row)) {
         _showPendingRide(row);
         return;
       }
@@ -327,7 +340,7 @@ class AppStateProvider extends ChangeNotifier {
   }
 
   Future<void> _showPendingRide(Map<String, dynamic> row) async {
-    final String rideId = row['id'] as String;
+    final String tripId = row['id'] as String;
     String customerName = 'زبون جديد';
     String customerPhone = '';
     try {
@@ -352,33 +365,49 @@ class AppStateProvider extends ChangeNotifier {
 
     final pickupLat = (row['pickup_lat'] as num).toDouble();
     final pickupLng = (row['pickup_lng'] as num).toDouble();
-    final dropLat = (row['dropoff_lat'] as num).toDouble();
-    final dropLng = (row['dropoff_lng'] as num).toDouble();
-    final distanceKm =
-        Geolocator.distanceBetween(pickupLat, pickupLng, dropLat, dropLng) /
-        1000;
-    // No routing engine available yet: roughly estimate 2 minutes per km.
-    final durationMin = (distanceKm * 2).round().clamp(1, 999);
-    final price = (row['price_estimate'] as num?)?.toDouble() ?? 0.0;
+    final destLat = (row['destination_lat'] as num?)?.toDouble();
+    final destLng = (row['destination_lng'] as num?)?.toDouble();
+    final isOpenRide = row['trip_type'] == 'open';
+
+    double distanceKm = (row['distance_km'] as num?)?.toDouble() ?? 0.0;
+    if (distanceKm == 0.0 && destLat != null && destLng != null) {
+      distanceKm =
+          Geolocator.distanceBetween(pickupLat, pickupLng, destLat, destLng) /
+          1000;
+    }
+    int durationMin = (row['estimated_duration_minutes'] as num?)?.toInt() ?? 0;
+    if (durationMin == 0) {
+      // No routing engine available: roughly estimate 2 minutes per km.
+      durationMin = (distanceKm * 2).round().clamp(1, 999);
+    }
+    final price = (row['estimated_price'] as num?)?.toDouble() ?? 0.0;
+    final paymentMethod = row['payment_method'] == 'wallet'
+        ? 'محفظة الهدهد'
+        : 'نقداً';
+    final vehicleType = switch (row['vehicle_type']) {
+      'comfort' => VehicleType.comfort,
+      'family' => VehicleType.family,
+      _ => VehicleType.economy,
+    };
 
     _countdownSeconds = 45;
     _incomingRequest = Trip(
-      id: rideId,
+      id: tripId,
       customerName: customerName,
       customerPhone: customerPhone,
       pickupLocation: row['pickup_address'] as String? ?? 'موقع الانطلاق',
-      destinationLocation: row['dropoff_address'] as String?,
+      destinationLocation: row['destination_address'] as String?,
       pickupLat: pickupLat,
       pickupLng: pickupLng,
-      destLat: dropLat,
-      destLng: dropLng,
+      destLat: destLat,
+      destLng: destLng,
       distance: distanceKm,
       duration: durationMin,
-      price: price,
-      paymentMethod: 'نقداً',
+      price: isOpenRide ? openRideBaseFare : price,
+      paymentMethod: paymentMethod,
       status: TripStatus.searching,
-      carType: VehicleType.economy,
-      isOpenRide: false,
+      carType: vehicleType,
+      isOpenRide: isOpenRide,
       openRideTimeout: 45,
       date: DateTime.now().toString().substring(0, 16),
       isRemote: true,
@@ -396,14 +425,31 @@ class AppStateProvider extends ChangeNotifier {
         notifyListeners();
       } else {
         timer.cancel();
-        if (_incomingRequest?.id == rideId) {
-          _ignoredRideIds.add(rideId);
+        if (_incomingRequest?.id == tripId) {
+          _ignoredRideIds.add(tripId);
+          _markIgnoredOnServer(row);
           _incomingRequest = null;
           notifyListeners();
           _maybeShowNextPendingRide();
         }
       }
     });
+  }
+
+  // Appends this captain to the trip's `ignored_by` array so it doesn't
+  // resurface for them again, without claiming it for anyone else.
+  void _markIgnoredOnServer(Map<String, dynamic> row) {
+    final uid = _userId;
+    if (uid == null) return;
+    final current = (row['ignored_by'] as List?)?.cast<String>() ?? [];
+    if (current.contains(uid)) return;
+    Supabase.instance.client
+        .from('trips')
+        .update({
+          'ignored_by': [...current, uid],
+        })
+        .eq('id', row['id'])
+        .catchError((_) {});
   }
 
   Future<void> acceptIncomingRequest() async {
@@ -418,10 +464,14 @@ class AppStateProvider extends ChangeNotifier {
       if (uid == null) return;
       try {
         final claimed = await Supabase.instance.client
-            .from('rides')
-            .update({'driver_id': uid, 'status': 'accepted'})
+            .from('trips')
+            .update({
+              'captain_id': uid,
+              'status': 'accepted',
+              'accepted_at': DateTime.now().toIso8601String(),
+            })
             .eq('id', request.id)
-            .eq('status', 'pending')
+            .eq('status', 'searching')
             .select();
         if (claimed.isEmpty) {
           // Another captain claimed it first; move on to the next request.
@@ -466,7 +516,15 @@ class AppStateProvider extends ChangeNotifier {
   void ignoreIncomingRequest() {
     _countdownTimer?.cancel();
     if (_incomingRequest != null) {
-      _ignoredRideIds.add(_incomingRequest!.id);
+      final id = _incomingRequest!.id;
+      _ignoredRideIds.add(id);
+      if (_incomingRequest!.isRemote) {
+        final row = _lastPendingRides.cast<Map<String, dynamic>?>().firstWhere(
+          (r) => r?['id'] == id,
+          orElse: () => null,
+        );
+        if (row != null) _markIgnoredOnServer(row);
+      }
     }
     _incomingRequest = null;
     notifyListeners();
@@ -476,6 +534,13 @@ class AppStateProvider extends ChangeNotifier {
   void captainArriveAtPickup() {
     if (_activeTrip != null && _activeTrip!.status == TripStatus.accepted) {
       _activeTrip!.status = TripStatus.arrived;
+      if (_activeTrip!.isRemote) {
+        _updateRemoteTripStatus(
+          _activeTrip!.id,
+          'arrived',
+          extra: {'arrived_at': DateTime.now().toIso8601String()},
+        );
+      }
       notifyListeners();
     }
   }
@@ -484,7 +549,16 @@ class AppStateProvider extends ChangeNotifier {
     if (_activeTrip != null && _activeTrip!.status == TripStatus.arrived) {
       _activeTrip!.status = TripStatus.started;
       if (_activeTrip!.isRemote) {
-        _updateRemoteRideStatus(_activeTrip!.id, 'in_progress');
+        _updateRemoteTripStatus(
+          _activeTrip!.id,
+          _activeTrip!.isOpenRide ? 'boarded' : 'in_progress',
+          extra: {
+            if (_activeTrip!.isOpenRide)
+              'boarded_at': DateTime.now().toIso8601String()
+            else
+              'started_at': DateTime.now().toIso8601String(),
+          },
+        );
       }
       if (_activeTrip!.isOpenRide) {
         _openRideStartTime = DateTime.now();
@@ -506,20 +580,31 @@ class AppStateProvider extends ChangeNotifier {
         _activeTrip!.status == TripStatus.started &&
         !_activeTrip!.isOpenRide) {
       if (_activeTrip!.isRemote) {
-        _updateRemoteRideStatus(_activeTrip!.id, 'completed');
+        _updateRemoteTripStatus(
+          _activeTrip!.id,
+          'completed',
+          extra: {
+            'completed_at': DateTime.now().toIso8601String(),
+            'final_price': _activeTrip!.price,
+          },
+        );
       }
       _finalizeCompletedTrip(_activeTrip!.price);
     }
   }
 
-  // Fire-and-forget: keeps the customer app's copy of the ride in sync.
+  // Fire-and-forget: keeps the customer app's copy of the trip in sync.
   // Local captain state has already moved on by the time this resolves, so
   // failures here don't need to roll anything back - just log and continue.
-  void _updateRemoteRideStatus(String rideId, String status) {
+  void _updateRemoteTripStatus(
+    String tripId,
+    String status, {
+    Map<String, dynamic>? extra,
+  }) {
     Supabase.instance.client
-        .from('rides')
-        .update({'status': status})
-        .eq('id', rideId)
+        .from('trips')
+        .update({'status': status, ...?extra})
+        .eq('id', tripId)
         .catchError((_) {});
   }
 
@@ -530,6 +615,18 @@ class AppStateProvider extends ChangeNotifier {
         _activeTrip!.status == TripStatus.started &&
         _activeTrip!.isOpenRide) {
       final elapsedMinutes = (openRideElapsed.inSeconds / 60.0).round();
+      final fare = openRideFare;
+      if (_activeTrip!.isRemote) {
+        _updateRemoteTripStatus(
+          _activeTrip!.id,
+          'completed',
+          extra: {
+            'completed_at': DateTime.now().toIso8601String(),
+            'final_price': fare,
+            'traveled_distance_km': distanceKm,
+          },
+        );
+      }
       _activeTrip = Trip(
         id: _activeTrip!.id,
         customerName: _activeTrip!.customerName,
@@ -554,8 +651,9 @@ class AppStateProvider extends ChangeNotifier {
         isOpenRide: _activeTrip!.isOpenRide,
         openRideTimeout: _activeTrip!.openRideTimeout,
         date: _activeTrip!.date,
+        isRemote: _activeTrip!.isRemote,
       );
-      _finalizeCompletedTrip(openRideFare);
+      _finalizeCompletedTrip(fare);
       _openRideTicker?.cancel();
       _openRideTicker = null;
       _openRideStartTime = null;
@@ -635,7 +733,15 @@ class AppStateProvider extends ChangeNotifier {
     if (_activeTrip == null) return;
 
     if (_activeTrip!.isRemote) {
-      _updateRemoteRideStatus(_activeTrip!.id, 'cancelled');
+      _updateRemoteTripStatus(
+        _activeTrip!.id,
+        'cancelled',
+        extra: {
+          'cancelled_at': DateTime.now().toIso8601String(),
+          'cancelled_by': 'captain',
+          'cancellation_reason': reason,
+        },
+      );
     }
 
     final cancelledTrip = Trip(

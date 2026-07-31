@@ -51,8 +51,8 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
     try {
       final userId = _authRepository.currentUser?.id;
       if (userId == null) return;
-      final profile = await _authRepository.getProfile(userId);
-      final approved = profile['is_approved'] as bool? ?? false;
+      final captain = await _authRepository.getCaptain(userId);
+      final approved = captain['status'] == 'approved';
 
       if (!mounted) return;
       if (approved) {
