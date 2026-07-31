@@ -5,6 +5,7 @@ import '../../providers/app_state_provider.dart';
 import '../../models/models.dart';
 import '../../core/widgets/real_map_widget.dart';
 import '../../core/widgets/app_logo.dart';
+import '../../core/widgets/trip_progress_rail.dart';
 import '../trips/my_trips_screen.dart';
 import '../wallet/wallet_screen.dart';
 import '../profile/profile_screen.dart';
@@ -367,13 +368,13 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
 
     return Positioned.fill(
       child: Container(
-        color: Colors.black87, // Translucent dark backdrop
+        color: Colors.black54, // Translucent dark backdrop
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(24),
@@ -384,97 +385,46 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: const Text(
-                        'مشوار ركاب جديد!',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                          fontFamily: 'Cairo',
-                        ),
-                      ),
+                  const TripProgressRail(step: 1),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'مشوار ركاب جديد',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.darkText,
+                      fontFamily: 'Cairo',
                     ),
                   ),
-                  const Divider(height: 32),
-
-                  // Pickup & Destination
-                  Row(
-                    children: [
-                      Column(
-                        children: [
-                          const Icon(
-                            Icons.radio_button_checked_rounded,
-                            color: AppColors.success,
-                            size: 18,
-                          ),
-                          Container(
-                            width: 1.5,
-                            height: 24,
-                            color: AppColors.border,
-                          ),
-                          const Icon(
-                            Icons.location_on_rounded,
-                            color: AppColors.error,
-                            size: 18,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              trip.pickupLocation,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                                color: AppColors.darkText,
-                                fontFamily: 'Cairo',
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 20),
-                            Text(
-                              trip.destinationLocation ??
-                                  'مشوار مفتوح (بدون وجهة محددة)',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                                fontStyle: trip.destinationLocation == null
-                                    ? FontStyle.italic
-                                    : FontStyle.normal,
-                                color: trip.destinationLocation == null
-                                    ? AppColors.secondaryText
-                                    : AppColors.darkText,
-                                fontFamily: 'Cairo',
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 2),
+                  Text(
+                    '${trip.customerName} · تبقّى 00:${provider.countdownSeconds.toString().padLeft(2, '0')}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.secondaryText,
+                      fontFamily: 'Cairo',
+                    ),
                   ),
                   const SizedBox(height: 16),
+
+                  // Pickup & Destination
+                  _buildRouteRow(
+                    AppColors.success,
+                    trip.pickupLocation,
+                  ),
+                  const SizedBox(height: 6),
+                  _buildRouteRow(
+                    AppColors.error,
+                    trip.destinationLocation ??
+                        'مشوار مفتوح (بدون وجهة محددة)',
+                  ),
+                  const SizedBox(height: 14),
 
                   // Map preview of pickup & destination points
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: SizedBox(
-                      height: 140,
+                      height: 130,
                       child: RealMapWidget(
                         showRoute: true,
                         pickupLat: trip.pickupLat,
@@ -486,72 +436,50 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                       ),
                     ),
                   ),
-                  const Divider(height: 32),
+                  const SizedBox(height: 14),
+                  Container(height: 1, color: AppColors.border),
+                  const SizedBox(height: 12),
 
-                  // Details Row - an open ride has no known destination, so
+                  // Details row - an open ride has no known destination, so
                   // there's no real fare/distance/duration estimate to show
                   // yet (it's metered live once the trip starts); just say
                   // what the meter starts at instead of a fake fixed number.
                   if (trip.isOpenRide)
-                    _buildSummaryItem(
-                      'مشوار مفتوح',
-                      'يبدأ من ${AppStateProvider.openRideBaseFare.toStringAsFixed(0)} أوقية',
-                    )
-                  else
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildSummaryItem(
-                          'الأرباح المقدرة',
-                          '${trip.price} أوقية',
-                        ),
-                        Container(
-                          width: 1,
-                          height: 24,
-                          color: AppColors.border,
-                        ),
-                        _buildSummaryItem(
-                          'مسافة المشوار',
-                          '${trip.distance} كم',
-                        ),
-                        Container(
-                          width: 1,
-                          height: 24,
-                          color: AppColors.border,
-                        ),
-                        _buildSummaryItem(
-                          'المدة المتوقعة',
-                          '${trip.duration} دقيقة',
-                        ),
-                      ],
-                    ),
-                  const Divider(height: 32),
-
-                  // Ticking Countdown
-                  Center(
-                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'الوقت المتبقي لقبول المشوار:',
+                          'مشوار مفتوح',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 12,
                             color: AppColors.secondaryText,
                             fontFamily: 'Cairo',
                           ),
                         ),
-                        const SizedBox(height: 6),
                         Text(
-                          '00:${provider.countdownSeconds.toString().padLeft(2, '0')}',
+                          'يبدأ من ${AppStateProvider.openRideBaseFare.toStringAsFixed(0)} أوقية',
                           style: const TextStyle(
-                            fontSize: 32,
+                            fontSize: 13,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.error,
+                            color: AppColors.darkText,
+                            fontFamily: 'Cairo',
                           ),
                         ),
                       ],
+                    )
+                  else
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildQuietStat('المسافة ${trip.distance} كم'),
+                        _buildQuietStat('المدة ${trip.duration} د'),
+                        _buildQuietStat(
+                          'الأجرة ${trip.price} أوقية',
+                          emphasize: true,
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 20),
 
                   // Action Buttons
                   Row(
@@ -563,7 +491,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                             foregroundColor: AppColors.secondaryText,
                             side: const BorderSide(color: AppColors.border),
                           ),
-                          child: const Text('تجاهل الطلب'),
+                          child: const Text('تجاهل'),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -573,9 +501,6 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                             provider.acceptIncomingRequest();
                             // Navigation to Active Trip screen occurs automatically via state listener
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.success,
-                          ),
                           child: const Text('قبول المشوار'),
                         ),
                       ),
@@ -590,26 +515,39 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
     );
   }
 
-  Widget _buildSummaryItem(String label, String value) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+  Widget _buildQuietStat(String text, {bool emphasize = false}) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: emphasize ? 13 : 12,
+        fontWeight: emphasize ? FontWeight.bold : FontWeight.normal,
+        color: emphasize ? AppColors.darkText : AppColors.secondaryText,
+        fontFamily: 'Cairo',
+      ),
+    );
+  }
+
+  Widget _buildRouteRow(Color dotColor, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10,
-            color: AppColors.secondaryText,
-            fontFamily: 'Cairo',
-          ),
+        Container(
+          width: 8,
+          height: 8,
+          margin: const EdgeInsets.only(left: 10),
+          decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: AppColors.darkText,
-            fontFamily: 'Cairo',
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: AppColors.darkText,
+              fontFamily: 'Cairo',
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],

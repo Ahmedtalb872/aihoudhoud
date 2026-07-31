@@ -4,6 +4,7 @@ import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
 import '../../models/models.dart';
 import '../../core/widgets/real_map_widget.dart';
+import '../../core/widgets/trip_progress_rail.dart';
 import '../../core/services/phone_caller.dart';
 import '../support/chat_screen.dart';
 import 'captain_trip_summary_screen.dart';
@@ -70,25 +71,25 @@ class CaptainActiveTripScreen extends StatelessWidget {
     String addressLabel = 'موقع العميل (الالتقاء)';
     String addressValue = trip.pickupLocation;
     String actionLabel = 'وصلت للزبون';
-    Color actionColor = AppColors.primary;
     IconData actionIcon = Icons.sports_motorsports_rounded;
     VoidCallback onAction = () => provider.captainArriveAtPickup();
+    int progressStep = 2;
 
     if (trip.status == TripStatus.arrived) {
       statusTitle = 'وصلت لموقع العميل';
       addressLabel = 'موقع العميل (الانتظار)';
       actionLabel = 'بدء الرحلة الجارية';
-      actionColor = AppColors.success;
       actionIcon = Icons.play_arrow_rounded;
       onAction = () => provider.captainStartActiveTrip();
+      progressStep = 3;
     } else if (trip.status == TripStatus.started) {
       statusTitle = 'مشوار جاري الآن نحو الوجهة';
       addressLabel = 'الوجهة المحددة للرحلة';
       addressValue = trip.destinationLocation ?? 'غير محددة';
       actionLabel = 'إنهاء الرحلة بنجاح';
-      actionColor = AppColors.error;
       actionIcon = Icons.flag_rounded;
       onAction = () => provider.captainCompleteActiveTrip();
+      progressStep = 4;
     }
 
     return Scaffold(
@@ -176,6 +177,9 @@ class CaptainActiveTripScreen extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  TripProgressRail(step: progressStep),
+                  const SizedBox(height: 20),
+
                   // Address text box
                   Row(
                     children: [
@@ -284,9 +288,6 @@ class CaptainActiveTripScreen extends StatelessWidget {
                   // Status change confirm action button
                   ElevatedButton(
                     onPressed: onAction,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: actionColor,
-                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

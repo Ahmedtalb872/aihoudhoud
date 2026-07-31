@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
+import '../../core/widgets/trip_progress_rail.dart';
 import '../../providers/app_state_provider.dart';
 
 class CaptainTripSummaryScreen extends StatelessWidget {
@@ -40,19 +41,21 @@ class CaptainTripSummaryScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              const SizedBox(height: 24),
+              const TripProgressRail(step: 5),
               const SizedBox(height: 30),
 
               // Success badge
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
+                  color: AppColors.primary.withOpacity(0.12),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.verified_rounded,
-                  color: AppColors.success,
-                  size: 64,
+                  Icons.check_rounded,
+                  color: AppColors.primaryDark,
+                  size: 56,
                 ),
               ),
               const SizedBox(height: 20),
@@ -126,7 +129,7 @@ class CaptainTripSummaryScreen extends StatelessWidget {
                             'عمولة الهدهد المستقطعة (15%)',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.error,
+                              color: AppColors.secondaryText,
                               fontFamily: 'Cairo',
                             ),
                           ),
@@ -135,7 +138,7 @@ class CaptainTripSummaryScreen extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.error,
+                              color: AppColors.secondaryText,
                             ),
                           ),
                         ],
@@ -151,7 +154,7 @@ class CaptainTripSummaryScreen extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
+                              color: AppColors.darkText,
                               fontFamily: 'Cairo',
                             ),
                           ),
@@ -160,7 +163,7 @@ class CaptainTripSummaryScreen extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.success,
+                              color: AppColors.primaryDark,
                               fontFamily: 'Cairo',
                             ),
                           ),
