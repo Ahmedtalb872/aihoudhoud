@@ -132,7 +132,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                             vertical: 10,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.darkText,
+                            color: AppColors.primary,
                             borderRadius: BorderRadius.circular(30),
                             boxShadow: const [
                               BoxShadow(color: Colors.black26, blurRadius: 8),
@@ -141,7 +141,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                           child: Text(
                             '${provider.openRideFare.toStringAsFixed(0)} أوقية',
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: AppColors.darkText,
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
                               fontFamily: 'Cairo',
@@ -346,9 +346,6 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                   ElevatedButton(
                     onPressed: () => provider.captainCompleteOpenRide(
                       distanceKm: _distanceKm,
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.darkText,
                     ),
                     child: const Text('إنهاء الرحلة'),
                   ),
