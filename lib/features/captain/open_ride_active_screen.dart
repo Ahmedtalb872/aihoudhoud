@@ -174,18 +174,16 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                     ),
                   ),
 
-                  // Live stats stack - same isolation as the fare badge above.
+                  // Live stats stack, grouped on the opposite side from the
+                  // map's zoom controls (which sit at left:16). The fare
+                  // already shows in the badge above, so it isn't repeated
+                  // here - just distance and elapsed time.
                   Positioned(
-                    left: 16,
+                    right: 16,
                     top: 72,
                     child: Consumer<AppStateProvider>(
                       builder: (context, provider, _) => Column(
                         children: [
-                          _buildStatChip(
-                            provider.openRideFare.toStringAsFixed(0),
-                            'أوقية',
-                          ),
-                          const SizedBox(height: 8),
                           _buildStatChip(_distanceKm.toStringAsFixed(1), 'كم'),
                           const SizedBox(height: 8),
                           _buildStatChip(
