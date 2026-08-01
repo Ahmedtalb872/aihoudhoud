@@ -171,6 +171,7 @@ class AuthRepository {
     required String city,
     required String address,
     required String dateOfBirth,
+    required String vehicleCategory,
     required String vehicleType,
     required String vehicleBrand,
     required String vehicleModel,
@@ -186,6 +187,7 @@ class AuthRepository {
             'city': city,
             'address': address,
             'date_of_birth': dateOfBirth,
+            'vehicle_category': vehicleCategory,
             'vehicle_type': vehicleType,
             'vehicle_brand': vehicleBrand,
             'vehicle_model': vehicleModel,
@@ -208,6 +210,19 @@ class AuthRepository {
           .eq('id', captainId);
     } catch (_) {
       // Best-effort - local online state still works even if this fails.
+    }
+  }
+
+  /// Motorcycle captains can opt in/out of receiving delivery requests
+  /// alongside their normal passenger requests.
+  Future<void> setDeliveryModeEnabled(String captainId, bool enabled) async {
+    try {
+      await _client
+          .from('captains')
+          .update({'delivery_mode_enabled': enabled})
+          .eq('id', captainId);
+    } catch (_) {
+      // Best-effort - local toggle state still works even if this fails.
     }
   }
 

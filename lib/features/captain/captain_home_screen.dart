@@ -280,31 +280,72 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                 BoxShadow(color: Colors.black12, blurRadius: 6),
               ],
             ),
-            child: Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  provider.isCaptainOnline
-                      ? Icons.check_circle_rounded
-                      : Icons.info_outline_rounded,
-                  color: provider.isCaptainOnline
-                      ? AppColors.success
-                      : AppColors.error,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    provider.isCaptainOnline
-                        ? 'أنت متاح لاستقبال المشاوير وبث الطلبات القريبة.'
-                        : 'قم بتفعيل زر الاتصال بالأعلى لبدء استقبال المشاوير.',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.darkText,
-                      fontFamily: 'Cairo',
+                Row(
+                  children: [
+                    Icon(
+                      provider.isCaptainOnline
+                          ? Icons.check_circle_rounded
+                          : Icons.info_outline_rounded,
+                      color: provider.isCaptainOnline
+                          ? AppColors.success
+                          : AppColors.error,
+                      size: 20,
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        provider.isCaptainOnline
+                            ? 'أنت متاح لاستقبال المشاوير وبث الطلبات القريبة.'
+                            : 'قم بتفعيل زر الاتصال بالأعلى لبدء استقبال المشاوير.',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.darkText,
+                          fontFamily: 'Cairo',
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+                // Delivery-mode toggle - only for motorcycle captains, car
+                // captains never see this and never receive delivery
+                // requests. Kept in the same flowing container as the
+                // status row above it so it can never overlap other
+                // absolutely-positioned elements.
+                if (provider.isMotorcycleCaptain) ...[
+                  const Divider(height: 20),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.inventory_2_rounded,
+                        color: provider.deliveryModeEnabled
+                            ? AppColors.primaryDark
+                            : AppColors.secondaryText,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'قبول طلبات توصيل',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.darkText,
+                            fontFamily: 'Cairo',
+                          ),
+                        ),
+                      ),
+                      Switch(
+                        value: provider.deliveryModeEnabled,
+                        activeColor: AppColors.primaryDark,
+                        onChanged: (_) => provider.toggleDeliveryMode(),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -437,14 +478,26 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                 children: [
                   const TripProgressRail(step: 1),
                   const SizedBox(height: 14),
-                  const Text(
-                    'مشوار ركاب جديد',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.darkText,
-                      fontFamily: 'Cairo',
-                    ),
+                  Row(
+                    children: [
+                      if (trip.isDelivery) ...[
+                        const Icon(
+                          Icons.inventory_2_rounded,
+                          color: AppColors.primaryDark,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Text(
+                        trip.isDelivery ? 'طلب توصيل جديد' : 'مشوار ركاب جديد',
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.darkText,
+                          fontFamily: 'Cairo',
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -455,9 +508,22 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                       fontFamily: 'Cairo',
                     ),
                   ),
+                  if (trip.isDelivery &&
+                      (trip.packageDescription?.isNotEmpty ?? false)) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'الطرد: ${trip.packageDescription}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryDark,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 16),
 
-                  // Pickup & Destination
+                  // Pickup & Destination (delivery: pickup/drop-off points)
                   RouteRow(
                     dotColor: AppColors.success,
                     text: trip.pickupLocation,
@@ -554,7 +620,9 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                             provider.acceptIncomingRequest();
                             // Navigation to Active Trip screen occurs automatically via state listener
                           },
-                          child: const Text('قبول المشوار'),
+                          child: Text(
+                            trip.isDelivery ? 'قبول التوصيل' : 'قبول المشوار',
+                          ),
                         ),
                       ),
                     ],

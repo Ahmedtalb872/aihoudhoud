@@ -17,6 +17,10 @@ class AppStateProvider extends ChangeNotifier {
   bool _isCaptainOnline = false;
   String _captainName = DummyData.dummyCaptain.user.name;
   String _captainPhone = DummyData.dummyCaptain.user.phone;
+  // 'car' or 'motorcycle' - only motorcycle captains can see/toggle delivery
+  // requests. Loaded from captains.vehicle_category at login.
+  String _vehicleCategory = 'car';
+  bool _deliveryModeEnabled = false;
   double _captainWalletBalance = 1250.0;
   double _captainTodayEarnings = 425.0;
   int _captainTripsCount = DummyData.dummyCaptain.user.tripsCount;
@@ -67,6 +71,9 @@ class AppStateProvider extends ChangeNotifier {
   bool get isCaptainOnline => _isCaptainOnline;
   String get captainName => _captainName;
   String get captainPhone => _captainPhone;
+  String get vehicleCategory => _vehicleCategory;
+  bool get isMotorcycleCaptain => _vehicleCategory == 'motorcycle';
+  bool get deliveryModeEnabled => _deliveryModeEnabled;
   double get captainWalletBalance => _captainWalletBalance;
   double get captainTodayEarnings => _captainTodayEarnings;
   int get captainTripsCount => _captainTripsCount;
@@ -129,7 +136,11 @@ class AppStateProvider extends ChangeNotifier {
   // Hydrate state from a Supabase `profiles` row after a real sign-in/sign-up.
   // Callers are responsible for verifying profile['role'] == 'captain'
   // before calling this, since this app only serves captains.
-  void loginFromProfile(Map<String, dynamic> profile, String email) {
+  void loginFromProfile(
+    Map<String, dynamic> profile,
+    String email, {
+    Map<String, dynamic>? captain,
+  }) {
     _isLoggedIn = true;
     _userId = profile['id'] as String?;
     final String? fullName = profile['full_name'] as String?;
@@ -137,13 +148,31 @@ class AppStateProvider extends ChangeNotifier {
     if (fullName != null && fullName.isNotEmpty) _captainName = fullName;
     if (phone != null && phone.isNotEmpty) _captainPhone = phone;
     _captainEmail = email;
+    if (captain != null) {
+      _vehicleCategory = captain['vehicle_category'] as String? ?? 'car';
+      _deliveryModeEnabled = captain['delivery_mode_enabled'] as bool? ?? false;
+    }
     notifyListeners();
+  }
+
+  // Motorcycle captains can opt in/out of receiving delivery requests
+  // alongside their normal passenger requests. Has no effect for car
+  // captains, who never see delivery requests regardless of this flag.
+  void toggleDeliveryMode() {
+    if (!isMotorcycleCaptain) return;
+    _deliveryModeEnabled = !_deliveryModeEnabled;
+    notifyListeners();
+    if (_userId != null) {
+      AuthRepository().setDeliveryModeEnabled(_userId!, _deliveryModeEnabled);
+    }
   }
 
   void logout() {
     _isLoggedIn = false;
     _userId = null;
     _captainEmail = '';
+    _vehicleCategory = 'car';
+    _deliveryModeEnabled = false;
     _activeTrip = null;
     _isSearching = false;
     _isCaptainOnline = false;
@@ -330,6 +359,14 @@ class AppStateProvider extends ChangeNotifier {
     }
     for (final row in _lastPendingRides) {
       final id = row['id'] as String;
+      final serviceType = row['service_type'] as String? ?? 'ride';
+      // Delivery requests only ever reach a motorcycle captain who has
+      // opted in - a car captain (or one with delivery mode off) skips
+      // past them entirely, no matter their online status.
+      if (serviceType == 'delivery' &&
+          !(isMotorcycleCaptain && _deliveryModeEnabled)) {
+        continue;
+      }
       if (row['captain_id'] == null &&
           !_ignoredRideIds.contains(id) &&
           !_isIgnoredByMe(row)) {
@@ -364,6 +401,24 @@ class AppStateProvider extends ChangeNotifier {
       if (guestPhone != null && guestPhone.isNotEmpty) {
         customerPhone = guestPhone;
       }
+    }
+
+    final serviceType = row['service_type'] as String? ?? 'ride';
+    final isDelivery = serviceType == 'delivery';
+    String? packageDescription;
+    if (isDelivery) {
+      // A delivery's contact is the recipient, not the sender - reuse the
+      // same customerName/customerPhone fields the call/chat UI already
+      // reads, so nothing downstream needs to know the difference.
+      final recipientName = row['recipient_name'] as String?;
+      final recipientPhone = row['recipient_phone'] as String?;
+      if (recipientName != null && recipientName.isNotEmpty) {
+        customerName = recipientName;
+      }
+      if (recipientPhone != null && recipientPhone.isNotEmpty) {
+        customerPhone = recipientPhone;
+      }
+      packageDescription = row['package_description'] as String?;
     }
 
     // The captain may have gone offline, or picked up another trip, while
@@ -420,6 +475,8 @@ class AppStateProvider extends ChangeNotifier {
       openRideTimeout: 45,
       date: DateTime.now().toString().substring(0, 16),
       isRemote: true,
+      serviceType: serviceType,
+      packageDescription: packageDescription,
     );
     notifyListeners();
     NewTripAlert.play(
@@ -518,6 +575,8 @@ class AppStateProvider extends ChangeNotifier {
       openRideTimeout: request.openRideTimeout,
       date: request.date,
       isRemote: request.isRemote,
+      serviceType: request.serviceType,
+      packageDescription: request.packageDescription,
     );
     notifyListeners();
   }
@@ -661,6 +720,8 @@ class AppStateProvider extends ChangeNotifier {
         openRideTimeout: _activeTrip!.openRideTimeout,
         date: _activeTrip!.date,
         isRemote: _activeTrip!.isRemote,
+        serviceType: _activeTrip!.serviceType,
+        packageDescription: _activeTrip!.packageDescription,
       );
       _finalizeCompletedTrip(fare);
       _openRideTicker?.cancel();
@@ -701,6 +762,9 @@ class AppStateProvider extends ChangeNotifier {
       date: _activeTrip!.date,
       netEarnings: net,
       commission: commission,
+      isRemote: _activeTrip!.isRemote,
+      serviceType: _activeTrip!.serviceType,
+      packageDescription: _activeTrip!.packageDescription,
     );
 
     _captainTripHistory.insert(0, finishedTrip);
@@ -778,6 +842,9 @@ class AppStateProvider extends ChangeNotifier {
       openRideTimeout: _activeTrip!.openRideTimeout,
       date: _activeTrip!.date,
       cancellationReason: reason,
+      isRemote: _activeTrip!.isRemote,
+      serviceType: _activeTrip!.serviceType,
+      packageDescription: _activeTrip!.packageDescription,
     );
 
     _captainTripHistory.insert(0, cancelledTrip);

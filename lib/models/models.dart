@@ -133,6 +133,11 @@ class Trip {
   // `rides` Supabase table (as opposed to the local demo/browse flows), so
   // status changes should be written back to that row.
   final bool isRemote;
+  // 'ride' (passenger) or 'delivery' (package, motorcycle captains only).
+  // For a delivery trip, customerName/customerPhone hold the recipient's
+  // details - the same contact fields the call/chat UI already uses.
+  final String serviceType;
+  final String? packageDescription;
 
   Trip({
     required this.id,
@@ -162,7 +167,11 @@ class Trip {
     this.commission,
     this.cancellationReason,
     this.isRemote = false,
+    this.serviceType = 'ride',
+    this.packageDescription,
   });
+
+  bool get isDelivery => serviceType == 'delivery';
 
   String get carTypeNameArabic {
     switch (carType) {

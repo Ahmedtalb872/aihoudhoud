@@ -67,6 +67,8 @@ class CaptainActiveTripScreen extends StatelessWidget {
       return const OpenRideActiveScreen();
     }
 
+    final isDelivery = trip.isDelivery;
+
     // Determine state visual details
     String statusTitle = 'توجه إلى نقطة الانطلاق';
     String actionLabel = 'وصلت للزبون';
@@ -75,14 +77,18 @@ class CaptainActiveTripScreen extends StatelessWidget {
     int progressStep = 2;
 
     if (trip.status == TripStatus.arrived) {
-      statusTitle = 'وصلت لموقع العميل';
-      actionLabel = 'بدء الرحلة الجارية';
-      actionIcon = Icons.play_arrow_rounded;
+      statusTitle = isDelivery ? 'وصلت إلى نقطة الاستلام' : 'وصلت لموقع العميل';
+      actionLabel = isDelivery ? 'تم استلام الطرد' : 'بدء الرحلة الجارية';
+      actionIcon = isDelivery
+          ? Icons.inventory_2_rounded
+          : Icons.play_arrow_rounded;
       onAction = () => provider.captainStartActiveTrip();
       progressStep = 3;
     } else if (trip.status == TripStatus.started) {
-      statusTitle = 'مشوار جاري الآن نحو الوجهة';
-      actionLabel = 'إنهاء الرحلة بنجاح';
+      statusTitle = isDelivery
+          ? 'التوصيل جارٍ الآن نحو عنوان التسليم'
+          : 'مشوار جاري الآن نحو الوجهة';
+      actionLabel = isDelivery ? 'تم التسليم' : 'إنهاء الرحلة بنجاح';
       actionIcon = Icons.flag_rounded;
       onAction = () => provider.captainCompleteActiveTrip();
       progressStep = 4;
@@ -183,16 +189,29 @@ class CaptainActiveTripScreen extends StatelessWidget {
                     dotColor: AppColors.error,
                     text: trip.destinationLocation ?? 'غير محددة',
                   ),
+                  if (isDelivery &&
+                      (trip.packageDescription?.isNotEmpty ?? false)) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'الطرد: ${trip.packageDescription}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryDark,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
+                  ],
                   const Divider(height: 24),
 
-                  // Customer details and actions row
+                  // Customer/recipient details and actions row
                   Row(
                     children: [
-                      const CircleAvatar(
+                      CircleAvatar(
                         radius: 20,
                         backgroundColor: AppColors.primary,
                         child: Icon(
-                          Icons.person,
+                          isDelivery ? Icons.inventory_2_rounded : Icons.person,
                           color: Colors.white,
                           size: 22,
                         ),

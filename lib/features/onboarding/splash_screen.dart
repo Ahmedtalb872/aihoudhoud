@@ -52,16 +52,21 @@ class _SplashScreenState extends State<SplashScreen>
       try {
         final profile = await AuthRepository().getProfile(currentUser.id);
         if (profile['role'] == 'captain' && mounted) {
-          Provider.of<AppStateProvider>(
-            context,
-            listen: false,
-          ).loginFromProfile(profile, currentUser.phone ?? '');
+          Map<String, dynamic>? captain;
           bool approved = false;
           try {
-            final captain = await AuthRepository().getCaptain(currentUser.id);
+            captain = await AuthRepository().getCaptain(currentUser.id);
             approved = captain['status'] == 'approved';
           } catch (_) {
             // Fall back to "not approved".
+          }
+          if (mounted) {
+            Provider.of<AppStateProvider>(context, listen: false)
+                .loginFromProfile(
+                  profile,
+                  currentUser.phone ?? '',
+                  captain: captain,
+                );
           }
           destination = approved
               ? const CaptainHomeScreen()

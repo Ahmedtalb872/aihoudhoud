@@ -172,7 +172,10 @@ class CaptainTripSummaryScreen extends StatelessWidget {
                       const Divider(height: 24),
 
                       // Route info
-                      _buildSummaryRow('اسم العميل للرحلة', trip.customerName),
+                      _buildSummaryRow(
+                        trip.isDelivery ? 'اسم المستلم' : 'اسم العميل للرحلة',
+                        trip.customerName,
+                      ),
                       _buildSummaryRow(
                         'طريقة الدفع للمشوار',
                         trip.paymentMethod,

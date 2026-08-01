@@ -49,6 +49,7 @@ class _CaptainRegisterStepperScreenState
   final _dobController = TextEditingController(text: '1990-01-01');
 
   // Step 2 Controllers
+  String _vehicleCategory = 'car'; // car, motorcycle
   String _carType = 'economy'; // economy, comfort, family
   final _carBrandController = TextEditingController(text: 'تويوتا');
   final _carModelController = TextEditingController(text: 'كورولا');
@@ -457,6 +458,7 @@ class _CaptainRegisterStepperScreenState
           city: _selectedCity,
           address: _addressController.text.trim(),
           dateOfBirth: _dobController.text.trim(),
+          vehicleCategory: _vehicleCategory,
           vehicleType: _carType,
           vehicleBrand: _carBrandController.text.trim(),
           vehicleModel: _carModelController.text.trim(),
@@ -470,20 +472,20 @@ class _CaptainRegisterStepperScreenState
         // vehicle details can be corrected later from the profile screen.
       }
 
-      if (!mounted) return;
-      final provider = Provider.of<AppStateProvider>(context, listen: false);
-      provider.loginFromProfile(profile, _fullPhone);
-
       // A brand-new captain is never pre-approved, so this always lands on
       // the pending-review screen - there is no "continue into the app"
       // button to skip past admin approval.
+      Map<String, dynamic>? captain;
       bool approved = false;
       try {
-        final captain = await _authRepository.getCaptain(captainId);
+        captain = await _authRepository.getCaptain(captainId);
         approved = captain['status'] == 'approved';
       } on AppAuthException catch (_) {
         // Fall back to "not approved" if the captain row can't be read yet.
       }
+      if (!mounted) return;
+      final provider = Provider.of<AppStateProvider>(context, listen: false);
+      provider.loginFromProfile(profile, _fullPhone, captain: captain);
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
@@ -546,7 +548,7 @@ class _CaptainRegisterStepperScreenState
         children: [
           _buildStepIndicatorItem(1, 'الشخصية'),
           _buildStepLine(1),
-          _buildStepIndicatorItem(2, 'السيارة'),
+          _buildStepIndicatorItem(2, 'المركبة'),
           _buildStepLine(2),
           _buildStepIndicatorItem(3, 'المستندات'),
           _buildStepLine(3),
@@ -760,12 +762,15 @@ class _CaptainRegisterStepperScreenState
     );
   }
 
+  bool get _isMotorcycle => _vehicleCategory == 'motorcycle';
+  String get _vehicleNoun => _isMotorcycle ? 'الدراجة النارية' : 'السيارة';
+
   Widget _buildStep2Vehicle() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'معلومات السيارة',
+          'معلومات المركبة',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -774,9 +779,11 @@ class _CaptainRegisterStepperScreenState
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
-          'ملاحظة: الخدمة حالياً مخصصة فقط لنقل الركاب بالسيارات العادية.',
-          style: TextStyle(
+        Text(
+          _isMotorcycle
+              ? 'كباتن الدراجات النارية يمكنهم لاحقاً تفعيل استقبال طلبات توصيل الطرود.'
+              : 'ملاحظة: الخدمة حالياً مخصصة فقط لنقل الركاب بالسيارات العادية.',
+          style: const TextStyle(
             fontSize: 12,
             color: AppColors.secondaryText,
             fontFamily: 'Cairo',
@@ -784,9 +791,9 @@ class _CaptainRegisterStepperScreenState
         ),
         const SizedBox(height: 20),
 
-        // Car Type selection (Custom cards)
+        // Vehicle category selection (car / motorcycle)
         const Text(
-          'فئة السيارة',
+          'نوع المركبة',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
@@ -797,27 +804,58 @@ class _CaptainRegisterStepperScreenState
         const SizedBox(height: 8),
         Row(
           children: [
-            _buildCarTypeCard(
-              'economy',
-              'إقتصادية',
-              Icons.directions_car_filled_outlined,
+            _buildVehicleCategoryCard(
+              'car',
+              'سيارة',
+              Icons.directions_car_filled_rounded,
             ),
             const SizedBox(width: 8),
-            _buildCarTypeCard('comfort', 'مريحة', Icons.local_taxi_rounded),
-            const SizedBox(width: 8),
-            _buildCarTypeCard(
-              'family',
-              'عائلية',
-              Icons.airport_shuttle_rounded,
+            _buildVehicleCategoryCard(
+              'motorcycle',
+              'دراجة نارية',
+              Icons.two_wheeler_rounded,
             ),
           ],
         ),
         const SizedBox(height: 20),
 
+        // Car Type selection (Custom cards) - only meaningful for cars,
+        // which have passenger comfort tiers; a motorcycle only delivers.
+        if (!_isMotorcycle) ...[
+          const Text(
+            'فئة السيارة',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: AppColors.darkText,
+              fontFamily: 'Cairo',
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _buildCarTypeCard(
+                'economy',
+                'إقتصادية',
+                Icons.directions_car_filled_outlined,
+              ),
+              const SizedBox(width: 8),
+              _buildCarTypeCard('comfort', 'مريحة', Icons.local_taxi_rounded),
+              const SizedBox(width: 8),
+              _buildCarTypeCard(
+                'family',
+                'عائلية',
+                Icons.airport_shuttle_rounded,
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+        ],
+
         _buildTextField(
-          'ماركة السيارة',
+          'ماركة $_vehicleNoun',
           _carBrandController,
-          hint: 'مثال: تويوتا',
+          hint: _isMotorcycle ? 'مثال: هوندا' : 'مثال: تويوتا',
         ),
         const SizedBox(height: 16),
         _buildTextField(
@@ -829,7 +867,7 @@ class _CaptainRegisterStepperScreenState
         _buildTextField('سنة الصنع', _carYearController, hint: 'مثال: 2018'),
         const SizedBox(height: 16),
         _buildTextField(
-          'لون السيارة',
+          'لون $_vehicleNoun',
           _carColorController,
           hint: 'مثال: رمادي / أبيض',
         ),
@@ -839,52 +877,94 @@ class _CaptainRegisterStepperScreenState
           _carPlateController,
           hint: 'مثال: 1234 AA 00',
         ),
-        const SizedBox(height: 16),
 
-        // Seats dropdown
-        const Text(
-          'عدد المقاعد المتاحة للركاب',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: AppColors.darkText,
-            fontFamily: 'Cairo',
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<int>(
-              value: _carSeats,
-              isExpanded: true,
-              style: const TextStyle(
-                color: AppColors.darkText,
-                fontSize: 16,
-                fontFamily: 'Cairo',
-              ),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _carSeats = value;
-                  });
-                }
-              },
-              items: <int>[4, 6, 7].map<DropdownMenuItem<int>>((int val) {
-                return DropdownMenuItem<int>(
-                  value: val,
-                  child: Text('$val مقاعد'),
-                );
-              }).toList(),
+        // Seats dropdown - not applicable to a motorcycle.
+        if (!_isMotorcycle) ...[
+          const SizedBox(height: 16),
+          const Text(
+            'عدد المقاعد المتاحة للركاب',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: AppColors.darkText,
+              fontFamily: 'Cairo',
             ),
           ),
-        ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<int>(
+                value: _carSeats,
+                isExpanded: true,
+                style: const TextStyle(
+                  color: AppColors.darkText,
+                  fontSize: 16,
+                  fontFamily: 'Cairo',
+                ),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _carSeats = value;
+                    });
+                  }
+                },
+                items: <int>[4, 6, 7].map<DropdownMenuItem<int>>((int val) {
+                  return DropdownMenuItem<int>(
+                    value: val,
+                    child: Text('$val مقاعد'),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
       ],
+    );
+  }
+
+  Widget _buildVehicleCategoryCard(String category, String label, IconData icon) {
+    bool isSel = _vehicleCategory == category;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _vehicleCategory = category),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: isSel ? AppColors.primary : Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: isSel ? AppColors.primary : AppColors.border,
+              width: 1.5,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                color: isSel ? Colors.white : AppColors.secondaryText,
+                size: 28,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSel ? Colors.white : AppColors.darkText,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Cairo',
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -935,6 +1015,20 @@ class _CaptainRegisterStepperScreenState
         ),
       ),
     );
+  }
+
+  // Same underlying document (doc_key, upload path) for both vehicle
+  // categories - only the guiding label text changes for a motorcycle.
+  static const Map<String, String> _motorcycleDocLabels = {
+    'رخصة السياقة': 'رخصة قيادة دراجة نارية',
+    'البطاقة الرمادية': 'تسجيل الدراجة',
+    'صورة السيارة': 'صورة الدراجة النارية',
+    'تأمين السيارة': 'تأمين الدراجة النارية',
+  };
+
+  String _docDisplayLabel(String docName) {
+    if (!_isMotorcycle) return docName;
+    return _motorcycleDocLabels[docName] ?? docName;
   }
 
   Widget _buildStep3Documents() {
@@ -1018,7 +1112,7 @@ class _CaptainRegisterStepperScreenState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            docName,
+                            _docDisplayLabel(docName),
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
@@ -1102,19 +1196,25 @@ class _CaptainRegisterStepperScreenState
                 _buildReviewRow('تاريخ الميلاد', _dobController.text),
                 const Divider(height: 24),
                 _buildReviewRow(
-                  'نوع السيارة',
-                  _carType == 'economy'
-                      ? 'إقتصادية'
-                      : _carType == 'comfort'
-                      ? 'مريحة'
-                      : 'عائلية',
+                  'نوع المركبة',
+                  _isMotorcycle ? 'دراجة نارية' : 'سيارة',
                 ),
+                if (!_isMotorcycle)
+                  _buildReviewRow(
+                    'فئة السيارة',
+                    _carType == 'economy'
+                        ? 'إقتصادية'
+                        : _carType == 'comfort'
+                        ? 'مريحة'
+                        : 'عائلية',
+                  ),
                 _buildReviewRow(
                   'الماركة والموديل',
                   '${_carBrandController.text} ${_carModelController.text} (${_carYearController.text})',
                 ),
-                _buildReviewRow('رقم لوحة السيارة', _carPlateController.text),
-                _buildReviewRow('المقاعد المتاحة', '$_carSeats مقاعد'),
+                _buildReviewRow('رقم اللوحة', _carPlateController.text),
+                if (!_isMotorcycle)
+                  _buildReviewRow('المقاعد المتاحة', '$_carSeats مقاعد'),
                 const Divider(height: 24),
 
                 // Documents check list
@@ -1143,7 +1243,7 @@ class _CaptainRegisterStepperScreenState
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          entry.key,
+                          _docDisplayLabel(entry.key),
                           style: const TextStyle(
                             fontSize: 12,
                             fontFamily: 'Cairo',
