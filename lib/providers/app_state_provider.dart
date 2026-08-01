@@ -17,8 +17,9 @@ class AppStateProvider extends ChangeNotifier {
   bool _isCaptainOnline = false;
   String _captainName = DummyData.dummyCaptain.user.name;
   String _captainPhone = DummyData.dummyCaptain.user.phone;
-  // 'car' or 'motorcycle' - only motorcycle captains can see/toggle delivery
-  // requests. Loaded from captains.vehicle_category at login.
+  // 'car' or 'motorcycle' - derived from captains.vehicle_type at login
+  // (motorcycle is just another value of that same column, not a separate
+  // one). Only motorcycle captains can see/toggle delivery requests.
   String _vehicleCategory = 'car';
   bool _deliveryModeEnabled = false;
   double _captainWalletBalance = 1250.0;
@@ -149,8 +150,12 @@ class AppStateProvider extends ChangeNotifier {
     if (phone != null && phone.isNotEmpty) _captainPhone = phone;
     _captainEmail = email;
     if (captain != null) {
-      _vehicleCategory = captain['vehicle_category'] as String? ?? 'car';
-      _deliveryModeEnabled = captain['delivery_mode_enabled'] as bool? ?? false;
+      // Motorcycle isn't a separate column - it's just another value of
+      // captains.vehicle_type (alongside economy/comfort/family for cars).
+      _vehicleCategory = captain['vehicle_type'] == 'motorcycle'
+          ? 'motorcycle'
+          : 'car';
+      _deliveryModeEnabled = captain['accepts_delivery'] as bool? ?? false;
     }
     notifyListeners();
   }
@@ -163,7 +168,7 @@ class AppStateProvider extends ChangeNotifier {
     _deliveryModeEnabled = !_deliveryModeEnabled;
     notifyListeners();
     if (_userId != null) {
-      AuthRepository().setDeliveryModeEnabled(_userId!, _deliveryModeEnabled);
+      AuthRepository().setAcceptsDelivery(_userId!, _deliveryModeEnabled);
     }
   }
 
@@ -529,21 +534,12 @@ class AppStateProvider extends ChangeNotifier {
       final uid = _userId;
       if (uid == null) return;
       try {
-        final claimed = await Supabase.instance.client
-            .from('trips')
-            .update({
-              'captain_id': uid,
-              'status': 'accepted',
-              'accepted_at': DateTime.now().toIso8601String(),
-            })
-            .eq('id', request.id)
-            .eq('status', 'searching')
-            .select();
-        if (claimed.isEmpty) {
-          // Another captain claimed it first; move on to the next request.
-          _maybeShowNextPendingRide();
-          return;
-        }
+        // Atomic, server-checked claim: captain_accept_trip() re-verifies
+        // the captain is approved/online (and, for a delivery, a motorcycle
+        // captain with accepts_delivery on) before handing the trip over -
+        // it raises if someone else claimed it first or the captain isn't
+        // eligible, either of which just means moving on to the next one.
+        await AuthRepository().acceptTrip(request.id);
       } catch (_) {
         _maybeShowNextPendingRide();
         return;

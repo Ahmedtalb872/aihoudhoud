@@ -166,12 +166,14 @@ class AuthRepository {
 
   /// Fills in the vehicle/city/address/birth-date details collected during
   /// registration on the bare `captains` row the sign-up trigger created.
+  /// [vehicleType] is 'economy'/'comfort'/'family' for a car, or literally
+  /// 'motorcycle' - there's no separate vehicle-category column, a
+  /// motorcycle is just another value of this same column.
   Future<void> updateCaptainVehicleInfo({
     required String captainId,
     required String city,
     required String address,
     required String dateOfBirth,
-    required String vehicleCategory,
     required String vehicleType,
     required String vehicleBrand,
     required String vehicleModel,
@@ -187,7 +189,6 @@ class AuthRepository {
             'city': city,
             'address': address,
             'date_of_birth': dateOfBirth,
-            'vehicle_category': vehicleCategory,
             'vehicle_type': vehicleType,
             'vehicle_brand': vehicleBrand,
             'vehicle_model': vehicleModel,
@@ -215,15 +216,28 @@ class AuthRepository {
 
   /// Motorcycle captains can opt in/out of receiving delivery requests
   /// alongside their normal passenger requests.
-  Future<void> setDeliveryModeEnabled(String captainId, bool enabled) async {
+  Future<void> setAcceptsDelivery(String captainId, bool enabled) async {
     try {
       await _client
           .from('captains')
-          .update({'delivery_mode_enabled': enabled})
+          .update({'accepts_delivery': enabled})
           .eq('id', captainId);
     } catch (_) {
       // Best-effort - local toggle state still works even if this fails.
     }
+  }
+
+  /// Atomically claims a searching trip via the `captain_accept_trip`
+  /// RPC, which re-checks server-side that the captain is approved/online
+  /// (and, for a delivery, a motorcycle captain with accepts_delivery on)
+  /// before handing it over. Throws if the trip is no longer available or
+  /// the captain isn't eligible.
+  Future<Map<String, dynamic>> acceptTrip(String tripId) async {
+    final result = await _client.rpc(
+      'captain_accept_trip',
+      params: {'p_trip_id': tripId},
+    );
+    return result as Map<String, dynamic>;
   }
 
   Future<void> signOut() async {

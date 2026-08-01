@@ -458,8 +458,9 @@ class _CaptainRegisterStepperScreenState
           city: _selectedCity,
           address: _addressController.text.trim(),
           dateOfBirth: _dobController.text.trim(),
-          vehicleCategory: _vehicleCategory,
-          vehicleType: _carType,
+          // No separate vehicle-category column: a motorcycle is just
+          // another value of vehicle_type, alongside the car tiers.
+          vehicleType: _isMotorcycle ? 'motorcycle' : _carType,
           vehicleBrand: _carBrandController.text.trim(),
           vehicleModel: _carModelController.text.trim(),
           vehicleYear: int.tryParse(_carYearController.text.trim()) ?? 2018,
