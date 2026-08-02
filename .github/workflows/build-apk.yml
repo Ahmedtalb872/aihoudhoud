@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android APK + App Bundle
 
 on:
   push:
@@ -40,10 +40,19 @@ jobs:
       - name: Build release APK
         run: flutter build apk --release --dart-define-from-file=env.json
 
-      - name: Publish APK to the "latest-apk" release
+      - name: Build release App Bundle (for Play Store upload)
+        run: flutter build appbundle --release --dart-define-from-file=env.json
+
+      - name: Publish APK + App Bundle to the "latest-apk" release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest-apk
-          name: أحدث نسخة (تثبيت مباشر)
-          body: يتم تحديث هذا الإصدار تلقائيًا مع كل تعديل على فرع claude/project-details-o5qgzr. نزّل app-release.apk وثبّته على هاتفك مباشرة.
-          files: build/app/outputs/flutter-apk/app-release.apk
+          name: أحدث نسخة
+          body: |
+            يتم تحديث هذا الإصدار تلقائيًا مع كل تعديل على فرع claude/project-details-o5qgzr.
+
+            - app-release.apk: للتثبيت المباشر على هاتف أندرويد (نزّله وثبّته مباشرة).
+            - app-release.aab: App Bundle لرفعه على Google Play Console - لا يُثبَّت مباشرة على هاتف.
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
