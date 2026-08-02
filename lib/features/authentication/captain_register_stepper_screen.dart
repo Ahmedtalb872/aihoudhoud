@@ -823,23 +823,25 @@ class _CaptainRegisterStepperScreenState
           ),
         ),
         const SizedBox(height: 12),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildVehicleCategoryCard(
-              'car',
-              'سيارة',
-              'نقل الركاب',
-              Icons.directions_car_filled_rounded,
-            ),
-            const SizedBox(width: 12),
-            _buildVehicleCategoryCard(
-              'motorcycle',
-              'دراجة نارية',
-              'نقل الركاب + توصيل الطرود',
-              Icons.two_wheeler_rounded,
-            ),
-          ],
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildVehicleCategoryCard(
+                'car',
+                'سيارة',
+                'نقل الركاب',
+                Icons.directions_car_filled_rounded,
+              ),
+              const SizedBox(width: 12),
+              _buildVehicleCategoryCard(
+                'motorcycle',
+                'دراجة نارية',
+                'نقل الركاب + توصيل الطرود',
+                Icons.two_wheeler_rounded,
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 20),
 

@@ -338,21 +338,23 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildVehicleCategoryCard(
-                          'car',
-                          'سيارة',
-                          Icons.directions_car_filled_rounded,
-                        ),
-                        const SizedBox(width: 12),
-                        _buildVehicleCategoryCard(
-                          'motorcycle',
-                          'دراجة نارية',
-                          Icons.two_wheeler_rounded,
-                        ),
-                      ],
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _buildVehicleCategoryCard(
+                            'car',
+                            'سيارة',
+                            Icons.directions_car_filled_rounded,
+                          ),
+                          const SizedBox(width: 12),
+                          _buildVehicleCategoryCard(
+                            'motorcycle',
+                            'دراجة نارية',
+                            Icons.two_wheeler_rounded,
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 20),
                     if (!_isMotorcycle) ...[
