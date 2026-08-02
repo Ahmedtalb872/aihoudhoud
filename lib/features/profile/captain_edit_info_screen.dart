@@ -1,14 +1,17 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../../core/constants/captain_documents.dart';
 import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_exception.dart';
 import '../../core/supabase/auth_repository.dart';
 import '../../providers/app_state_provider.dart';
 
-/// Lets a captain fix their personal/vehicle details after registration -
-/// most commonly needed right after an admin rejects the application for a
-/// mistake (wrong plate number, blurry brand/model, etc.) and the captain
-/// needs to correct it and resubmit.
+/// Lets a captain fix their personal/vehicle/document details after
+/// registration - most commonly needed right after an admin rejects the
+/// application for a mistake (wrong plate number, blurry document, etc.)
+/// and the captain needs to correct it and resubmit.
 class CaptainEditInfoScreen extends StatefulWidget {
   const CaptainEditInfoScreen({super.key});
 
@@ -35,6 +38,11 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
   final _carColorController = TextEditingController();
   final _carPlateController = TextEditingController();
   int _carSeats = 4;
+
+  // document_type -> {'status': ..., 'rejection_reason': ...}
+  Map<String, Map<String, dynamic>> _docDataByKey = {};
+  String? _uploadingDoc;
+  String? _accountRejectionReason;
 
   bool get _isMotorcycle => _vehicleCategory == 'motorcycle';
 
@@ -66,6 +74,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
     try {
       final profile = await _authRepository.getProfile(userId);
       final captain = await _authRepository.getCaptain(userId);
+      final docs = await _authRepository.getCaptainDocuments(userId);
       if (!mounted) return;
       setState(() {
         _nameController.text = profile['full_name'] as String? ?? '';
@@ -82,6 +91,12 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
         _carColorController.text = captain['vehicle_color'] as String? ?? '';
         _carPlateController.text = captain['vehicle_plate'] as String? ?? '';
         _carSeats = (captain['vehicle_seats'] as num?)?.toInt() ?? 4;
+        _docDataByKey = {
+          for (final row in docs) row['document_type'] as String: row,
+        };
+        _accountRejectionReason = captain['status'] == 'rejected'
+            ? captain['rejection_reason'] as String?
+            : null;
       });
     } on AppAuthException catch (e) {
       if (mounted) setState(() => _errorText = e.message);
@@ -141,6 +156,92 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
     }
   }
 
+  Future<void> _reuploadDoc(String docType) async {
+    final userId = _authRepository.currentUser?.id;
+    if (userId == null) return;
+
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(
+                Icons.camera_alt_rounded,
+                color: AppColors.primary,
+              ),
+              title: const Text(
+                'التقاط صورة',
+                style: TextStyle(fontFamily: 'Cairo'),
+              ),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.photo_library_rounded,
+                color: AppColors.primary,
+              ),
+              title: const Text(
+                'اختيار من المعرض',
+                style: TextStyle(fontFamily: 'Cairo'),
+              ),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
+
+    setState(() => _uploadingDoc = docType);
+    try {
+      final file = await ImagePicker().pickImage(source: source, imageQuality: 80);
+      if (file == null) {
+        if (mounted) setState(() => _uploadingDoc = null);
+        return;
+      }
+      final Uint8List bytes = await file.readAsBytes();
+      await _authRepository.uploadCaptainDocuments(userId, [
+        CaptainDocumentFile(
+          docKey: docType,
+          docName: kCaptainDocTypes[docType] ?? docType,
+          bytes: bytes,
+        ),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _docDataByKey[docType] = {'status': 'pending', 'rejection_reason': null};
+        _uploadingDoc = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'تم رفع المستند من جديد، وهو الآن قيد المراجعة.',
+            style: TextStyle(fontFamily: 'Cairo'),
+          ),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _uploadingDoc = null);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'تعذر رفع المستند، حاول مرة أخرى.',
+            style: TextStyle(fontFamily: 'Cairo'),
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -154,6 +255,14 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (_accountRejectionReason != null &&
+                        _accountRejectionReason!.isNotEmpty) ...[
+                      _buildNoticeBanner(
+                        'ملاحظة من الإدارة',
+                        _accountRejectionReason!,
+                      ),
+                      const SizedBox(height: 20),
+                    ],
                     const Text(
                       'المعلومات الشخصية',
                       style: TextStyle(
@@ -328,6 +437,28 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                         ),
                       ),
                     ],
+                    const SizedBox(height: 28),
+
+                    const Text(
+                      'المستندات',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.darkText,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'يُرفع كل مستند فور اختياره - لا حاجة لزر الحفظ بالأسفل لهذا القسم.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.secondaryText,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ...kCaptainDocTypes.keys.map(_buildDocRow),
 
                     if (_errorText != null) ...[
                       const SizedBox(height: 16),
@@ -357,6 +488,173 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                   ],
                 ),
               ),
+      ),
+    );
+  }
+
+  Widget _buildNoticeBanner(String title, String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.error.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.error.withOpacity(0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: AppColors.error,
+                    fontFamily: 'Cairo',
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.darkText,
+                    fontFamily: 'Cairo',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocRow(String docType) {
+    final docLabel = captainDocLabel(docType, isMotorcycle: _isMotorcycle);
+    final data = _docDataByKey[docType];
+    final status = data?['status'] as String?;
+    final docReason = data?['rejection_reason'] as String?;
+    final isThisUploading = _uploadingDoc == docType;
+
+    Color statusColor = AppColors.secondaryText;
+    String statusText = 'لم يُرفع بعد';
+    IconData statusIcon = Icons.upload_file_rounded;
+    if (status == 'approved') {
+      statusColor = AppColors.success;
+      statusText = 'تم القبول';
+      statusIcon = Icons.check_circle_outline;
+    } else if (status == 'pending') {
+      statusColor = AppColors.warning;
+      statusText = 'قيد المراجعة';
+      statusIcon = Icons.hourglass_empty_rounded;
+    } else if (status == 'rejected') {
+      statusColor = AppColors.error;
+      statusText = 'مرفوض - يحتاج إعادة رفع';
+      statusIcon = Icons.cancel_outlined;
+    } else if (status == 'expired') {
+      statusColor = AppColors.secondaryText;
+      statusText = 'منتهي الصلاحية';
+      statusIcon = Icons.timer_off_outlined;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      docLabel,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.darkText,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(statusIcon, color: statusColor, size: 13),
+                        const SizedBox(width: 4),
+                        Text(
+                          statusText,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: statusColor,
+                            fontFamily: 'Cairo',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (status == 'rejected' && docReason != null && docReason.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  docReason,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.error,
+                    fontFamily: 'Cairo',
+                  ),
+                ),
+              ],
+              if (status != 'approved') ...[
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: isThisUploading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: AppColors.primary,
+                          ),
+                        )
+                      : ElevatedButton.icon(
+                          onPressed: () => _reuploadDoc(docType),
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(130, 32),
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          icon: const Icon(Icons.upload_rounded, size: 14),
+                          label: Text(
+                            status == null ? 'رفع المستند' : 'إعادة رفع المستند',
+                            style: const TextStyle(fontSize: 10),
+                          ),
+                        ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

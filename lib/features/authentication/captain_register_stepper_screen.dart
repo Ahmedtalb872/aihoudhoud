@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../../core/constants/captain_documents.dart';
 import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_exception.dart';
 import '../../core/supabase/auth_repository.dart';
@@ -10,24 +11,6 @@ import '../../providers/app_state_provider.dart';
 import '../captain/captain_home_screen.dart';
 import '../onboarding/pending_review_screen.dart';
 import '../onboarding/permissions_screen.dart';
-
-/// Arabic document label -> `document_type` value, matching the
-/// `captain_documents_document_type_check` constraint exactly.
-const Map<String, String> _kDocKeys = {
-  'الصورة الشخصية': 'profile_photo',
-  'بطاقة الهوية الوطنية - الوجه الأمامي': 'national_id_front',
-  'بطاقة الهوية الوطنية - الوجه الخلفي': 'national_id_back',
-  'رخصة السياقة - الوجه الأمامي': 'driving_license_front',
-  'رخصة السياقة - الوجه الخلفي': 'driving_license_back',
-  'البطاقة الرمادية - الوجه الأمامي': 'vehicle_registration_front',
-  'البطاقة الرمادية - الوجه الخلفي': 'vehicle_registration_back',
-  'صورة السيارة': 'vehicle_photo',
-  'تأمين السيارة': 'vehicle_insurance',
-  'مستند إضافي (اختياري)': 'additional_document',
-};
-
-/// This one alone isn't required to complete registration.
-const String _kOptionalDocLabel = 'مستند إضافي (اختياري)';
 
 class CaptainRegisterStepperScreen extends StatefulWidget {
   const CaptainRegisterStepperScreen({super.key});
@@ -67,9 +50,9 @@ class _CaptainRegisterStepperScreenState
   final _carPlateController = TextEditingController(text: '1234 AA 00');
   int _carSeats = 4;
 
-  // Step 3 Upload states
+  // Step 3 Upload states - keyed by document_type.
   final Map<String, bool> _uploadStates = {
-    for (final label in _kDocKeys.keys) label: false,
+    for (final docType in kCaptainDocTypes.keys) docType: false,
   };
   String? _uploadingDoc;
   final Map<String, Uint8List> _pickedFileBytes = {};
@@ -279,7 +262,7 @@ class _CaptainRegisterStepperScreenState
 
   bool _validateStep3() {
     final requiredUploaded = _uploadStates.entries
-        .where((e) => e.key != _kOptionalDocLabel)
+        .where((e) => e.key != kOptionalDocType)
         .every((e) => e.value);
     if (requiredUploaded) return true;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -327,7 +310,7 @@ class _CaptainRegisterStepperScreenState
     }
   }
 
-  Future<void> _pickDocument(String docName) async {
+  Future<void> _pickDocument(String docType) async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -381,7 +364,7 @@ class _CaptainRegisterStepperScreenState
     );
     if (source == null || !mounted) return;
 
-    setState(() => _uploadingDoc = docName);
+    setState(() => _uploadingDoc = docType);
     try {
       final file = await ImagePicker().pickImage(
         source: source,
@@ -394,8 +377,8 @@ class _CaptainRegisterStepperScreenState
       final bytes = await file.readAsBytes();
       if (!mounted) return;
       setState(() {
-        _pickedFileBytes[docName] = bytes;
-        _uploadStates[docName] = true;
+        _pickedFileBytes[docType] = bytes;
+        _uploadStates[docType] = true;
         _uploadingDoc = null;
       });
     } catch (_) {
@@ -446,8 +429,8 @@ class _CaptainRegisterStepperScreenState
           _pickedFileBytes.entries
               .map(
                 (e) => CaptainDocumentFile(
-                  docKey: _kDocKeys[e.key] ?? e.key,
-                  docName: e.key,
+                  docKey: e.key,
+                  docName: kCaptainDocTypes[e.key] ?? e.key,
                   bytes: e.value,
                 ),
               )
@@ -1094,20 +1077,8 @@ class _CaptainRegisterStepperScreenState
     );
   }
 
-  // Same underlying document (doc_key, upload path) for both vehicle
-  // categories - only the guiding label text changes for a motorcycle.
-  static const Map<String, String> _motorcycleDocLabels = {
-    'رخصة السياقة - الوجه الأمامي': 'رخصة قيادة دراجة نارية - الوجه الأمامي',
-    'رخصة السياقة - الوجه الخلفي': 'رخصة قيادة دراجة نارية - الوجه الخلفي',
-    'البطاقة الرمادية - الوجه الأمامي': 'تسجيل الدراجة - الوجه الأمامي',
-    'البطاقة الرمادية - الوجه الخلفي': 'تسجيل الدراجة - الوجه الخلفي',
-    'صورة السيارة': 'صورة الدراجة النارية',
-    'تأمين السيارة': 'تأمين الدراجة النارية',
-  };
-
-  String _docDisplayLabel(String docName) {
-    if (!_isMotorcycle) return docName;
-    return _motorcycleDocLabels[docName] ?? docName;
+  String _docDisplayLabel(String docType) {
+    return captainDocLabel(docType, isMotorcycle: _isMotorcycle);
   }
 
   Widget _buildStep3Documents() {
@@ -1140,13 +1111,13 @@ class _CaptainRegisterStepperScreenState
           itemCount: _uploadStates.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
-            String docName = _uploadStates.keys.elementAt(index);
-            bool isUploaded = _uploadStates[docName]!;
-            bool isThisUploading = _uploadingDoc == docName;
-            Uint8List? preview = _pickedFileBytes[docName];
+            String docType = _uploadStates.keys.elementAt(index);
+            bool isUploaded = _uploadStates[docType]!;
+            bool isThisUploading = _uploadingDoc == docType;
+            Uint8List? preview = _pickedFileBytes[docType];
 
             return InkWell(
-              onTap: isThisUploading ? null : () => _pickDocument(docName),
+              onTap: isThisUploading ? null : () => _pickDocument(docType),
               borderRadius: BorderRadius.circular(20),
               child: Container(
                 padding: const EdgeInsets.all(16),
@@ -1191,7 +1162,7 @@ class _CaptainRegisterStepperScreenState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _docDisplayLabel(docName),
+                            _docDisplayLabel(docType),
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14,

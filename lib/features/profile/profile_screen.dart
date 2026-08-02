@@ -6,7 +6,6 @@ import '../wallet/wallet_screen.dart';
 import '../trips/my_trips_screen.dart';
 import '../support/support_screen.dart';
 import '../support/settings_screen.dart';
-import 'captain_documents_status_screen.dart';
 import 'captain_edit_info_screen.dart';
 import '../../dummy_data/dummy_data.dart';
 
@@ -134,19 +133,10 @@ class ProfileScreen extends StatelessWidget {
         _buildMenuCard([
           _buildMenuItem(
             icon: Icons.edit_rounded,
-            title: 'تعديل المعلومات الشخصية والمركبة',
+            title: 'تعديل المعلومات والمستندات',
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => const CaptainEditInfoScreen(),
-              ),
-            ),
-          ),
-          _buildMenuItem(
-            icon: Icons.assignment_rounded,
-            title: 'حالة المستندات المرفوعة',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const CaptainDocumentsStatusScreen(),
               ),
             ),
           ),

@@ -6,18 +6,17 @@ import '../../core/supabase/auth_repository.dart';
 import '../../core/services/whatsapp_support.dart';
 import '../../providers/app_state_provider.dart';
 import '../captain/captain_home_screen.dart';
-import '../profile/captain_documents_status_screen.dart';
 import '../profile/captain_edit_info_screen.dart';
 import 'permissions_screen.dart';
 import 'splash_screen.dart';
 
 /// Shown after registration (and on every login) while a captain's account
 /// is not yet approved by an admin. There is deliberately no way to skip
-/// past this screen into the app - only a status refresh, editing info,
-/// reviewing document status, a WhatsApp contact button for delays, and
-/// logout. Approval/rejection happens from the admin panel, which flips
-/// `captains.status` and (on rejection) fills `captains.rejection_reason`
-/// with the reason shown here.
+/// past this screen into the app - only a status refresh, editing info
+/// (personal/vehicle/documents, all in one place), a WhatsApp contact
+/// button for delays, and logout. Approval/rejection happens from the
+/// admin panel, which flips `captains.status` and (on rejection) fills
+/// `captains.rejection_reason` with the reason shown here.
 class PendingReviewScreen extends StatefulWidget {
   final String? uploadWarning;
   const PendingReviewScreen({super.key, this.uploadWarning});
@@ -225,21 +224,7 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
                   _checkStatus(silent: true);
                 },
                 icon: const Icon(Icons.edit_rounded),
-                label: const Text('تعديل المعلومات الشخصية والمركبة'),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          const CaptainDocumentsStatusScreen(),
-                    ),
-                  );
-                  _checkStatus(silent: true);
-                },
-                icon: const Icon(Icons.assignment_rounded),
-                label: const Text('مراجعة حالة المستندات'),
+                label: const Text('تعديل المعلومات والمستندات'),
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
