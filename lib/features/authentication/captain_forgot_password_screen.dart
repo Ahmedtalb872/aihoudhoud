@@ -25,6 +25,8 @@ class _CaptainForgotPasswordScreenState
 
   int _step = 1; // 1: phone, 2: code + new password, 3: done
   bool _isLoading = false;
+  bool _obscureNewPassword = true;
+  bool _obscureConfirmPassword = true;
   String? _errorText;
 
   String get _fullPhone => '+222${_phoneController.text.trim()}';
@@ -245,8 +247,19 @@ class _CaptainForgotPasswordScreenState
       const SizedBox(height: 8),
       TextField(
         controller: _newPasswordController,
-        obscureText: true,
-        decoration: const InputDecoration(hintText: '6 أحرف على الأقل'),
+        obscureText: _obscureNewPassword,
+        decoration: InputDecoration(
+          hintText: '6 أحرف على الأقل',
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscureNewPassword
+                  ? Icons.visibility_off_rounded
+                  : Icons.visibility_rounded,
+            ),
+            onPressed: () =>
+                setState(() => _obscureNewPassword = !_obscureNewPassword),
+          ),
+        ),
       ),
       const SizedBox(height: 16),
       const Text(
@@ -259,7 +272,22 @@ class _CaptainForgotPasswordScreenState
         ),
       ),
       const SizedBox(height: 8),
-      TextField(controller: _confirmPasswordController, obscureText: true),
+      TextField(
+        controller: _confirmPasswordController,
+        obscureText: _obscureConfirmPassword,
+        decoration: InputDecoration(
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscureConfirmPassword
+                  ? Icons.visibility_off_rounded
+                  : Icons.visibility_rounded,
+            ),
+            onPressed: () => setState(
+              () => _obscureConfirmPassword = !_obscureConfirmPassword,
+            ),
+          ),
+        ),
+      ),
       if (_errorText != null) ...[
         const SizedBox(height: 8),
         Text(

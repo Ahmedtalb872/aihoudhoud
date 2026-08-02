@@ -51,6 +51,8 @@ class _CaptainRegisterStepperScreenState
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   String _selectedCity = 'نواكشوط';
   final _addressController = TextEditingController();
   final _dobController = TextEditingController(text: '1990-01-01');
@@ -690,14 +692,33 @@ class _CaptainRegisterStepperScreenState
           _buildTextField(
             'كلمة المرور',
             _passwordController,
-            obscure: true,
+            obscure: _obscurePassword,
             hint: '6 أحرف على الأقل',
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword
+                    ? Icons.visibility_off_rounded
+                    : Icons.visibility_rounded,
+              ),
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
+            ),
           ),
           const SizedBox(height: 16),
           _buildTextField(
             'تأكيد كلمة المرور',
             _confirmPasswordController,
-            obscure: true,
+            obscure: _obscureConfirmPassword,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureConfirmPassword
+                    ? Icons.visibility_off_rounded
+                    : Icons.visibility_rounded,
+              ),
+              onPressed: () => setState(
+                () => _obscureConfirmPassword = !_obscureConfirmPassword,
+              ),
+            ),
           ),
           const SizedBox(height: 4),
           const Text(
@@ -1392,6 +1413,7 @@ class _CaptainRegisterStepperScreenState
     TextEditingController controller, {
     bool obscure = false,
     String? hint,
+    Widget? suffixIcon,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1409,7 +1431,7 @@ class _CaptainRegisterStepperScreenState
         TextFormField(
           controller: controller,
           obscureText: obscure,
-          decoration: InputDecoration(hintText: hint),
+          decoration: InputDecoration(hintText: hint, suffixIcon: suffixIcon),
         ),
       ],
     );
