@@ -792,28 +792,41 @@ class _CaptainRegisterStepperScreenState
         ),
         const SizedBox(height: 20),
 
-        // Vehicle category selection (car / motorcycle)
+        // Vehicle category selection (car / motorcycle) - large, unmissable
+        // cards since this choice decides whether delivery mode unlocks.
         const Text(
-          'نوع المركبة',
+          'ما هي مركبتك؟',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: 16,
             fontWeight: FontWeight.bold,
             color: AppColors.darkText,
             fontFamily: 'Cairo',
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
+        const Text(
+          'اختر نوع مركبتك - يحدد هذا الخيار خدمات النقل المتاحة لك.',
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.secondaryText,
+            fontFamily: 'Cairo',
+          ),
+        ),
+        const SizedBox(height: 12),
         Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildVehicleCategoryCard(
               'car',
               'سيارة',
+              'نقل الركاب',
               Icons.directions_car_filled_rounded,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             _buildVehicleCategoryCard(
               'motorcycle',
               'دراجة نارية',
+              'نقل الركاب + توصيل الطرود',
               Icons.two_wheeler_rounded,
             ),
           ],
@@ -929,38 +942,76 @@ class _CaptainRegisterStepperScreenState
     );
   }
 
-  Widget _buildVehicleCategoryCard(String category, String label, IconData icon) {
+  Widget _buildVehicleCategoryCard(
+    String category,
+    String label,
+    String subtitle,
+    IconData icon,
+  ) {
     bool isSel = _vehicleCategory == category;
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _vehicleCategory = category),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
           decoration: BoxDecoration(
-            color: isSel ? AppColors.primary : Colors.white,
-            borderRadius: BorderRadius.circular(18),
+            color: isSel ? AppColors.primary.withOpacity(0.12) : Colors.white,
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isSel ? AppColors.primary : AppColors.border,
-              width: 1.5,
+              width: isSel ? 2.5 : 1.5,
             ),
           ),
-          child: Column(
+          child: Stack(
             children: [
-              Icon(
-                icon,
-                color: isSel ? Colors.white : AppColors.secondaryText,
-                size: 28,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSel ? Colors.white : AppColors.darkText,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Cairo',
-                  fontSize: 13,
+              if (isSel)
+                const Positioned(
+                  top: -4,
+                  left: -4,
+                  child: Icon(
+                    Icons.check_circle_rounded,
+                    color: AppColors.primaryDark,
+                    size: 22,
+                  ),
                 ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 68,
+                    height: 68,
+                    decoration: BoxDecoration(
+                      color: isSel ? AppColors.primary : AppColors.background,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      icon,
+                      color: isSel ? Colors.white : AppColors.secondaryText,
+                      size: 40,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: AppColors.darkText,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Cairo',
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: AppColors.secondaryText,
+                      fontFamily: 'Cairo',
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
