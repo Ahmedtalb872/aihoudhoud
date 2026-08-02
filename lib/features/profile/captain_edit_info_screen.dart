@@ -200,7 +200,15 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
 
     setState(() => _uploadingDoc = docType);
     try {
-      final file = await ImagePicker().pickImage(source: source, imageQuality: 80);
+      final file = await ImagePicker().pickImage(
+        source: source,
+        imageQuality: 80,
+        // imageQuality alone isn't reliably honored on Flutter web, which
+        // can otherwise upload a raw multi-MB camera photo as-is - capping
+        // the dimensions keeps every platform's upload small and fast.
+        maxWidth: 1600,
+        maxHeight: 1600,
+      );
       if (file == null) {
         if (mounted) setState(() => _uploadingDoc = null);
         return;
@@ -227,7 +235,8 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
           backgroundColor: AppColors.success,
         ),
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Document re-upload failed: $e');
       if (!mounted) return;
       setState(() => _uploadingDoc = null);
       ScaffoldMessenger.of(context).showSnackBar(
