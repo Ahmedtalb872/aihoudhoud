@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../core/constants/app_links.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
 import '../onboarding/auth_choice_screen.dart';
@@ -238,6 +240,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       );
                     },
+                  ),
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.privacy_tip_outlined,
+                      color: AppColors.secondaryText,
+                    ),
+                    title: const Text(
+                      'سياسة الخصوصية',
+                      style: TextStyle(fontFamily: 'Cairo', fontSize: 14),
+                    ),
+                    trailing: const Icon(Icons.chevron_left_rounded),
+                    onTap: () => launchUrl(
+                      Uri.parse(kPrivacyPolicyUrl),
+                      mode: LaunchMode.externalApplication,
+                    ),
                   ),
                   const Divider(height: 1, indent: 16, endIndent: 16),
                   ListTile(

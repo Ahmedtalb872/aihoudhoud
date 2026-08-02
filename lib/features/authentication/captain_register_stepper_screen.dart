@@ -2,6 +2,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../core/constants/app_links.dart';
 import '../../core/constants/captain_documents.dart';
 import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_exception.dart';
@@ -1344,6 +1346,16 @@ class _CaptainRegisterStepperScreenState
               ),
             ),
           ],
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: () => launchUrl(
+              Uri.parse(kPrivacyPolicyUrl),
+              mode: LaunchMode.externalApplication,
+            ),
+            child: const Text('اطّلع على سياسة الخصوصية'),
+          ),
         ),
       ],
     );
