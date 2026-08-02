@@ -28,9 +28,6 @@ class AppStateProvider extends ChangeNotifier {
   final List<WalletTransaction> _captainTransactions = List.from(
     DummyData.dummyCaptainTransactions,
   );
-  final Map<String, String> _captainDocsStatus = Map.from(
-    DummyData.dummyCaptain.documentsStatus,
-  );
 
   // Active Trip states
   Trip? _activeTrip;
@@ -79,7 +76,6 @@ class AppStateProvider extends ChangeNotifier {
   double get captainTodayEarnings => _captainTodayEarnings;
   int get captainTripsCount => _captainTripsCount;
   List<WalletTransaction> get captainTransactions => _captainTransactions;
-  Map<String, String> get captainDocsStatus => _captainDocsStatus;
 
   Trip? get activeTrip => _activeTrip;
   int get countdownSeconds => _countdownSeconds;
@@ -157,6 +153,25 @@ class AppStateProvider extends ChangeNotifier {
           : 'car';
       _deliveryModeEnabled = captain['accepts_delivery'] as bool? ?? false;
     }
+    notifyListeners();
+  }
+
+  // Reflects an edit made from CaptainEditInfoScreen locally, without a
+  // full re-login: the display name shown in the drawer/profile header.
+  void updateCaptainDisplayName(String name) {
+    if (name.isEmpty) return;
+    _captainName = name;
+    notifyListeners();
+  }
+
+  // Reflects a vehicle-category change made from CaptainEditInfoScreen
+  // locally. Switching away from motorcycle also turns delivery mode off
+  // locally (the server-side accepts_delivery flag is irrelevant anyway
+  // once vehicle_type isn't 'motorcycle', since both the RPC and RLS check
+  // it - this just keeps the UI in sync without an extra round trip).
+  void updateVehicleCategoryLocally(String vehicleType) {
+    _vehicleCategory = vehicleType == 'motorcycle' ? 'motorcycle' : 'car';
+    if (_vehicleCategory != 'motorcycle') _deliveryModeEnabled = false;
     notifyListeners();
   }
 
@@ -928,12 +943,6 @@ class AppStateProvider extends ChangeNotifier {
       _chatMessages.add(replyMessage);
       notifyListeners();
     });
-  }
-
-  // Update Captain doc status
-  void updateCaptainDoc(String docKey, String newStatus) {
-    _captainDocsStatus[docKey] = newStatus;
-    notifyListeners();
   }
 
   @override

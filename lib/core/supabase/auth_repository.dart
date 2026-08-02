@@ -140,11 +140,37 @@ class AuthRepository {
     }
   }
 
+  /// The current upload status of every `captain_documents` row for
+  /// [captainId] - a doc_key with no row here just hasn't been uploaded.
+  Future<List<Map<String, dynamic>>> getCaptainDocuments(
+    String captainId,
+  ) async {
+    try {
+      return await _client
+          .from('captain_documents')
+          .select('doc_key, status')
+          .eq('captain_id', captainId);
+    } on PostgrestException {
+      throw AppAuthException('تعذر تحميل حالة المستندات.');
+    }
+  }
+
   Future<Map<String, dynamic>> getProfile(String userId) async {
     try {
       return await _client.from('profiles').select().eq('id', userId).single();
     } on PostgrestException {
       throw AppAuthException('تعذر تحميل بيانات الحساب.');
+    }
+  }
+
+  Future<void> updateProfileName(String profileId, String fullName) async {
+    try {
+      await _client
+          .from('profiles')
+          .update({'full_name': fullName})
+          .eq('id', profileId);
+    } on PostgrestException {
+      throw AppAuthException('تعذر حفظ الاسم.');
     }
   }
 

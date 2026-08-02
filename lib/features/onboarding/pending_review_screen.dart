@@ -6,14 +6,18 @@ import '../../core/supabase/auth_repository.dart';
 import '../../core/services/whatsapp_support.dart';
 import '../../providers/app_state_provider.dart';
 import '../captain/captain_home_screen.dart';
+import '../profile/captain_documents_status_screen.dart';
+import '../profile/captain_edit_info_screen.dart';
 import 'permissions_screen.dart';
 import 'splash_screen.dart';
 
 /// Shown after registration (and on every login) while a captain's account
 /// is not yet approved by an admin. There is deliberately no way to skip
-/// past this screen into the app - only a status refresh, a WhatsApp
-/// contact button for delays, and logout. Approval happens by an admin
-/// flipping `profiles.is_approved` from the Supabase Table Editor.
+/// past this screen into the app - only a status refresh, editing info,
+/// reviewing document status, a WhatsApp contact button for delays, and
+/// logout. Approval/rejection happens from the admin panel, which flips
+/// `captains.status` and (on rejection) fills `captains.rejection_reason`
+/// with the reason shown here.
 class PendingReviewScreen extends StatefulWidget {
   final String? uploadWarning;
   const PendingReviewScreen({super.key, this.uploadWarning});
@@ -25,10 +29,13 @@ class PendingReviewScreen extends StatefulWidget {
 class _PendingReviewScreenState extends State<PendingReviewScreen> {
   final _authRepository = AuthRepository();
   bool _isChecking = false;
+  bool _isRejected = false;
+  String? _rejectionReason;
 
   @override
   void initState() {
     super.initState();
+    _checkStatus(silent: true);
     if (widget.uploadWarning != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -46,13 +53,14 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
     }
   }
 
-  Future<void> _checkStatus() async {
+  Future<void> _checkStatus({bool silent = false}) async {
     setState(() => _isChecking = true);
     try {
       final userId = _authRepository.currentUser?.id;
       if (userId == null) return;
       final captain = await _authRepository.getCaptain(userId);
-      final approved = captain['status'] == 'approved';
+      final status = captain['status'] as String?;
+      final approved = status == 'approved';
 
       if (!mounted) return;
       if (approved) {
@@ -63,18 +71,29 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
           ),
           (route) => false,
         );
-      } else {
+        return;
+      }
+
+      setState(() {
+        _isRejected = status == 'rejected';
+        _rejectionReason = _isRejected
+            ? captain['rejection_reason'] as String?
+            : null;
+      });
+      if (!silent) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-              'لا يزال طلبك قيد المراجعة، حاول مرة أخرى لاحقًا.',
-              style: TextStyle(fontFamily: 'Cairo'),
+              _isRejected
+                  ? 'طلبك مرفوض حاليًا، راجع ملاحظة الإدارة أدناه.'
+                  : 'لا يزال طلبك قيد المراجعة، حاول مرة أخرى لاحقًا.',
+              style: const TextStyle(fontFamily: 'Cairo'),
             ),
           ),
         );
       }
     } on AppAuthException catch (e) {
-      if (!mounted) return;
+      if (!mounted || silent) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.message, style: const TextStyle(fontFamily: 'Cairo')),
@@ -101,28 +120,30 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Spacer(),
+              const SizedBox(height: 40),
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.1),
+                  color: (_isRejected ? AppColors.error : AppColors.warning)
+                      .withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.hourglass_top_rounded,
-                  color: AppColors.warning,
+                child: Icon(
+                  _isRejected
+                      ? Icons.error_outline_rounded
+                      : Icons.hourglass_top_rounded,
+                  color: _isRejected ? AppColors.error : AppColors.warning,
                   size: 72,
                 ),
               ),
               const SizedBox(height: 28),
-              const Text(
-                'جاري تأكد من حسابك',
-                style: TextStyle(
+              Text(
+                _isRejected ? 'طلبك مرفوض حاليًا' : 'جاري تأكد من حسابك',
+                style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: AppColors.darkText,
@@ -130,16 +151,55 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'فريقنا يراجع بياناتك ومستنداتك الآن. ستتمكن من الدخول للتطبيق فور تفعيل حسابك من الإدارة.',
+              Text(
+                _isRejected
+                    ? 'راجع ملاحظة الإدارة أدناه، صحّح المشكلة، ثم اطلب تحديث الحالة.'
+                    : 'فريقنا يراجع بياناتك ومستنداتك الآن. ستتمكن من الدخول للتطبيق فور تفعيل حسابك من الإدارة.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   color: AppColors.secondaryText,
                   fontFamily: 'Cairo',
                 ),
               ),
-              const Spacer(),
+              if (_isRejected &&
+                  _rejectionReason != null &&
+                  _rejectionReason!.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'ملاحظة الإدارة',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: AppColors.error,
+                          fontFamily: 'Cairo',
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _rejectionReason!,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.darkText,
+                          fontFamily: 'Cairo',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 40),
               ElevatedButton.icon(
                 onPressed: _isChecking ? null : _checkStatus,
                 icon: _isChecking
@@ -153,6 +213,33 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
                       )
                     : const Icon(Icons.refresh_rounded),
                 label: const Text('تحديث الحالة'),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const CaptainEditInfoScreen(),
+                    ),
+                  );
+                  _checkStatus(silent: true);
+                },
+                icon: const Icon(Icons.edit_rounded),
+                label: const Text('تعديل المعلومات الشخصية والمركبة'),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const CaptainDocumentsStatusScreen(),
+                    ),
+                  );
+                  _checkStatus(silent: true);
+                },
+                icon: const Icon(Icons.assignment_rounded),
+                label: const Text('مراجعة حالة المستندات'),
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(

@@ -7,43 +7,12 @@ import '../trips/my_trips_screen.dart';
 import '../support/support_screen.dart';
 import '../support/settings_screen.dart';
 import 'captain_documents_status_screen.dart';
+import 'captain_edit_info_screen.dart';
 import '../../dummy_data/dummy_data.dart';
 
 class ProfileScreen extends StatelessWidget {
   final bool showAppBar;
   const ProfileScreen({super.key, this.showAppBar = false});
-
-  void _showInfoDialog(BuildContext context, String title, String content) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontFamily: 'Cairo',
-            fontWeight: FontWeight.bold,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        content: Text(
-          content,
-          style: const TextStyle(
-            fontFamily: 'Cairo',
-            fontSize: 13,
-            height: 1.5,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('إغلاق'),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -164,25 +133,13 @@ class ProfileScreen extends StatelessWidget {
       children: [
         _buildMenuCard([
           _buildMenuItem(
-            icon: Icons.person_outline_rounded,
-            title: 'معلومات الحساب الشخصي',
-            onTap: () => _showInfoDialog(
-              context,
-              'بيانات الكابتن',
-              'الاسم: ${provider.captainName}\nرقم الهاتف: ${provider.captainPhone}\nالدور: كابتن معتمد',
+            icon: Icons.edit_rounded,
+            title: 'تعديل المعلومات الشخصية والمركبة',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const CaptainEditInfoScreen(),
+              ),
             ),
-          ),
-          _buildMenuItem(
-            icon: Icons.directions_car_rounded,
-            title: 'بيانات وتفاصيل السيارة',
-            onTap: () {
-              final vehicle = DummyData.dummyCaptain.vehicle;
-              _showInfoDialog(
-                context,
-                'بيانات سيارتي',
-                'فئة السيارة: ${vehicle.typeArabic}\nالماركة والموديل: ${vehicle.brand} ${vehicle.model} (${vehicle.year})\nاللون: ${vehicle.color}\nرقم اللوحة: ${vehicle.plate}\nعدد المقاعد: ${vehicle.seats} ركاب',
-              );
-            },
           ),
           _buildMenuItem(
             icon: Icons.assignment_rounded,
