@@ -5,6 +5,7 @@ import '../../core/supabase/auth_exception.dart';
 import '../../core/supabase/auth_repository.dart';
 import '../../core/widgets/app_logo.dart';
 import '../../providers/app_state_provider.dart';
+import 'captain_forgot_password_screen.dart';
 import 'captain_register_stepper_screen.dart';
 import '../captain/captain_home_screen.dart';
 import '../onboarding/pending_review_screen.dart';
@@ -183,6 +184,20 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
                     onPressed: () =>
                         setState(() => _obscurePassword = !_obscurePassword),
                   ),
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const CaptainForgotPasswordScreen(),
+                      ),
+                    );
+                  },
+                  child: const Text('نسيت كلمة المرور؟'),
                 ),
               ),
 

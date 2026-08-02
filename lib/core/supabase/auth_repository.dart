@@ -245,6 +245,46 @@ class AuthRepository {
     await _client.auth.signOut();
   }
 
+  /// Sends a 6-digit SMS code to an already-registered captain's [phone] so
+  /// they can reset a forgotten password. `shouldCreateUser: false` makes
+  /// sure this never silently creates a new account for an unknown number.
+  Future<void> sendPasswordResetOtp(String phone) async {
+    _requireConfigured();
+    try {
+      await _client.auth.signInWithOtp(phone: phone, shouldCreateUser: false);
+    } on AuthException catch (e) {
+      throw AppAuthException(_translateAuthError(e));
+    }
+  }
+
+  /// Confirms the code from [sendPasswordResetOtp] and sets [newPassword]
+  /// as the account's password. Always signs the captain back out
+  /// afterwards, successful or not, so they log in explicitly with the new
+  /// password through the normal flow (which also runs the role/approval
+  /// checks) rather than being left in a half-authenticated app state.
+  Future<void> resetPasswordWithOtp({
+    required String phone,
+    required String code,
+    required String newPassword,
+  }) async {
+    _requireConfigured();
+    try {
+      final response = await _client.auth.verifyOTP(
+        phone: phone,
+        token: code,
+        type: OtpType.sms,
+      );
+      if (response.user == null) {
+        throw AppAuthException('تعذر التحقق من الرمز.');
+      }
+      await _client.auth.updateUser(UserAttributes(password: newPassword));
+    } on AuthException catch (e) {
+      throw AppAuthException(_translateAuthError(e));
+    } finally {
+      await _client.auth.signOut();
+    }
+  }
+
   String _translateAuthError(AuthException e) {
     final msg = e.message.toLowerCase();
     if (msg.contains('invalid otp') || msg.contains('token has expired')) {
@@ -265,6 +305,9 @@ class AuthRepository {
     }
     if (msg.contains('password') && msg.contains('at least')) {
       return 'كلمة المرور قصيرة جدًا، استخدم 6 أحرف على الأقل.';
+    }
+    if (msg.contains('signups not allowed') || msg.contains('user not found')) {
+      return 'هذا الرقم غير مسجل في التطبيق.';
     }
     return e.message;
   }
