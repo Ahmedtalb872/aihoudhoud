@@ -202,12 +202,13 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
     try {
       final file = await ImagePicker().pickImage(
         source: source,
-        imageQuality: 80,
+        imageQuality: 65,
         // imageQuality alone isn't reliably honored on Flutter web, which
         // can otherwise upload a raw multi-MB camera photo as-is - capping
         // the dimensions keeps every platform's upload small and fast.
-        maxWidth: 1600,
-        maxHeight: 1600,
+        // 1280px is still plenty to read a document photo clearly.
+        maxWidth: 1280,
+        maxHeight: 1280,
       );
       if (file == null) {
         if (mounted) setState(() => _uploadingDoc = null);
