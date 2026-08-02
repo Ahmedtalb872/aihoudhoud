@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_exception.dart';
 import 'supabase_config.dart';
@@ -133,12 +134,19 @@ class AuthRepository {
             'document_type': doc.docKey,
             'file_name': doc.docName,
             'file_path': path,
+            'mime_type': 'image/jpeg',
+            'file_size': doc.bytes.length,
             'status': 'pending',
           },
           onConflict: 'captain_id,document_type',
         );
       }
-    } catch (_) {
+    } catch (e) {
+      // The underlying Postgrest/Storage error (RLS denial, NOT NULL
+      // violation, etc.) is swallowed into a generic Arabic message for the
+      // UI - keep it in the debug console so a real failure here doesn't
+      // need another round of manual SQL queries to diagnose.
+      debugPrint('uploadCaptainDocuments failed: $e');
       throw AppAuthException(
         'تم إنشاء حسابك، لكن تعذر رفع بعض المستندات. يمكنك رفعها لاحقًا من صفحة حسابك.',
       );
