@@ -103,6 +103,11 @@ class AuthRepository {
   /// Uploads each picked document to the private `captain-documents` bucket
   /// (under a path prefixed with [captainId], matching its storage RLS
   /// policy) and records it in `captain_documents` for admin review.
+  /// [CaptainDocumentFile.docKey] must be one of the values allowed by
+  /// `captain_documents_document_type_check` (profile_photo,
+  /// national_id_front/back, driving_license_front/back,
+  /// vehicle_registration_front/back, vehicle_photo, vehicle_insurance,
+  /// additional_document) - it maps to the `document_type` column.
   Future<void> uploadCaptainDocuments(
     String captainId,
     List<CaptainDocumentFile> documents,
@@ -125,12 +130,12 @@ class AuthRepository {
         await _client.from('captain_documents').upsert(
           {
             'captain_id': captainId,
-            'doc_key': doc.docKey,
-            'doc_name': doc.docName,
+            'document_type': doc.docKey,
+            'file_name': doc.docName,
             'file_path': path,
-            'status': 'under_review',
+            'status': 'pending',
           },
-          onConflict: 'captain_id,doc_key',
+          onConflict: 'captain_id,document_type',
         );
       }
     } catch (_) {
@@ -140,15 +145,16 @@ class AuthRepository {
     }
   }
 
-  /// The current upload status of every `captain_documents` row for
-  /// [captainId] - a doc_key with no row here just hasn't been uploaded.
+  /// The current review status (and, if rejected, the reason) of every
+  /// `captain_documents` row for [captainId] - a document_type with no row
+  /// here just hasn't been uploaded yet.
   Future<List<Map<String, dynamic>>> getCaptainDocuments(
     String captainId,
   ) async {
     try {
       return await _client
           .from('captain_documents')
-          .select('doc_key, status')
+          .select('document_type, status, rejection_reason')
           .eq('captain_id', captainId);
     } on PostgrestException {
       throw AppAuthException('تعذر تحميل حالة المستندات.');

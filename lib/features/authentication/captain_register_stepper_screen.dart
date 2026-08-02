@@ -11,16 +11,23 @@ import '../captain/captain_home_screen.dart';
 import '../onboarding/pending_review_screen.dart';
 import '../onboarding/permissions_screen.dart';
 
-/// Arabic document label -> short slug used as the storage path / `doc_key`.
+/// Arabic document label -> `document_type` value, matching the
+/// `captain_documents_document_type_check` constraint exactly.
 const Map<String, String> _kDocKeys = {
   'الصورة الشخصية': 'profile_photo',
-  'بطاقة الهوية الوطنية': 'national_id',
-  'رخصة السياقة': 'driving_license',
-  'البطاقة الرمادية': 'gray_card',
-  'صورة السيارة': 'car_photo',
-  'تأمين السيارة': 'car_insurance',
-  'تصريح العمل الإضافي': 'extra_work_permit',
+  'بطاقة الهوية الوطنية - الوجه الأمامي': 'national_id_front',
+  'بطاقة الهوية الوطنية - الوجه الخلفي': 'national_id_back',
+  'رخصة السياقة - الوجه الأمامي': 'driving_license_front',
+  'رخصة السياقة - الوجه الخلفي': 'driving_license_back',
+  'البطاقة الرمادية - الوجه الأمامي': 'vehicle_registration_front',
+  'البطاقة الرمادية - الوجه الخلفي': 'vehicle_registration_back',
+  'صورة السيارة': 'vehicle_photo',
+  'تأمين السيارة': 'vehicle_insurance',
+  'مستند إضافي (اختياري)': 'additional_document',
 };
+
+/// This one alone isn't required to complete registration.
+const String _kOptionalDocLabel = 'مستند إضافي (اختياري)';
 
 class CaptainRegisterStepperScreen extends StatefulWidget {
   const CaptainRegisterStepperScreen({super.key});
@@ -60,13 +67,7 @@ class _CaptainRegisterStepperScreenState
 
   // Step 3 Upload states
   final Map<String, bool> _uploadStates = {
-    'الصورة الشخصية': false,
-    'بطاقة الهوية الوطنية': false,
-    'رخصة السياقة': false,
-    'البطاقة الرمادية': false,
-    'صورة السيارة': false,
-    'تأمين السيارة': false,
-    'تصريح العمل الإضافي': false,
+    for (final label in _kDocKeys.keys) label: false,
   };
   String? _uploadingDoc;
   final Map<String, Uint8List> _pickedFileBytes = {};
@@ -275,7 +276,10 @@ class _CaptainRegisterStepperScreenState
   }
 
   bool _validateStep3() {
-    if (_uploadStates.values.every((uploaded) => uploaded)) return true;
+    final requiredUploaded = _uploadStates.entries
+        .where((e) => e.key != _kOptionalDocLabel)
+        .every((e) => e.value);
+    if (requiredUploaded) return true;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
@@ -1072,8 +1076,10 @@ class _CaptainRegisterStepperScreenState
   // Same underlying document (doc_key, upload path) for both vehicle
   // categories - only the guiding label text changes for a motorcycle.
   static const Map<String, String> _motorcycleDocLabels = {
-    'رخصة السياقة': 'رخصة قيادة دراجة نارية',
-    'البطاقة الرمادية': 'تسجيل الدراجة',
+    'رخصة السياقة - الوجه الأمامي': 'رخصة قيادة دراجة نارية - الوجه الأمامي',
+    'رخصة السياقة - الوجه الخلفي': 'رخصة قيادة دراجة نارية - الوجه الخلفي',
+    'البطاقة الرمادية - الوجه الأمامي': 'تسجيل الدراجة - الوجه الأمامي',
+    'البطاقة الرمادية - الوجه الخلفي': 'تسجيل الدراجة - الوجه الخلفي',
     'صورة السيارة': 'صورة الدراجة النارية',
     'تأمين السيارة': 'تأمين الدراجة النارية',
   };
@@ -1098,7 +1104,7 @@ class _CaptainRegisterStepperScreenState
         ),
         const SizedBox(height: 8),
         const Text(
-          'اضغط على كل مستند لالتقاط صورة له بالكاميرا أو اختياره من هاتفك. جميع المستندات إلزامية لإكمال التسجيل.',
+          'اضغط على كل مستند لالتقاط صورة له بالكاميرا أو اختياره من هاتفك. جميع المستندات إلزامية لإكمال التسجيل باستثناء المستند الإضافي.',
           style: TextStyle(
             fontSize: 12,
             color: AppColors.secondaryText,

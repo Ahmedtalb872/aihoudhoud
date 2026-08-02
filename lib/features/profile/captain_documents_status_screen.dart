@@ -7,24 +7,36 @@ import '../../core/supabase/auth_exception.dart';
 import '../../core/supabase/auth_repository.dart';
 import '../../providers/app_state_provider.dart';
 
-/// Same doc_key list used at registration (captain_register_stepper_screen's
-/// _kDocKeys) - kept in sync here since both read/write the same
-/// `captain_documents` rows.
+/// Same document_type list used at registration
+/// (captain_register_stepper_screen's _kDocKeys) - kept in sync here since
+/// both read/write the same `captain_documents` rows. Values must match
+/// the `captain_documents_document_type_check` constraint exactly.
 const List<Map<String, String>> _kDocs = [
   {'key': 'profile_photo', 'name': 'الصورة الشخصية'},
-  {'key': 'national_id', 'name': 'بطاقة الهوية الوطنية'},
-  {'key': 'driving_license', 'name': 'رخصة السياقة'},
-  {'key': 'gray_card', 'name': 'البطاقة الرمادية'},
-  {'key': 'car_photo', 'name': 'صورة السيارة'},
-  {'key': 'car_insurance', 'name': 'تأمين السيارة'},
-  {'key': 'extra_work_permit', 'name': 'تصريح العمل الإضافي'},
+  {'key': 'national_id_front', 'name': 'بطاقة الهوية الوطنية - الوجه الأمامي'},
+  {'key': 'national_id_back', 'name': 'بطاقة الهوية الوطنية - الوجه الخلفي'},
+  {'key': 'driving_license_front', 'name': 'رخصة السياقة - الوجه الأمامي'},
+  {'key': 'driving_license_back', 'name': 'رخصة السياقة - الوجه الخلفي'},
+  {
+    'key': 'vehicle_registration_front',
+    'name': 'البطاقة الرمادية - الوجه الأمامي',
+  },
+  {
+    'key': 'vehicle_registration_back',
+    'name': 'البطاقة الرمادية - الوجه الخلفي',
+  },
+  {'key': 'vehicle_photo', 'name': 'صورة السيارة'},
+  {'key': 'vehicle_insurance', 'name': 'تأمين السيارة'},
+  {'key': 'additional_document', 'name': 'مستند إضافي (اختياري)'},
 ];
 
 // Only the driving-license/registration/vehicle-photo/insurance labels
-// change wording for a motorcycle - same doc_key, same everything else.
+// change wording for a motorcycle - same document_type, same everything else.
 const Map<String, String> _kMotorcycleDocLabels = {
-  'رخصة السياقة': 'رخصة قيادة دراجة نارية',
-  'البطاقة الرمادية': 'تسجيل الدراجة',
+  'رخصة السياقة - الوجه الأمامي': 'رخصة قيادة دراجة نارية - الوجه الأمامي',
+  'رخصة السياقة - الوجه الخلفي': 'رخصة قيادة دراجة نارية - الوجه الخلفي',
+  'البطاقة الرمادية - الوجه الأمامي': 'تسجيل الدراجة - الوجه الأمامي',
+  'البطاقة الرمادية - الوجه الخلفي': 'تسجيل الدراجة - الوجه الخلفي',
   'صورة السيارة': 'صورة الدراجة النارية',
   'تأمين السيارة': 'تأمين الدراجة النارية',
 };
@@ -42,8 +54,10 @@ class _CaptainDocumentsStatusScreenState
   final _authRepository = AuthRepository();
   bool _isLoading = true;
   String? _uploadingDoc;
-  Map<String, String> _statusByKey = {};
-  String? _rejectionReason;
+
+  // doc_key -> {'status': ..., 'rejection_reason': ...}
+  Map<String, Map<String, dynamic>> _docDataByKey = {};
+  String? _accountRejectionReason;
 
   @override
   void initState() {
@@ -63,12 +77,10 @@ class _CaptainDocumentsStatusScreenState
       final captain = await _authRepository.getCaptain(userId);
       if (!mounted) return;
       setState(() {
-        _statusByKey = {
-          for (final row in docs)
-            row['doc_key'] as String: row['status'] as String? ??
-                'under_review',
+        _docDataByKey = {
+          for (final row in docs) row['document_type'] as String: row,
         };
-        _rejectionReason = captain['status'] == 'rejected'
+        _accountRejectionReason = captain['status'] == 'rejected'
             ? captain['rejection_reason'] as String?
             : null;
       });
@@ -139,7 +151,7 @@ class _CaptainDocumentsStatusScreenState
       ]);
       if (!mounted) return;
       setState(() {
-        _statusByKey[docKey] = 'under_review';
+        _docDataByKey[docKey] = {'status': 'pending', 'rejection_reason': null};
         _uploadingDoc = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
@@ -181,60 +193,20 @@ class _CaptainDocumentsStatusScreenState
               child: ListView(
                 padding: const EdgeInsets.all(24.0),
                 children: [
-                  if (_rejectionReason != null &&
-                      _rejectionReason!.isNotEmpty) ...[
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.error.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: AppColors.error.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(
-                            Icons.error_outline_rounded,
-                            color: AppColors.error,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'ملاحظة من الإدارة',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                    color: AppColors.error,
-                                    fontFamily: 'Cairo',
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _rejectionReason!,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.darkText,
-                                    fontFamily: 'Cairo',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                  if (_accountRejectionReason != null &&
+                      _accountRejectionReason!.isNotEmpty) ...[
+                    _buildNoticeBanner(
+                      'ملاحظة عامة من الإدارة',
+                      _accountRejectionReason!,
                     ),
                     const SizedBox(height: 16),
                   ],
                   ..._kDocs.map((doc) {
                     final docKey = doc['key']!;
                     final docName = _displayLabel(doc['name']!, isMotorcycle);
-                    final status = _statusByKey[docKey];
+                    final data = _docDataByKey[docKey];
+                    final status = data?['status'] as String?;
+                    final docReason = data?['rejection_reason'] as String?;
                     final isThisUploading = _uploadingDoc == docKey;
 
                     Color statusColor = AppColors.secondaryText;
@@ -244,7 +216,7 @@ class _CaptainDocumentsStatusScreenState
                       statusColor = AppColors.success;
                       statusText = 'تم القبول';
                       statusIcon = Icons.check_circle_outline;
-                    } else if (status == 'under_review') {
+                    } else if (status == 'pending') {
                       statusColor = AppColors.warning;
                       statusText = 'قيد المراجعة';
                       statusIcon = Icons.hourglass_empty_rounded;
@@ -252,6 +224,10 @@ class _CaptainDocumentsStatusScreenState
                       statusColor = AppColors.error;
                       statusText = 'مرفوض - يحتاج إعادة رفع';
                       statusIcon = Icons.cancel_outlined;
+                    } else if (status == 'expired') {
+                      statusColor = AppColors.secondaryText;
+                      statusText = 'منتهي الصلاحية';
+                      statusIcon = Icons.timer_off_outlined;
                     }
 
                     return Padding(
@@ -309,6 +285,19 @@ class _CaptainDocumentsStatusScreenState
                                   ),
                                 ],
                               ),
+                              if (status == 'rejected' &&
+                                  docReason != null &&
+                                  docReason.isNotEmpty) ...[
+                                const SizedBox(height: 10),
+                                Text(
+                                  docReason,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.error,
+                                    fontFamily: 'Cairo',
+                                  ),
+                                ),
+                              ],
                               if (status != 'approved') ...[
                                 const Divider(height: 24),
                                 Align(
@@ -362,6 +351,53 @@ class _CaptainDocumentsStatusScreenState
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildNoticeBanner(String title, String message) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.error.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.error.withOpacity(0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.error_outline_rounded,
+            color: AppColors.error,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: AppColors.error,
+                    fontFamily: 'Cairo',
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.darkText,
+                    fontFamily: 'Cairo',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
