@@ -12,3 +12,10 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+# This app has no Play Store presence and is only ever distributed as a
+# directly-downloaded APK for internal testing, so the tradeoff here is
+# committing this specific release key rather than every CI build getting
+# a fresh random debug key (which made every new build uninstallable-over
+# the last one). Deliberately checked in - see build.gradle.kts.
+!key.properties
+!app/upload-keystore.jks
