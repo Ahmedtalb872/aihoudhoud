@@ -8,6 +8,7 @@ import '../../core/widgets/real_map_widget.dart';
 import '../../core/services/phone_caller.dart';
 import '../support/chat_screen.dart';
 import 'cancel_trip_dialog.dart';
+import 'collect_payment_dialog.dart';
 
 /// Shown once a captain is driving an open ride (no known destination): a
 /// live map, a running fare meter, and a manual "end trip" action instead of
@@ -342,8 +343,14 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                   const SizedBox(height: 20),
 
                   ElevatedButton(
-                    onPressed: () => provider.captainCompleteOpenRide(
-                      distanceKm: _distanceKm,
+                    onPressed: () => showCollectPaymentDialog(
+                      context,
+                      suggestedAmount: provider.openRideFare,
+                      onConfirm: (amountPaid) =>
+                          provider.captainCompleteOpenRide(
+                            distanceKm: _distanceKm,
+                            amountPaid: amountPaid,
+                          ),
                     ),
                     child: const Text('إنهاء الرحلة'),
                   ),

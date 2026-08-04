@@ -654,7 +654,9 @@ class AppStateProvider extends ChangeNotifier {
     }
   }
 
-  void captainCompleteActiveTrip() {
+  // The captain enters what was actually collected from the customer in
+  // cash, which may differ from the estimated fare shown during the trip.
+  void captainCompleteActiveTrip({required double amountPaid}) {
     if (_activeTrip != null &&
         _activeTrip!.status == TripStatus.started &&
         !_activeTrip!.isOpenRide) {
@@ -664,11 +666,11 @@ class AppStateProvider extends ChangeNotifier {
           'completed',
           extra: {
             'completed_at': DateTime.now().toIso8601String(),
-            'final_price': _activeTrip!.price,
+            'final_price': amountPaid,
           },
         );
       }
-      _finalizeCompletedTrip(_activeTrip!.price);
+      _finalizeCompletedTrip(amountPaid);
     }
   }
 
@@ -689,19 +691,21 @@ class AppStateProvider extends ChangeNotifier {
 
   // Ends an open ride: there's no destination to arrive at, so the captain
   // decides when it's over and the fare is whatever the live meter shows.
-  void captainCompleteOpenRide({double distanceKm = 0}) {
+  void captainCompleteOpenRide({
+    double distanceKm = 0,
+    required double amountPaid,
+  }) {
     if (_activeTrip != null &&
         _activeTrip!.status == TripStatus.started &&
         _activeTrip!.isOpenRide) {
       final elapsedMinutes = (openRideElapsed.inSeconds / 60.0).round();
-      final fare = openRideFare;
       if (_activeTrip!.isRemote) {
         _updateRemoteTripStatus(
           _activeTrip!.id,
           'completed',
           extra: {
             'completed_at': DateTime.now().toIso8601String(),
-            'final_price': fare,
+            'final_price': amountPaid,
             'traveled_distance_km': distanceKm,
           },
         );
@@ -734,7 +738,7 @@ class AppStateProvider extends ChangeNotifier {
         serviceType: _activeTrip!.serviceType,
         packageDescription: _activeTrip!.packageDescription,
       );
-      _finalizeCompletedTrip(fare);
+      _finalizeCompletedTrip(amountPaid);
       _openRideTicker?.cancel();
       _openRideTicker = null;
       _openRideStartTime = null;

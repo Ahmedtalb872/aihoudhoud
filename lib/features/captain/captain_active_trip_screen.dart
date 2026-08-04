@@ -11,6 +11,7 @@ import '../support/chat_screen.dart';
 import 'captain_trip_summary_screen.dart';
 import 'open_ride_active_screen.dart';
 import 'cancel_trip_dialog.dart';
+import 'collect_payment_dialog.dart';
 
 class CaptainActiveTripScreen extends StatelessWidget {
   const CaptainActiveTripScreen({super.key});
@@ -90,7 +91,12 @@ class CaptainActiveTripScreen extends StatelessWidget {
           : 'مشوار جاري الآن نحو الوجهة';
       actionLabel = isDelivery ? 'تم التسليم' : 'إنهاء الرحلة بنجاح';
       actionIcon = Icons.flag_rounded;
-      onAction = () => provider.captainCompleteActiveTrip();
+      onAction = () => showCollectPaymentDialog(
+        context,
+        suggestedAmount: trip.price,
+        onConfirm: (amountPaid) =>
+            provider.captainCompleteActiveTrip(amountPaid: amountPaid),
+      );
       progressStep = 4;
     }
 

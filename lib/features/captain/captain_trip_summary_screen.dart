@@ -77,7 +77,29 @@ class CaptainTripSummaryScreen extends StatelessWidget {
                   fontFamily: 'Cairo',
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'تسعدنا في شركة الهدهد أنك شريك معنا',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryDark,
+                    fontFamily: 'Cairo',
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
 
               // Financial Invoice Ledger card
               Card(
