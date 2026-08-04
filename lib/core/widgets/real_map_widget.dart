@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../models/models.dart';
 import '../constants/colors.dart';
-import 'dart:async';
 
 class RealMapWidget extends StatefulWidget {
   final TripStatus? status;
@@ -17,7 +15,7 @@ class RealMapWidget extends StatefulWidget {
   final double? carLat;
   final double? carLng;
   final List<LatLng>? routePolyline;
-  final Function(LatLng)? onMapTap;
+  final void Function(LatLng)? onMapTap;
   final bool interactive;
   final bool showControls;
 
@@ -44,9 +42,10 @@ class RealMapWidget extends StatefulWidget {
 
 class _RealMapWidgetState extends State<RealMapWidget>
     with SingleTickerProviderStateMixin {
-  final MapController _mapController = MapController();
+  GoogleMapController? _mapController;
   LatLng _currentCenter = const LatLng(18.0858, -15.9785); // Nouakchott center
   bool _isLoadingLocation = false;
+  bool _myLocationEnabled = false;
 
   late AnimationController _carController;
   late Animation<double> _carAnimation;
@@ -59,6 +58,7 @@ class _RealMapWidgetState extends State<RealMapWidget>
     // pickup pin off-screen a moment after this first rendered.
     if (widget.pickupLat != null && widget.pickupLng != null) {
       _currentCenter = LatLng(widget.pickupLat!, widget.pickupLng!);
+      _enableMyLocationIfPermitted();
     } else {
       _determinePosition();
     }
@@ -91,10 +91,10 @@ class _RealMapWidgetState extends State<RealMapWidget>
 
     // Auto-center map if new locations are provided
     if (widget.pickupLat != null && widget.pickupLng != null) {
-      LatLng newLoc = LatLng(widget.pickupLat!, widget.pickupLng!);
+      final newLoc = LatLng(widget.pickupLat!, widget.pickupLng!);
       if (oldWidget.pickupLat != widget.pickupLat ||
           oldWidget.pickupLng != widget.pickupLng) {
-        _mapController.move(newLoc, 14.0);
+        _mapController?.animateCamera(CameraUpdate.newLatLngZoom(newLoc, 14.0));
       }
     }
   }
@@ -103,6 +103,26 @@ class _RealMapWidgetState extends State<RealMapWidget>
   void dispose() {
     _carController.dispose();
     super.dispose();
+  }
+
+  // Only turns on the blue "my location" dot if permission is already
+  // granted - doesn't move the camera, since a pickup point was given.
+  Future<void> _enableMyLocationIfPermitted() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (!mounted) return;
+      if (permission == LocationPermission.always ||
+          permission == LocationPermission.whileInUse) {
+        setState(() => _myLocationEnabled = true);
+      }
+    } catch (_) {
+      // Leave the "my location" layer off if permissions can't be resolved.
+    }
   }
 
   Future<void> _determinePosition() async {
@@ -133,9 +153,12 @@ class _RealMapWidgetState extends State<RealMapWidget>
       if (mounted) {
         setState(() {
           _currentCenter = LatLng(position.latitude, position.longitude);
+          _myLocationEnabled = true;
           _isLoadingLocation = false;
         });
-        _mapController.move(_currentCenter, 14.0);
+        _mapController?.animateCamera(
+          CameraUpdate.newLatLngZoom(_currentCenter, 14.0),
+        );
       }
     } catch (e) {
       if (mounted) setState(() => _isLoadingLocation = false);
@@ -158,61 +181,50 @@ class _RealMapWidgetState extends State<RealMapWidget>
 
     return Stack(
       children: [
-        FlutterMap(
-          mapController: _mapController,
-          options: MapOptions(
-            initialCenter: _currentCenter,
-            initialZoom: 13.0,
-            onTap: widget.interactive && widget.onMapTap != null
-                ? (tapPosition, latLng) => widget.onMapTap!(latLng)
-                : null,
-            interactionOptions: InteractionOptions(
-              flags: widget.interactive
-                  ? InteractiveFlag.all
-                  : InteractiveFlag.none,
-            ),
+        GoogleMap(
+          initialCameraPosition: CameraPosition(
+            target: _currentCenter,
+            zoom: 13.0,
           ),
-          children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.alhudhud.app',
-            ),
-
-            if (polylinePoints.isNotEmpty)
-              PolylineLayer(
-                polylines: [
+          onMapCreated: (controller) => _mapController = controller,
+          markers: _buildMarkers(),
+          polylines: polylinePoints.isEmpty
+              ? const {}
+              : {
                   Polyline(
+                    polylineId: const PolylineId('route'),
                     points: polylinePoints,
-                    strokeWidth: 4.0,
+                    width: 4,
                     color: AppColors.primary,
                   ),
-                ],
-              ),
-
-            MarkerLayer(markers: _buildMarkers()),
-          ],
+                },
+          onTap: widget.interactive ? widget.onMapTap : null,
+          myLocationEnabled: _myLocationEnabled,
+          myLocationButtonEnabled: false,
+          zoomControlsEnabled: false,
+          mapToolbarEnabled: false,
+          zoomGesturesEnabled: widget.interactive,
+          scrollGesturesEnabled: widget.interactive,
+          rotateGesturesEnabled: widget.interactive,
+          tiltGesturesEnabled: widget.interactive,
         ),
 
-        // Map controls (Compass, location)
+        // Map controls (zoom, location)
         if (widget.showControls)
           Positioned(
             left: 16,
             bottom: 150, // Keep above bottom sheets
             child: Column(
               children: [
-                _buildMapButton(Icons.add, () {
-                  _mapController.move(
-                    _mapController.camera.center,
-                    _mapController.camera.zoom + 1,
-                  );
-                }),
+                _buildMapButton(
+                  Icons.add,
+                  () => _mapController?.animateCamera(CameraUpdate.zoomIn()),
+                ),
                 const SizedBox(height: 8),
-                _buildMapButton(Icons.remove, () {
-                  _mapController.move(
-                    _mapController.camera.center,
-                    _mapController.camera.zoom - 1,
-                  );
-                }),
+                _buildMapButton(
+                  Icons.remove,
+                  () => _mapController?.animateCamera(CameraUpdate.zoomOut()),
+                ),
                 const SizedBox(height: 8),
                 _buildMapButton(
                   _isLoadingLocation
@@ -227,19 +239,16 @@ class _RealMapWidgetState extends State<RealMapWidget>
     );
   }
 
-  List<Marker> _buildMarkers() {
-    List<Marker> markers = [];
+  Set<Marker> _buildMarkers() {
+    final markers = <Marker>{};
 
     if (widget.pickupLat != null && widget.pickupLng != null) {
       markers.add(
         Marker(
-          point: LatLng(widget.pickupLat!, widget.pickupLng!),
-          width: 40,
-          height: 40,
-          child: const Icon(
-            Icons.location_pin,
-            color: AppColors.success,
-            size: 36,
+          markerId: const MarkerId('pickup'),
+          position: LatLng(widget.pickupLat!, widget.pickupLng!),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueGreen,
           ),
         ),
       );
@@ -248,13 +257,10 @@ class _RealMapWidgetState extends State<RealMapWidget>
     if (widget.destLat != null && widget.destLng != null) {
       markers.add(
         Marker(
-          point: LatLng(widget.destLat!, widget.destLng!),
-          width: 40,
-          height: 40,
-          child: const Icon(
-            Icons.location_pin,
-            color: AppColors.error,
-            size: 36,
+          markerId: const MarkerId('destination'),
+          position: LatLng(widget.destLat!, widget.destLng!),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueRed,
           ),
         ),
       );
@@ -263,10 +269,11 @@ class _RealMapWidgetState extends State<RealMapWidget>
     if (widget.carLat != null && widget.carLng != null) {
       markers.add(
         Marker(
-          point: LatLng(widget.carLat!, widget.carLng!),
-          width: 40,
-          height: 40,
-          child: _buildCarIcon(),
+          markerId: const MarkerId('car'),
+          position: LatLng(widget.carLat!, widget.carLng!),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueOrange,
+          ),
         ),
       );
     } else if (widget.showRoute &&
@@ -275,10 +282,11 @@ class _RealMapWidgetState extends State<RealMapWidget>
       // Animate a simulated car between pickup and destination
       markers.add(
         Marker(
-          point: _getSimulatedCarLocation(),
-          width: 40,
-          height: 40,
-          child: _buildCarIcon(),
+          markerId: const MarkerId('car'),
+          position: _getSimulatedCarLocation(),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueOrange,
+          ),
         ),
       );
     }
@@ -311,24 +319,6 @@ class _RealMapWidgetState extends State<RealMapWidget>
     }
 
     return LatLng(widget.pickupLat!, widget.pickupLng!);
-  }
-
-  Widget _buildCarIcon() {
-    return Container(
-      padding: const EdgeInsets.all(5),
-      decoration: const BoxDecoration(
-        color: AppColors.accent,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2)),
-        ],
-      ),
-      child: const Icon(
-        Icons.local_taxi_rounded,
-        color: AppColors.darkText,
-        size: 16,
-      ),
-    );
   }
 
   Widget _buildMapButton(IconData icon, VoidCallback onTap) {

@@ -9,6 +9,12 @@
         android:label="الهدهد"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Google Maps SDK for Android. Restrict this key in Google Cloud
+             Console to this app's package name + release SHA-1 fingerprint,
+             not by keeping it secret - it's meant to ship inside the app. -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyCsp2LwsRAitjwA1nt3aTleQM5-cqG29_U" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
