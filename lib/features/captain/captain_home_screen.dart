@@ -677,22 +677,6 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
           ),
 
           ListTile(
-            leading: const Icon(
-              Icons.dashboard_rounded,
-              color: AppColors.primary,
-            ),
-            title: const Text(
-              'لوحة التحكم',
-              style: TextStyle(fontFamily: 'Cairo'),
-            ),
-            onTap: () {
-              Navigator.of(context).pop();
-              setState(() {
-                _currentIndex = 0;
-              });
-            },
-          ),
-          ListTile(
             leading: const Icon(Icons.wallet_rounded, color: AppColors.primary),
             title: const Text(
               'الأرباح والمحفظة',
