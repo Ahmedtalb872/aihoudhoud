@@ -951,22 +951,6 @@ class AppStateProvider extends ChangeNotifier {
   }
 
   // Wallet operations
-  void rechargeWallet(double amount, String method) {
-    _captainWalletBalance += amount;
-    _captainTransactions.insert(
-      0,
-      WalletTransaction(
-        id: 'tx_rch_${DateTime.now().millisecondsSinceEpoch}',
-        amount: amount,
-        type: TransactionType.charge,
-        title: 'شحن رصيد الكابتن بواسطة $method',
-        date: DateTime.now().toString().substring(0, 16),
-        isCredit: true,
-      ),
-    );
-    notifyListeners();
-  }
-
   void withdrawCaptainEarnings(double amount) {
     if (amount <= _captainWalletBalance) {
       _captainWalletBalance -= amount;

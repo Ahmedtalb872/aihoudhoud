@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
+import 'recharge_bank_select_screen.dart';
 
 class WalletScreen extends StatefulWidget {
   final bool showAppBar;
@@ -13,126 +14,11 @@ class WalletScreen extends StatefulWidget {
 
 class _WalletScreenState extends State<WalletScreen> {
   final _amountController = TextEditingController();
-  String _selectedMethod = 'Bankily';
 
   @override
   void dispose() {
     _amountController.dispose();
     super.dispose();
-  }
-
-  void _showRechargeDialog() {
-    _amountController.clear();
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(22),
-              ),
-              title: const Text(
-                'شحن رصيد المحفظة',
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'المبلغ (أوقية)',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Cairo',
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _amountController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        hintText: 'أدخل المبلغ، مثال: 500',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'وسيلة الدفع الإلكتروني',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Cairo',
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Column(
-                      children: ['Bankily', 'Masrvi', 'Sedad', 'بطاقة مصرفية']
-                          .map((method) {
-                            return RadioListTile<String>(
-                              value: method,
-                              groupValue: _selectedMethod,
-                              activeColor: AppColors.primary,
-                              title: Text(
-                                method,
-                                style: const TextStyle(
-                                  fontFamily: 'Cairo',
-                                  fontSize: 14,
-                                ),
-                              ),
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setDialogState(() {
-                                    _selectedMethod = val;
-                                  });
-                                }
-                              },
-                            );
-                          })
-                          .toList(),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('إلغاء'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    final amount =
-                        double.tryParse(_amountController.text) ?? 0.0;
-                    if (amount > 0) {
-                      Provider.of<AppStateProvider>(
-                        context,
-                        listen: false,
-                      ).rechargeWallet(amount, _selectedMethod);
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'تمت إضافة $amount أوقية لمحفظتك بنجاح عبر $_selectedMethod.',
-                            style: const TextStyle(fontFamily: 'Cairo'),
-                          ),
-                          backgroundColor: AppColors.success,
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text('تأكيد الشحن'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
   }
 
   void _showWithdrawDialog() {
@@ -314,7 +200,14 @@ class _WalletScreenState extends State<WalletScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: _showRechargeDialog,
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const RechargeBankSelectScreen(),
+                        ),
+                      );
+                    },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
                       side: const BorderSide(color: Colors.white70),
