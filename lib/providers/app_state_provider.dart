@@ -51,6 +51,7 @@ class AppStateProvider extends ChangeNotifier {
   // Nudges the captain every couple of minutes to complete whatever step of
   // the active trip they're currently on, so a step doesn't get forgotten.
   Timer? _stepReminderTicker;
+  DateTime? _tripStepStartedAt;
 
   // Chat state
   final List<Message> _chatMessages = List.from(DummyData.dummyMessages);
@@ -699,12 +700,24 @@ class AppStateProvider extends ChangeNotifier {
 
   void _startStepReminder() {
     _stepReminderTicker?.cancel();
+    _tripStepStartedAt = DateTime.now();
     _stepReminderTicker = Timer.periodic(const Duration(minutes: 2), (_) {
-      if (_activeTrip == null ||
-          _activeTrip!.status == TripStatus.completed ||
-          _activeTrip!.status == TripStatus.cancelled) {
+      final trip = _activeTrip;
+      if (trip == null ||
+          trip.status == TripStatus.completed ||
+          trip.status == TripStatus.cancelled) {
         _stopStepReminder();
         return;
+      }
+      // While actually driving to the destination, don't nag to finish the
+      // trip before the estimated trip time has even passed - only "did you
+      // arrive"/"did the customer board" steps should chase every 2 minutes
+      // regardless of estimate, since those should happen quickly.
+      if (trip.status == TripStatus.started && !trip.isOpenRide) {
+        final elapsed = _tripStepStartedAt == null
+            ? Duration.zero
+            : DateTime.now().difference(_tripStepStartedAt!);
+        if (elapsed < Duration(minutes: trip.duration)) return;
       }
       NewTripAlert.playStepReminder(_stepReminderMessage());
     });
@@ -713,6 +726,7 @@ class AppStateProvider extends ChangeNotifier {
   void _stopStepReminder() {
     _stepReminderTicker?.cancel();
     _stepReminderTicker = null;
+    _tripStepStartedAt = null;
   }
 
   String _stepReminderMessage() {
