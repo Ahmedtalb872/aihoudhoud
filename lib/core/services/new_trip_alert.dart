@@ -39,7 +39,23 @@ class NewTripAlert {
   static Future<void> play({String? customerName, String? pickup}) async {
     unawaited(_vibrate());
     unawaited(_playChime());
-    unawaited(_notify(customerName: customerName, pickup: pickup));
+    unawaited(
+      _notify(
+        title: 'مشوار ركاب جديد!',
+        body: customerName != null && pickup != null
+            ? '$customerName - $pickup'
+            : 'اضغط لعرض تفاصيل الطلب قبل انتهاء الوقت.',
+      ),
+    );
+  }
+
+  // Nudges the captain (chime + vibration + notification) to complete the
+  // current step of an already-active trip, fired every couple of minutes
+  // from AppStateProvider so a step doesn't get left hanging unnoticed.
+  static Future<void> playStepReminder(String message) async {
+    unawaited(_vibrate());
+    unawaited(_playChime());
+    unawaited(_notify(title: 'تذكير بخطوة المشوار', body: message));
   }
 
   static Future<void> _vibrate() async {
@@ -61,15 +77,13 @@ class NewTripAlert {
     }
   }
 
-  static Future<void> _notify({String? customerName, String? pickup}) async {
+  static Future<void> _notify({required String title, required String body}) async {
     if (!_initialized) return;
     try {
       await _notifications.show(
         0,
-        'مشوار ركاب جديد!',
-        customerName != null && pickup != null
-            ? '$customerName - $pickup'
-            : 'اضغط لعرض تفاصيل الطلب قبل انتهاء الوقت.',
+        title,
+        body,
         const NotificationDetails(android: _channel),
       );
     } catch (_) {

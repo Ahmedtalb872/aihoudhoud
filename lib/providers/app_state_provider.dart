@@ -48,6 +48,10 @@ class AppStateProvider extends ChangeNotifier {
   double _openRideDistanceKm = 0.0;
   Timer? _openRideTicker;
 
+  // Nudges the captain every couple of minutes to complete whatever step of
+  // the active trip they're currently on, so a step doesn't get forgotten.
+  Timer? _stepReminderTicker;
+
   // Chat state
   final List<Message> _chatMessages = List.from(DummyData.dummyMessages);
 
@@ -589,6 +593,7 @@ class AppStateProvider extends ChangeNotifier {
       serviceType: request.serviceType,
       packageDescription: request.packageDescription,
     );
+    _startStepReminder();
     notifyListeners();
   }
 
@@ -620,6 +625,7 @@ class AppStateProvider extends ChangeNotifier {
           extra: {'arrived_at': DateTime.now().toIso8601String()},
         );
       }
+      _startStepReminder();
       notifyListeners();
     }
   }
@@ -650,6 +656,7 @@ class AppStateProvider extends ChangeNotifier {
           notifyListeners();
         });
       }
+      _startStepReminder();
       notifyListeners();
     }
   }
@@ -670,6 +677,7 @@ class AppStateProvider extends ChangeNotifier {
           },
         );
       }
+      _stopStepReminder();
       _finalizeCompletedTrip(amountPaid);
     }
   }
@@ -687,6 +695,46 @@ class AppStateProvider extends ChangeNotifier {
         .update({'status': status, ...?extra})
         .eq('id', tripId)
         .catchError((_) {});
+  }
+
+  void _startStepReminder() {
+    _stepReminderTicker?.cancel();
+    _stepReminderTicker = Timer.periodic(const Duration(minutes: 2), (_) {
+      if (_activeTrip == null ||
+          _activeTrip!.status == TripStatus.completed ||
+          _activeTrip!.status == TripStatus.cancelled) {
+        _stopStepReminder();
+        return;
+      }
+      NewTripAlert.playStepReminder(_stepReminderMessage());
+    });
+  }
+
+  void _stopStepReminder() {
+    _stepReminderTicker?.cancel();
+    _stepReminderTicker = null;
+  }
+
+  String _stepReminderMessage() {
+    final trip = _activeTrip;
+    if (trip == null) return 'لا تنسَ إكمال خطوات المشوار الحالي.';
+    final isDelivery = trip.isDelivery;
+    switch (trip.status) {
+      case TripStatus.accepted:
+        return isDelivery
+            ? 'لا تنسَ التوجه إلى نقطة الاستلام وتحديث حالة الطلب.'
+            : 'لا تنسَ التوجه إلى نقطة الانطلاق وتحديث حالة الطلب.';
+      case TripStatus.arrived:
+        return isDelivery
+            ? 'اضغط "تم استلام الطرد" لمتابعة التوصيل.'
+            : 'اضغط "بدء الرحلة الجارية" لمتابعة المشوار.';
+      case TripStatus.started:
+        return isDelivery
+            ? 'اضغط "تم التسليم" فور تسليم الطرد للزبون.'
+            : 'اضغط "إنهاء الرحلة بنجاح" فور الوصول للوجهة.';
+      default:
+        return 'لا تنسَ إكمال خطوات المشوار الحالي.';
+    }
   }
 
   // Ends an open ride: there's no destination to arrive at, so the captain
@@ -738,6 +786,7 @@ class AppStateProvider extends ChangeNotifier {
         serviceType: _activeTrip!.serviceType,
         packageDescription: _activeTrip!.packageDescription,
       );
+      _stopStepReminder();
       _finalizeCompletedTrip(amountPaid);
       _openRideTicker?.cancel();
       _openRideTicker = null;
@@ -867,6 +916,7 @@ class AppStateProvider extends ChangeNotifier {
     _activeTrip = null;
     _isSearching = false;
     _countdownTimer?.cancel();
+    _stopStepReminder();
     _openRideTicker?.cancel();
     _openRideTicker = null;
     _openRideStartTime = null;
@@ -954,6 +1004,7 @@ class AppStateProvider extends ChangeNotifier {
     _countdownTimer?.cancel();
     _pendingRidesSubscription?.cancel();
     _openRideTicker?.cancel();
+    _stepReminderTicker?.cancel();
     super.dispose();
   }
 }
