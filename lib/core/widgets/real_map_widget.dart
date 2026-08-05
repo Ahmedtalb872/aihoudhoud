@@ -287,23 +287,14 @@ class _RealMapWidgetState extends State<RealMapWidget>
           tiltGesturesEnabled: widget.interactive,
         ),
 
-        // Map controls (zoom, location)
+        // Map controls (location, navigation) - zooming is still available
+        // via the standard pinch gesture on the map itself.
         if (widget.showControls)
           Positioned(
             left: 16,
             bottom: 150, // Keep above bottom sheets
             child: Column(
               children: [
-                _buildMapButton(
-                  Icons.add,
-                  () => _mapController?.animateCamera(CameraUpdate.zoomIn()),
-                ),
-                const SizedBox(height: 8),
-                _buildMapButton(
-                  Icons.remove,
-                  () => _mapController?.animateCamera(CameraUpdate.zoomOut()),
-                ),
-                const SizedBox(height: 8),
                 _buildMapButton(
                   _isLoadingLocation
                       ? Icons.hourglass_empty
