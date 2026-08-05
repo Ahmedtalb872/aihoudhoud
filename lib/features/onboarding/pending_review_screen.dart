@@ -161,6 +161,30 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
                   fontFamily: 'Cairo',
                 ),
               ),
+              if (!_isRejected) ...[
+                const SizedBox(height: 20),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Text(
+                    'نرحب بك كابتن بيننا! أنت على بعد خطوة من الانضمام لأسرة الهدهد، أكمل ملفك معنا وترقب التفعيل.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primaryDark,
+                      fontFamily: 'Cairo',
+                    ),
+                  ),
+                ),
+              ],
               if (_isRejected &&
                   _rejectionReason != null &&
                   _rejectionReason!.isNotEmpty) ...[
@@ -230,10 +254,6 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
               OutlinedButton.icon(
                 onPressed: () => WhatsAppSupport.contactSupport(
                   message: 'السلام عليكم، تأخر تفعيل حساب الكابتن الخاص بي.',
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF25D366),
-                  side: const BorderSide(color: Color(0xFF25D366)),
                 ),
                 icon: const Icon(Icons.chat_rounded),
                 label: const Text('تأخر التفعيل؟ تواصل معنا على واتساب'),
