@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/models.dart';
 import '../constants/colors.dart';
 
@@ -165,6 +166,83 @@ class _RealMapWidgetState extends State<RealMapWidget>
     }
   }
 
+  // Opens turn-by-turn navigation in the native Google Maps app (or its web
+  // fallback) - our own map only shows the route, it doesn't drive the
+  // captain there.
+  Future<void> _openExternalNavigation(double lat, double lng) async {
+    final uri = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving',
+    );
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  void _showNavigationChoice() {
+    final hasPickup = widget.pickupLat != null && widget.pickupLng != null;
+    final hasDest = widget.destLat != null && widget.destLng != null;
+
+    if (hasPickup && !hasDest) {
+      _openExternalNavigation(widget.pickupLat!, widget.pickupLng!);
+      return;
+    }
+    if (hasDest && !hasPickup) {
+      _openExternalNavigation(widget.destLat!, widget.destLng!);
+      return;
+    }
+    if (!hasPickup && !hasDest) return;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, 4),
+              child: Text(
+                'التوجه عبر خرائط غوغل',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.darkText,
+                  fontFamily: 'Cairo',
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.radio_button_checked_rounded,
+                color: AppColors.success,
+              ),
+              title: const Text(
+                'نقطة البداية',
+                style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold),
+              ),
+              onTap: () {
+                Navigator.of(context).pop();
+                _openExternalNavigation(widget.pickupLat!, widget.pickupLng!);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.flag_rounded, color: AppColors.error),
+              title: const Text(
+                'نقطة النهاية',
+                style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold),
+              ),
+              onTap: () {
+                Navigator.of(context).pop();
+                _openExternalNavigation(widget.destLat!, widget.destLng!);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // If no route provided but we have pickup/destination and want to show route
@@ -232,6 +310,14 @@ class _RealMapWidgetState extends State<RealMapWidget>
                       : Icons.my_location,
                   _determinePosition,
                 ),
+                if ((widget.pickupLat != null && widget.pickupLng != null) ||
+                    (widget.destLat != null && widget.destLng != null)) ...[
+                  const SizedBox(height: 8),
+                  _buildMapButton(
+                    Icons.alt_route_rounded,
+                    _showNavigationChoice,
+                  ),
+                ],
               ],
             ),
           ),

@@ -189,10 +189,15 @@ class CaptainActiveTripScreen extends StatelessWidget {
                   const SizedBox(height: 20),
 
                   // Pickup & destination, each on its own line.
-                  RouteRow(dotColor: AppColors.success, text: trip.pickupLocation),
+                  RouteRow(
+                    dotColor: AppColors.success,
+                    label: 'من',
+                    text: trip.pickupLocation,
+                  ),
                   const SizedBox(height: 6),
                   RouteRow(
                     dotColor: AppColors.error,
+                    label: 'إلى',
                     text: trip.destinationLocation ?? 'غير محددة',
                   ),
                   if (isDelivery &&

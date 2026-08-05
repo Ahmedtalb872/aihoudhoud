@@ -9,12 +9,14 @@ class RouteRow extends StatelessWidget {
   final Color dotColor;
   final String text;
   final String? trailing;
+  final String? label;
 
   const RouteRow({
     super.key,
     required this.dotColor,
     required this.text,
     this.trailing,
+    this.label,
   });
 
   @override
@@ -28,6 +30,18 @@ class RouteRow extends StatelessWidget {
           margin: const EdgeInsets.only(left: 10),
           decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
         ),
+        if (label != null) ...[
+          Text(
+            label!,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: AppColors.secondaryText,
+              fontFamily: 'Cairo',
+            ),
+          ),
+          const SizedBox(width: 6),
+        ],
         Expanded(
           child: Text(
             text,

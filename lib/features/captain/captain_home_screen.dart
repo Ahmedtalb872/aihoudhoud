@@ -526,6 +526,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                   // Pickup & Destination (delivery: pickup/drop-off points)
                   RouteRow(
                     dotColor: AppColors.success,
+                    label: 'من',
                     text: trip.pickupLocation,
                     trailing: _distanceFromCaptainKm == null
                         ? null
@@ -534,6 +535,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                   const SizedBox(height: 6),
                   RouteRow(
                     dotColor: AppColors.error,
+                    label: 'إلى',
                     text: trip.destinationLocation ??
                         'مشوار مفتوح (بدون وجهة محددة)',
                   ),
