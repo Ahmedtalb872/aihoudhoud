@@ -21,7 +21,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.alhudhud.alhudhud"
+    namespace = "com.alhudhud.captain"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -32,8 +32,10 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.alhudhud.alhudhud"
+        // Distinct from the customer app's applicationId - both apps used
+        // to share com.alhudhud.alhudhud, which made Android treat them as
+        // the same app and refuse to install one over the other.
+        applicationId = "com.alhudhud.captain"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

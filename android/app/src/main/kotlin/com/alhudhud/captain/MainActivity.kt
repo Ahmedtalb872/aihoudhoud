@@ -1,4 +1,4 @@
-package com.alhudhud.alhudhud
+package com.alhudhud.captain
 
 import io.flutter.embedding.android.FlutterActivity
 
