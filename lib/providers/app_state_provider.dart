@@ -958,25 +958,6 @@ class AppStateProvider extends ChangeNotifier {
     _maybeShowNextPendingRide();
   }
 
-  // Wallet operations
-  void withdrawCaptainEarnings(double amount) {
-    if (amount <= _captainWalletBalance) {
-      _captainWalletBalance -= amount;
-      _captainTransactions.insert(
-        0,
-        WalletTransaction(
-          id: 'tx_wdr_${DateTime.now().millisecondsSinceEpoch}',
-          amount: amount,
-          type: TransactionType.withdraw,
-          title: 'سحب رصيد الأرباح إلى Bankily',
-          date: DateTime.now().toString().substring(0, 16),
-          isCredit: false,
-        ),
-      );
-      notifyListeners();
-    }
-  }
-
   // Reflects a successful WalletRepository.redeemGiftCredits() call: the
   // redemption itself already happened server-side, this just updates the
   // locally-tracked wallet balance/history to match.

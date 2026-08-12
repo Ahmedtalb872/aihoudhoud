@@ -17,7 +17,6 @@ class WalletScreen extends StatefulWidget {
 }
 
 class _WalletScreenState extends State<WalletScreen> {
-  final _amountController = TextEditingController();
   final _walletRepository = WalletRepository();
   double? _giftBalance;
   bool _isRedeemingGift = false;
@@ -26,12 +25,6 @@ class _WalletScreenState extends State<WalletScreen> {
   void initState() {
     super.initState();
     _loadGiftBalance();
-  }
-
-  @override
-  void dispose() {
-    _amountController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadGiftBalance() async {
@@ -75,86 +68,6 @@ class _WalletScreenState extends State<WalletScreen> {
     } finally {
       if (mounted) setState(() => _isRedeemingGift = false);
     }
-  }
-
-  void _showWithdrawDialog() {
-    _amountController.clear();
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
-          ),
-          title: const Text(
-            'سحب الأرباح إلى Bankily',
-            style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'المبلغ المراد سحبه (أوقية)',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Cairo',
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _amountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  hintText: 'أدخل المبلغ، مثال: 300',
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('إلغاء'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final amount = double.tryParse(_amountController.text) ?? 0.0;
-                final provider = Provider.of<AppStateProvider>(
-                  context,
-                  listen: false,
-                );
-                if (amount > 0 && amount <= provider.captainWalletBalance) {
-                  provider.withdrawCaptainEarnings(amount);
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'تم تقديم طلب سحب بقيمة $amount أوقية إلى حسابك بنجاح.',
-                        style: const TextStyle(fontFamily: 'Cairo'),
-                      ),
-                      backgroundColor: AppColors.success,
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'رصيد المحفظة غير كافٍ لإتمام عملية السحب.',
-                        style: TextStyle(fontFamily: 'Cairo'),
-                      ),
-                      backgroundColor: AppColors.error,
-                    ),
-                  );
-                }
-              },
-              child: const Text('تأكيد السحب'),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
@@ -243,39 +156,23 @@ class _WalletScreenState extends State<WalletScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _showWithdrawDialog,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppColors.primary,
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const RechargeBankSelectScreen(),
                     ),
-                    icon: const Icon(Icons.account_balance_wallet_rounded),
-                    label: const Text('سحب الأرباح'),
-                  ),
+                  );
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.white70),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const RechargeBankSelectScreen(),
-                        ),
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white70),
-                    ),
-                    icon: const Icon(Icons.add_rounded),
-                    label: const Text('شحن المحفظة'),
-                  ),
-                ),
-              ],
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('شحن المحفظة'),
+              ),
             ),
           ],
         ),
