@@ -110,10 +110,16 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
   Widget _buildDashboardView(AppStateProvider provider) {
     return Stack(
       children: [
-        // High fidelity map viewport
+        // High fidelity map viewport - shows the route for an incoming
+        // request right on the main map behind it, instead of a cramped
+        // preview inside the request card itself.
         Positioned.fill(
           child: RealMapWidget(
-            showRoute: false,
+            showRoute: provider.incomingRequest != null,
+            pickupLat: provider.incomingRequest?.pickupLat,
+            pickupLng: provider.incomingRequest?.pickupLng,
+            destLat: provider.incomingRequest?.destLat,
+            destLng: provider.incomingRequest?.destLng,
             // Dim map if captain is offline
             interactive: provider.isCaptainOnline,
           ),
@@ -450,27 +456,9 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                         'مشوار مفتوح (بدون وجهة محددة)',
                   ),
                   const SizedBox(height: 14),
-
-                  // Map preview of pickup & destination points - tall enough
-                  // that fitting both points in view (see RealMapWidget's
-                  // camera-bounds padding) still leaves room to see the
-                  // route between them, not just two overlapping pins.
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: SizedBox(
-                      height: 200,
-                      child: RealMapWidget(
-                        showRoute: true,
-                        pickupLat: trip.pickupLat,
-                        pickupLng: trip.pickupLng,
-                        destLat: trip.destLat,
-                        destLng: trip.destLng,
-                        interactive: false,
-                        showControls: false,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
+                  // The route itself is drawn on the main map behind this
+                  // card (see _buildDashboardView), so the card only needs
+                  // the rest of the request's details below.
                   Container(height: 1, color: AppColors.border),
                   const SizedBox(height: 12),
 
