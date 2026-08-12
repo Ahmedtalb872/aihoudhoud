@@ -371,28 +371,45 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
       _loadDistanceFromCaptain(trip);
     }
 
-    return Positioned.fill(
+    // Anchored to the bottom like a bottom sheet, instead of a centered
+    // dialog over a dark backdrop, so the live route on the main map above
+    // it (see _buildDashboardView) stays visible while a request is up.
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
       child: Container(
-        color: Colors.black54, // Translucent dark backdrop
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 24,
+              offset: Offset(0, -6),
+            ),
+          ],
+        ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black26, blurRadius: 20),
-                ],
+            // Drag-handle affordance marking this as a sheet over the map.
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 14),
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const TripProgressRail(step: 1),
-                  const SizedBox(height: 14),
-                  Row(
+            ),
+            const TripProgressRail(step: 1),
+            const SizedBox(height: 14),
+            Row(
                     children: [
                       const AppLogo(width: 28),
                       const SizedBox(width: 8),
@@ -562,9 +579,6 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
