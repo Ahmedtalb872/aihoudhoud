@@ -162,6 +162,125 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Re-hydrates an in-progress trip after the app process was killed and
+  // relaunched mid-trip - active-trip state otherwise only lives here in
+  // memory, so without this the captain would land back on the dashboard
+  // with no sign their trip still exists, even though nothing changed
+  // server-side. Call after loginFromProfile for an approved captain.
+  Future<void> restoreActiveTripIfAny() async {
+    final uid = _userId;
+    if (uid == null || _activeTrip != null) return;
+    try {
+      final row = await AuthRepository().getActiveTripForCaptain(uid);
+      if (row == null) return;
+      await _hydrateActiveTripFromRow(row);
+    } catch (_) {
+      // Best-effort - worst case the captain has to be told to check their
+      // trips manually; nothing here should block app startup.
+    }
+  }
+
+  Future<void> _hydrateActiveTripFromRow(Map<String, dynamic> row) async {
+    final tripId = row['id'] as String;
+    String customerName = 'الزبون';
+    String customerPhone = '';
+    if (row['customer_id'] != null) {
+      try {
+        final profile = await Supabase.instance.client
+            .from('profiles')
+            .select('full_name, phone')
+            .eq('id', row['customer_id'])
+            .single();
+        final name = profile['full_name'] as String?;
+        final phone = profile['phone'] as String?;
+        if (name != null && name.isNotEmpty) customerName = name;
+        if (phone != null && phone.isNotEmpty) customerPhone = phone;
+      } catch (_) {
+        // Fall back to the generic label if the profile can't be read.
+      }
+    }
+    if (customerPhone.isEmpty) {
+      final guestPhone = row['guest_customer_phone'] as String?;
+      if (guestPhone != null && guestPhone.isNotEmpty) {
+        customerPhone = guestPhone;
+      }
+    }
+
+    final serviceType = row['service_type'] as String? ?? 'ride';
+    final isDelivery = serviceType == 'delivery';
+    String? packageDescription;
+    if (isDelivery) {
+      final recipientName = row['recipient_name'] as String?;
+      final recipientPhone = row['recipient_phone'] as String?;
+      if (recipientName != null && recipientName.isNotEmpty) {
+        customerName = recipientName;
+      }
+      if (recipientPhone != null && recipientPhone.isNotEmpty) {
+        customerPhone = recipientPhone;
+      }
+      packageDescription = row['package_description'] as String?;
+    }
+
+    final pickupLat = (row['pickup_lat'] as num).toDouble();
+    final pickupLng = (row['pickup_lng'] as num).toDouble();
+    final destLat = (row['destination_lat'] as num?)?.toDouble();
+    final destLng = (row['destination_lng'] as num?)?.toDouble();
+    final isOpenRide = row['trip_type'] == 'open';
+
+    final distanceKm = (row['distance_km'] as num?)?.toDouble() ?? 0.0;
+    final durationMin =
+        (row['estimated_duration_minutes'] as num?)?.toInt() ?? 0;
+    final price = (row['estimated_price'] as num?)?.toDouble() ?? 0.0;
+    final paymentMethod = row['payment_method'] == 'wallet'
+        ? 'محفظة الهدهد'
+        : 'نقداً';
+    final vehicleType = switch (row['vehicle_type']) {
+      'comfort' => VehicleType.comfort,
+      'family' => VehicleType.family,
+      _ => VehicleType.economy,
+    };
+
+    _activeTrip = Trip(
+      id: tripId,
+      customerName: customerName,
+      customerPhone: customerPhone,
+      captainName: _captainName,
+      captainPhone: _captainPhone,
+      pickupLocation: row['pickup_address'] as String? ?? 'موقع الانطلاق',
+      destinationLocation: row['destination_address'] as String?,
+      pickupLat: pickupLat,
+      pickupLng: pickupLng,
+      destLat: destLat,
+      destLng: destLng,
+      distance: distanceKm,
+      duration: durationMin,
+      price: isOpenRide ? openRideBaseFare : price,
+      paymentMethod: paymentMethod,
+      status: _mapDbTripStatus(row['status'] as String?),
+      carType: vehicleType,
+      isOpenRide: isOpenRide,
+      openRideTimeout: 45,
+      date: DateTime.now().toString().substring(0, 16),
+      isRemote: true,
+      serviceType: serviceType,
+      packageDescription: packageDescription,
+    );
+    _startStepReminder();
+    notifyListeners();
+  }
+
+  TripStatus _mapDbTripStatus(String? dbStatus) {
+    switch (dbStatus) {
+      case 'arrived':
+        return TripStatus.arrived;
+      case 'in_progress':
+      case 'boarded':
+        return TripStatus.started;
+      default:
+        return TripStatus.accepted;
+    }
+  }
+
   // Reflects an edit made from CaptainEditInfoScreen locally, without a
   // full re-login: the display name shown in the drawer/profile header.
   void updateCaptainDisplayName(String name) {

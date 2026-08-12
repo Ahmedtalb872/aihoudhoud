@@ -61,12 +61,22 @@ class _SplashScreenState extends State<SplashScreen>
             // Fall back to "not approved".
           }
           if (mounted) {
-            Provider.of<AppStateProvider>(context, listen: false)
-                .loginFromProfile(
-                  profile,
-                  currentUser.phone ?? '',
-                  captain: captain,
-                );
+            final appState = Provider.of<AppStateProvider>(
+              context,
+              listen: false,
+            );
+            appState.loginFromProfile(
+              profile,
+              currentUser.phone ?? '',
+              captain: captain,
+            );
+            // Restores an in-progress trip if the app process was killed
+            // mid-trip (e.g. the phone locked/closed) - otherwise the
+            // captain would land on the dashboard with no sign it still
+            // exists, even though nothing changed on the server.
+            if (approved) {
+              await appState.restoreActiveTripIfAny();
+            }
           }
           destination = approved
               ? const CaptainHomeScreen()

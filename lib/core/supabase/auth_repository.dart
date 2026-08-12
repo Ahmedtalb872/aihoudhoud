@@ -218,6 +218,31 @@ class AuthRepository {
     }
   }
 
+  /// The captain's currently in-progress trip, if any - active-trip state
+  /// otherwise only lives in the app's in-memory provider, so without this
+  /// a captain who gets kicked back to the app after Android kills the
+  /// process mid-trip would land on the dashboard with no sign their trip
+  /// still exists. Returns null if they have no accepted/arrived/in_progress/
+  /// boarded trip right now.
+  Future<Map<String, dynamic>?> getActiveTripForCaptain(
+    String captainId,
+  ) async {
+    try {
+      final rows = await _client
+          .from('trips')
+          .select()
+          .eq('captain_id', captainId)
+          .inFilter('status', ['accepted', 'arrived', 'in_progress', 'boarded'])
+          .order('created_at', ascending: false)
+          .limit(1);
+      final list = rows as List;
+      if (list.isEmpty) return null;
+      return list.first as Map<String, dynamic>;
+    } on PostgrestException {
+      return null;
+    }
+  }
+
   /// Fills in the vehicle/city/address/birth-date details collected during
   /// registration on the bare `captains` row the sign-up trigger created.
   /// [vehicleType] is 'economy'/'comfort'/'family' for a car, or literally
