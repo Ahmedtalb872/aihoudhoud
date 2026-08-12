@@ -449,11 +449,14 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  // Map preview of pickup & destination points
+                  // Map preview of pickup & destination points - tall enough
+                  // that fitting both points in view (see RealMapWidget's
+                  // camera-bounds padding) still leaves room to see the
+                  // route between them, not just two overlapping pins.
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: SizedBox(
-                      height: 130,
+                      height: 200,
                       child: RealMapWidget(
                         showRoute: true,
                         pickupLat: trip.pickupLat,
