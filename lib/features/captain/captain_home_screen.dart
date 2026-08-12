@@ -388,6 +388,8 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                   const SizedBox(height: 14),
                   Row(
                     children: [
+                      const AppLogo(width: 28),
+                      const SizedBox(width: 8),
                       if (trip.isDelivery) ...[
                         const Icon(
                           Icons.inventory_2_rounded,
@@ -499,7 +501,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                         ),
                       ],
                     )
-                  else
+                  else ...[
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -507,12 +509,42 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                           'المسافة ${trip.distance.toStringAsFixed(1)} كم',
                         ),
                         _buildQuietStat('المدة ${trip.duration} د'),
-                        _buildQuietStat(
-                          'الأجرة ${trip.price} أوقية',
-                          emphasize: true,
-                        ),
                       ],
                     ),
+                    const SizedBox(height: 12),
+                    // The fare is the number a captain scans for first, so
+                    // it gets its own prominent banner instead of blending
+                    // into the small distance/duration stats row.
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Column(
+                        children: [
+                          const Text(
+                            'الأجرة',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.secondaryText,
+                              fontFamily: 'Cairo',
+                            ),
+                          ),
+                          Text(
+                            '${trip.price.toStringAsFixed(0)} أوقية',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primaryDark,
+                              fontFamily: 'Cairo',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 20),
 
                   // Action Buttons
@@ -551,13 +583,12 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
     );
   }
 
-  Widget _buildQuietStat(String text, {bool emphasize = false}) {
+  Widget _buildQuietStat(String text) {
     return Text(
       text,
-      style: TextStyle(
-        fontSize: emphasize ? 13 : 12,
-        fontWeight: emphasize ? FontWeight.bold : FontWeight.normal,
-        color: emphasize ? AppColors.darkText : AppColors.secondaryText,
+      style: const TextStyle(
+        fontSize: 12,
+        color: AppColors.secondaryText,
         fontFamily: 'Cairo',
       ),
     );
