@@ -90,11 +90,20 @@ class _RealMapWidgetState extends State<RealMapWidget>
       }
     }
 
-    // Auto-center map if new locations are provided
-    if (widget.pickupLat != null && widget.pickupLng != null) {
-      final newLoc = LatLng(widget.pickupLat!, widget.pickupLng!);
-      if (oldWidget.pickupLat != widget.pickupLat ||
-          oldWidget.pickupLng != widget.pickupLng) {
+    // Auto-center map if new locations are provided - fit both pickup and
+    // destination when there's a route to show, otherwise just zoom to the
+    // pickup point on its own.
+    final locationsChanged =
+        oldWidget.pickupLat != widget.pickupLat ||
+        oldWidget.pickupLng != widget.pickupLng ||
+        oldWidget.destLat != widget.destLat ||
+        oldWidget.destLng != widget.destLng;
+    if (locationsChanged) {
+      final bounds = _boundsForRoute();
+      if (bounds != null) {
+        _mapController?.animateCamera(CameraUpdate.newLatLngBounds(bounds, 60));
+      } else if (widget.pickupLat != null && widget.pickupLng != null) {
+        final newLoc = LatLng(widget.pickupLat!, widget.pickupLng!);
         _mapController?.animateCamera(CameraUpdate.newLatLngZoom(newLoc, 14.0));
       }
     }
@@ -243,6 +252,26 @@ class _RealMapWidgetState extends State<RealMapWidget>
     );
   }
 
+  // Bounds covering both pickup and destination, so the camera can fit the
+  // whole route instead of just centering on the pickup point at a fixed
+  // zoom - which cuts off the destination whenever it's more than a couple
+  // of km away.
+  LatLngBounds? _boundsForRoute() {
+    if (!widget.showRoute ||
+        widget.pickupLat == null ||
+        widget.pickupLng == null ||
+        widget.destLat == null ||
+        widget.destLng == null) {
+      return null;
+    }
+    final lats = [widget.pickupLat!, widget.destLat!]..sort();
+    final lngs = [widget.pickupLng!, widget.destLng!]..sort();
+    return LatLngBounds(
+      southwest: LatLng(lats.first, lngs.first),
+      northeast: LatLng(lats.last, lngs.last),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // If no route provided but we have pickup/destination and want to show route
@@ -264,7 +293,23 @@ class _RealMapWidgetState extends State<RealMapWidget>
             target: _currentCenter,
             zoom: 13.0,
           ),
-          onMapCreated: (controller) => _mapController = controller,
+          onMapCreated: (controller) {
+            _mapController = controller;
+            final bounds = _boundsForRoute();
+            if (bounds != null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                try {
+                  await controller.animateCamera(
+                    CameraUpdate.newLatLngBounds(bounds, 60),
+                  );
+                } catch (_) {
+                  // Map view may not have finished laying out yet on the
+                  // very first frame; it's already centered on the pickup
+                  // point as a reasonable fallback.
+                }
+              });
+            }
+          },
           markers: _buildMarkers(),
           polylines: polylinePoints.isEmpty
               ? const {}
@@ -353,10 +398,14 @@ class _RealMapWidgetState extends State<RealMapWidget>
           ),
         ),
       );
-    } else if (widget.showRoute &&
+    } else if (widget.animateCar &&
+        widget.showRoute &&
         widget.pickupLat != null &&
         widget.destLat != null) {
-      // Animate a simulated car between pickup and destination
+      // Animate a simulated car between pickup and destination - only once
+      // the trip is actually under way (animateCar is only passed true by
+      // the active-trip screens), so a preview map showing an incoming
+      // request doesn't get a car marker sitting on top of the pickup pin.
       markers.add(
         Marker(
           markerId: const MarkerId('car'),
