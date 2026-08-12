@@ -20,6 +20,11 @@ class RouteRow extends StatelessWidget {
     this.label,
   });
 
+  // Some places are geocoded under a formal name captains don't actually
+  // use day to day - substitute the local name so the app reads the way
+  // captains actually talk about these spots.
+  static const Map<String, String> _placeAliases = {'المفترق': 'كرفور'};
+
   // The full geocoded address ("point, quarter, moughataa, wilaya, ...") is
   // too much detail for this compact row - just the specific point and the
   // wilaya (its first and last comma-separated parts) is enough to place it.
@@ -29,11 +34,16 @@ class RouteRow extends StatelessWidget {
         .map((p) => p.trim())
         .where((p) => p.isNotEmpty)
         .toList();
-    if (parts.length <= 2) return raw.trim();
-    final point = parts.first;
+    if (parts.isEmpty) return raw.trim();
+
+    final point = _placeAliases[parts.first] ?? parts.first;
+    if (parts.length == 1) return point;
+    if (parts.length == 2) {
+      final second = parts[1];
+      return point == second ? point : '$point، $second';
+    }
     final wilaya = parts.last;
-    if (point == wilaya) return point;
-    return '$point، $wilaya';
+    return point == wilaya ? point : '$point، $wilaya';
   }
 
   @override
