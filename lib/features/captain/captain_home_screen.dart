@@ -7,7 +7,6 @@ import '../../core/supabase/auth_repository.dart';
 import '../../models/models.dart';
 import '../../core/widgets/real_map_widget.dart';
 import '../../core/widgets/app_logo.dart';
-import '../../core/widgets/trip_progress_rail.dart';
 import '../../core/widgets/route_row.dart';
 import '../trips/my_trips_screen.dart';
 import '../wallet/wallet_screen.dart';
@@ -316,42 +315,9 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                     ),
                   ],
                 ),
-                // Delivery-mode toggle - only for motorcycle captains, car
-                // captains never see this and never receive delivery
-                // requests. Kept in the same flowing container as the
-                // status row above it so it can never overlap other
-                // absolutely-positioned elements.
-                if (provider.isMotorcycleCaptain) ...[
-                  const Divider(height: 20),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.inventory_2_rounded,
-                        color: provider.deliveryModeEnabled
-                            ? AppColors.primaryDark
-                            : AppColors.secondaryText,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text(
-                          'قبول طلبات توصيل',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.darkText,
-                            fontFamily: 'Cairo',
-                          ),
-                        ),
-                      ),
-                      Switch(
-                        value: provider.deliveryModeEnabled,
-                        activeColor: AppColors.primaryDark,
-                        onChanged: (_) => provider.toggleDeliveryMode(),
-                      ),
-                    ],
-                  ),
-                ],
+                // Delivery-mode toggle now lives on the profile screen
+                // instead of here - this banner was filling up too much of
+                // the home screen.
               ],
             ),
           ),
@@ -379,7 +345,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
       right: 0,
       bottom: 0,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -400,15 +366,13 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
               child: Container(
                 width: 40,
                 height: 4,
-                margin: const EdgeInsets.only(bottom: 14),
+                margin: const EdgeInsets.only(bottom: 10),
                 decoration: BoxDecoration(
                   color: AppColors.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
-            const TripProgressRail(step: 1),
-            const SizedBox(height: 14),
             Row(
                     children: [
                       const AppLogo(width: 28),
@@ -454,7 +418,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
 
                   // Pickup & Destination (delivery: pickup/drop-off points)
                   RouteRow(
@@ -465,19 +429,19 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                         ? null
                         : 'يبعد عنك ${_distanceFromCaptainKm!.toStringAsFixed(1)} كم',
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   RouteRow(
                     dotColor: AppColors.error,
                     label: 'إلى',
                     text: trip.destinationLocation ??
                         'مشوار مفتوح (بدون وجهة محددة)',
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 10),
                   // The route itself is drawn on the main map behind this
                   // card (see _buildDashboardView), so the card only needs
                   // the rest of the request's details below.
                   Container(height: 1, color: AppColors.border),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
 
                   // Details row - an open ride has no known destination, so
                   // there's no real fare/distance/duration estimate to show
@@ -516,13 +480,13 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                         _buildQuietStat('المدة ${trip.duration} د'),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     // The fare is the number a captain scans for first, so
                     // it gets its own prominent banner instead of blending
                     // into the small distance/duration stats row.
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      padding: const EdgeInsets.symmetric(vertical: 6),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(14),
@@ -540,7 +504,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                           Text(
                             '${trip.price.toStringAsFixed(0)} أوقية',
                             style: const TextStyle(
-                              fontSize: 24,
+                              fontSize: 20,
                               fontWeight: FontWeight.bold,
                               color: AppColors.primaryDark,
                               fontFamily: 'Cairo',
@@ -550,7 +514,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
 
                   // Action Buttons
                   Row(

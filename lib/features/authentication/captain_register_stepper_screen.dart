@@ -465,6 +465,11 @@ class _CaptainRegisterStepperScreenState
           vehiclePlate: _carPlateController.text.trim(),
           vehicleSeats: _carSeats,
         );
+        // Motorcycle captains start opted in to delivery requests - they
+        // can still turn it off later from the home screen.
+        if (_isMotorcycle) {
+          await _authRepository.setAcceptsDelivery(captainId, true);
+        }
       } on AppAuthException catch (_) {
         // Non-fatal: the captain row still exists (bare) from sign-up: the
         // vehicle details can be corrected later from the profile screen.
