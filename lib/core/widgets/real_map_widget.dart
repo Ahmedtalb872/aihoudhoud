@@ -53,6 +53,10 @@ class _RealMapWidgetState extends State<RealMapWidget>
   // straight-line fallback once it loads. Null while loading or if no
   // widget.routePolyline was supplied and there's nothing to fetch yet.
   List<LatLng>? _fetchedRoute;
+  // Only true once a fetch has actually come back empty/failed - the
+  // straight-line fallback is reserved for that, not for the ordinary
+  // couple of seconds it takes the real route to arrive.
+  bool _routeFetchFailed = false;
 
   late AnimationController _carController;
   late Animation<double> _carAnimation;
@@ -102,8 +106,15 @@ class _RealMapWidgetState extends State<RealMapWidget>
       destLat: dLat,
       destLng: dLng,
     ).then((route) {
-      if (!mounted || route == null || route.isEmpty) return;
-      setState(() => _fetchedRoute = route);
+      if (!mounted) return;
+      if (route == null || route.isEmpty) {
+        setState(() => _routeFetchFailed = true);
+      } else {
+        setState(() {
+          _fetchedRoute = route;
+          _routeFetchFailed = false;
+        });
+      }
     });
   }
 
@@ -135,9 +146,10 @@ class _RealMapWidgetState extends State<RealMapWidget>
         _mapController?.animateCamera(CameraUpdate.newLatLngZoom(newLoc, 14.0));
       }
       // Stale route from the old pickup/destination pair - clear it and
-      // fetch again for the new one (falls back to a straight line in the
-      // meantime, same as before this loads).
+      // fetch again for the new one. No fallback line while this is in
+      // flight; _routeFetchFailed only flips back on if this fetch fails.
       _fetchedRoute = null;
+      _routeFetchFailed = false;
       _fetchRouteIfNeeded();
     }
   }
@@ -308,10 +320,12 @@ class _RealMapWidgetState extends State<RealMapWidget>
   @override
   Widget build(BuildContext context) {
     // Prefer a caller-supplied route, then the real road-following route
-    // fetched from Directions API, and only fall back to a straight line
-    // between pickup/destination while that's still loading (or failed).
+    // fetched from Directions API. No line shows while that fetch is still
+    // in flight - the straight-line fallback is reserved for when it
+    // actually fails, not for the couple of seconds it normally takes.
     List<LatLng> polylinePoints = widget.routePolyline ?? _fetchedRoute ?? [];
     if (polylinePoints.isEmpty &&
+        _routeFetchFailed &&
         widget.showRoute &&
         widget.pickupLat != null &&
         widget.destLat != null) {
