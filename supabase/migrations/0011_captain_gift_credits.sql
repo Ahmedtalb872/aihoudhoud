@@ -1,6 +1,6 @@
 -- Captain gift/incentive credits: 1 MRU is granted to a captain for every
 -- trip they complete, tracked as individual credit rows (not a running
--- total) because each 1 MRU has its own independent 3-month expiry from
+-- total) because each 1 MRU has its own independent 6-month expiry from
 -- when it was earned. A captain can only move this balance into their main
 -- wallet once the sum of still-valid, unredeemed credits reaches 10 MRU -
 -- redemption happens through redeem_captain_gift_credits() below, which
@@ -11,7 +11,7 @@ create table if not exists public.captain_gift_credits (
   trip_id uuid references public.trips(id) on delete set null,
   amount numeric not null default 1,
   created_at timestamptz not null default now(),
-  expires_at timestamptz not null default (now() + interval '3 months'),
+  expires_at timestamptz not null default (now() + interval '6 months'),
   redeemed_at timestamptz
 );
 

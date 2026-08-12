@@ -327,7 +327,7 @@ class _WalletScreenState extends State<WalletScreen> {
           ),
           const SizedBox(height: 6),
           const Text(
-            'تكسب أوقية واحدة عن كل رحلة تُكملها، تصلح لمدة 3 أشهر من '
+            'تكسب أوقية واحدة عن كل رحلة تُكملها، تصلح لمدة 6 أشهر من '
             'تاريخ كسبها. عند وصول رصيدك إلى 10 أوقية أو أكثر يمكنك تحويله '
             'إلى رصيدك الرئيسي.',
             style: TextStyle(
