@@ -44,14 +44,14 @@ class AppStateProvider extends ChangeNotifier {
   //   different rate from the rest - billed continuously by the meter,
   //   not rounded up to the next whole km.
   // - Waiting time: bills 50 MRU/minute, but only while the captain is
-  //   actually stationary (no GPS movement) beyond a 5-minute grace period
+  //   actually stationary (no GPS movement) beyond a 4-minute grace period
   //   per stop, pausing the instant they're moving again.
   static const double openRideBaseFare = 100.0;
   static const double openRideFreeDistanceKm = 3.0;
   static const double openRidePerMeterRate =
       openRideBaseFare / (openRideFreeDistanceKm * 1000);
-  static const double openRidePerMinuteRate = 50.0;
-  static const Duration openRideIdleThreshold = Duration(minutes: 5);
+  static const double openRidePerMinuteRate = 5.0;
+  static const Duration openRideIdleThreshold = Duration(minutes: 4);
   DateTime? _openRideStartTime;
   DateTime? _openRideLastMovementTime;
   // Billable idle seconds already banked from earlier stops this trip -
