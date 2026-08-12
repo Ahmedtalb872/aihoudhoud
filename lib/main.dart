@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'core/constants/colors.dart';
 import 'core/theme/app_theme.dart';
 import 'core/supabase/supabase_config.dart';
 import 'core/services/new_trip_alert.dart';
@@ -11,6 +13,16 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SupabaseConfig.initialize();
   await NewTripAlert.initialize();
+  // Gold status bar matching the app's brand color, instead of the
+  // platform default - AppBarTheme.systemOverlayStyle keeps this in sync
+  // on screens with their own AppBar, which would otherwise reset it.
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: AppColors.primary,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+    ),
+  );
   runApp(
     MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => AppStateProvider())],
