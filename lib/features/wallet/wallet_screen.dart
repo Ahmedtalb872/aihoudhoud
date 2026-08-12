@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
+import '../../core/supabase/auth_exception.dart';
+import '../../core/supabase/wallet_repository.dart';
 import '../../providers/app_state_provider.dart';
 import 'recharge_bank_select_screen.dart';
+
+const double _kGiftRedeemThreshold = 10;
 
 class WalletScreen extends StatefulWidget {
   final bool showAppBar;
@@ -14,11 +18,63 @@ class WalletScreen extends StatefulWidget {
 
 class _WalletScreenState extends State<WalletScreen> {
   final _amountController = TextEditingController();
+  final _walletRepository = WalletRepository();
+  double? _giftBalance;
+  bool _isRedeemingGift = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGiftBalance();
+  }
 
   @override
   void dispose() {
     _amountController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadGiftBalance() async {
+    try {
+      final balance = await _walletRepository.getGiftBalance();
+      if (mounted) setState(() => _giftBalance = balance);
+    } on AppAuthException {
+      // Leave the gift card in its loading state rather than showing a
+      // scary error for what's a nice-to-have bonus balance.
+    }
+  }
+
+  Future<void> _redeemGiftCredits() async {
+    setState(() => _isRedeemingGift = true);
+    try {
+      final amount = await _walletRepository.redeemGiftCredits();
+      if (!mounted) return;
+      Provider.of<AppStateProvider>(
+        context,
+        listen: false,
+      ).creditWalletFromGiftRedemption(amount);
+      await _loadGiftBalance();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'تم تحويل ${amount.toStringAsFixed(0)} أوقية من محفظة الهدايا إلى رصيدك.',
+            style: const TextStyle(fontFamily: 'Cairo'),
+          ),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } on AppAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message, style: const TextStyle(fontFamily: 'Cairo')),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isRedeemingGift = false);
+    }
   }
 
   void _showWithdrawDialog() {
@@ -131,6 +187,9 @@ class _WalletScreenState extends State<WalletScreen> {
 
             // Main Balance Card
             _buildBalanceCard(provider),
+            const SizedBox(height: 16),
+
+            _buildGiftWalletCard(),
             const SizedBox(height: 24),
 
             _buildCaptainStatsRow(provider),
@@ -220,6 +279,80 @@ class _WalletScreenState extends State<WalletScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildGiftWalletCard() {
+    final balance = _giftBalance;
+    final canRedeem = balance != null && balance >= _kGiftRedeemThreshold;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.card_giftcard_rounded, color: AppColors.primary),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'محفظة الهدايا',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.darkText,
+                    fontFamily: 'Cairo',
+                  ),
+                ),
+              ),
+              Text(
+                balance == null
+                    ? '...'
+                    : '${balance.toStringAsFixed(0)} أوقية',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                  fontFamily: 'Cairo',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'تكسب أوقية واحدة عن كل رحلة تُكملها، تصلح لمدة 3 أشهر من '
+            'تاريخ كسبها. عند وصول رصيدك إلى 10 أوقية أو أكثر يمكنك تحويله '
+            'إلى رصيدك الرئيسي.',
+            style: TextStyle(
+              fontSize: 11,
+              color: AppColors.secondaryText,
+              fontFamily: 'Cairo',
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: canRedeem && !_isRedeemingGift
+                  ? _redeemGiftCredits
+                  : null,
+              child: _isRedeemingGift
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('تحويل إلى المحفظة الرئيسية'),
+            ),
+          ),
+        ],
       ),
     );
   }

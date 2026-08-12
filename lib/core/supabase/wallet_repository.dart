@@ -49,4 +49,32 @@ class WalletRepository {
       throw AppAuthException('تعذر تحميل طلبات الشحن.');
     }
   }
+
+  /// Sum of the captain's still-valid, unredeemed gift credits (1 MRU
+  /// granted per completed trip, each expiring 3 months after it was
+  /// earned) - see migration 0011 for the crediting/expiry rules.
+  Future<double> getGiftBalance() async {
+    try {
+      final result = await _client.rpc('get_captain_gift_balance');
+      return (result as num).toDouble();
+    } on PostgrestException {
+      throw AppAuthException('تعذر تحميل رصيد محفظة الهدايا.');
+    }
+  }
+
+  /// Redeems the captain's entire gift balance into the main wallet - only
+  /// succeeds server-side if that balance is already at least 10 MRU.
+  /// Returns the redeemed amount.
+  Future<double> redeemGiftCredits() async {
+    try {
+      final result = await _client.rpc('redeem_captain_gift_credits');
+      return (result as num).toDouble();
+    } on PostgrestException catch (e) {
+      throw AppAuthException(
+        e.message.contains('10')
+            ? 'رصيد الهدايا أقل من 10 أوقية، لا يمكن التحويل بعد.'
+            : 'تعذر تحويل رصيد الهدايا، حاول مرة أخرى.',
+      );
+    }
+  }
 }

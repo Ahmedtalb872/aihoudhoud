@@ -969,6 +969,25 @@ class AppStateProvider extends ChangeNotifier {
     }
   }
 
+  // Reflects a successful WalletRepository.redeemGiftCredits() call: the
+  // redemption itself already happened server-side, this just updates the
+  // locally-tracked wallet balance/history to match.
+  void creditWalletFromGiftRedemption(double amount) {
+    _captainWalletBalance += amount;
+    _captainTransactions.insert(
+      0,
+      WalletTransaction(
+        id: 'tx_gift_${DateTime.now().millisecondsSinceEpoch}',
+        amount: amount,
+        type: TransactionType.reward,
+        title: 'تحويل من محفظة الهدايا',
+        date: DateTime.now().toString().substring(0, 16),
+        isCredit: true,
+      ),
+    );
+    notifyListeners();
+  }
+
   // Messaging / Chatting with the customer on the active trip
   void sendChatMessage(String content) {
     final newMessage = Message(
