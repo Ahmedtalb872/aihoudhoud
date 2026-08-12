@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/models.dart';
 import '../constants/colors.dart';
+import '../services/directions_service.dart';
 
 class RealMapWidget extends StatefulWidget {
   final TripStatus? status;
@@ -48,6 +49,11 @@ class _RealMapWidgetState extends State<RealMapWidget>
   bool _isLoadingLocation = false;
   bool _myLocationEnabled = false;
 
+  // Real road-following route fetched from Directions API, replacing the
+  // straight-line fallback once it loads. Null while loading or if no
+  // widget.routePolyline was supplied and there's nothing to fetch yet.
+  List<LatLng>? _fetchedRoute;
+
   late AnimationController _carController;
   late Animation<double> _carAnimation;
 
@@ -77,6 +83,28 @@ class _RealMapWidgetState extends State<RealMapWidget>
     if (widget.animateCar) {
       _carController.repeat();
     }
+
+    _fetchRouteIfNeeded();
+  }
+
+  void _fetchRouteIfNeeded() {
+    if (widget.routePolyline != null) return; // caller already supplied one
+    if (!widget.showRoute) return;
+    final pLat = widget.pickupLat;
+    final pLng = widget.pickupLng;
+    final dLat = widget.destLat;
+    final dLng = widget.destLng;
+    if (pLat == null || pLng == null || dLat == null || dLng == null) return;
+
+    DirectionsService.fetchRoute(
+      originLat: pLat,
+      originLng: pLng,
+      destLat: dLat,
+      destLng: dLng,
+    ).then((route) {
+      if (!mounted || route == null || route.isEmpty) return;
+      setState(() => _fetchedRoute = route);
+    });
   }
 
   @override
@@ -106,6 +134,11 @@ class _RealMapWidgetState extends State<RealMapWidget>
         final newLoc = LatLng(widget.pickupLat!, widget.pickupLng!);
         _mapController?.animateCamera(CameraUpdate.newLatLngZoom(newLoc, 14.0));
       }
+      // Stale route from the old pickup/destination pair - clear it and
+      // fetch again for the new one (falls back to a straight line in the
+      // meantime, same as before this loads).
+      _fetchedRoute = null;
+      _fetchRouteIfNeeded();
     }
   }
 
@@ -274,8 +307,10 @@ class _RealMapWidgetState extends State<RealMapWidget>
 
   @override
   Widget build(BuildContext context) {
-    // If no route provided but we have pickup/destination and want to show route
-    List<LatLng> polylinePoints = widget.routePolyline ?? [];
+    // Prefer a caller-supplied route, then the real road-following route
+    // fetched from Directions API, and only fall back to a straight line
+    // between pickup/destination while that's still loading (or failed).
+    List<LatLng> polylinePoints = widget.routePolyline ?? _fetchedRoute ?? [];
     if (polylinePoints.isEmpty &&
         widget.showRoute &&
         widget.pickupLat != null &&
