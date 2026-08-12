@@ -36,16 +36,20 @@ class AppStateProvider extends ChangeNotifier {
   int _countdownSeconds = 45;
   bool _isSearching = false;
 
-  // Open ride live meter: flat 100 MRU covers the first 3 km. The 50
-  // MRU/minute counter only starts once the captain either exceeds 3 km, or
-  // sits idle (no GPS movement) for more than 5 minutes - not from second one.
+  // Open ride live meter: flat 100 MRU base fare. The 50 MRU/minute rate
+  // only bills actual waiting time - it accrues while the captain is
+  // stationary (no GPS movement) beyond a 5-minute grace period per stop,
+  // and pauses the instant they're moving again. Moving distance alone,
+  // however far, never adds to the fare on its own.
   static const double openRideBaseFare = 100.0;
   static const double openRidePerMinuteRate = 50.0;
-  static const double openRideFreeDistanceKm = 3.0;
   static const Duration openRideIdleThreshold = Duration(minutes: 5);
   DateTime? _openRideStartTime;
   DateTime? _openRideLastMovementTime;
-  DateTime? _openRideMeterActivatedAt;
+  // Billable idle seconds already banked from earlier stops this trip -
+  // the current stop's contribution is computed live on top of this, see
+  // _currentBillableIdleSeconds().
+  double _openRideAccumulatedIdleSeconds = 0.0;
   double _openRideDistanceKm = 0.0;
   Timer? _openRideTicker;
 
@@ -96,43 +100,41 @@ class AppStateProvider extends ChangeNotifier {
       ? Duration.zero
       : DateTime.now().difference(_openRideStartTime!);
 
-  bool get isOpenRideMeterActive => _openRideMeterActivatedAt != null;
+  bool get isOpenRideMeterActive => openRideMeterElapsed > Duration.zero;
 
-  // Time shown on the live "الوقت" stat: stays at zero until the meter
-  // actually activates (>3km or >5min idle), so nothing appears to be
-  // ticking/billing before that threshold is really met.
-  Duration get openRideMeterElapsed => _openRideMeterActivatedAt == null
-      ? Duration.zero
-      : DateTime.now().difference(_openRideMeterActivatedAt!);
+  // Billable seconds of the *current* stop only - 0 while moving, and 0
+  // for the first 5 minutes of any stop (the free grace period), only
+  // counting up past that.
+  double _currentBillableIdleSeconds() {
+    if (_openRideLastMovementTime == null) return 0;
+    final idleSeconds = DateTime.now()
+        .difference(_openRideLastMovementTime!)
+        .inSeconds
+        .toDouble();
+    final graceSeconds = openRideIdleThreshold.inSeconds.toDouble();
+    return idleSeconds > graceSeconds ? idleSeconds - graceSeconds : 0;
+  }
+
+  // Time shown on the live "الوقت" stat: total billable waiting time so
+  // far - banked time from earlier stops plus whatever the current stop
+  // (if any) is accruing right now. Stays at zero while moving.
+  Duration get openRideMeterElapsed => Duration(
+    seconds: (_openRideAccumulatedIdleSeconds + _currentBillableIdleSeconds())
+        .round(),
+  );
 
   double get openRideFare {
-    if (_openRideMeterActivatedAt == null) return openRideBaseFare;
-    final minutesSinceActivation =
-        DateTime.now().difference(_openRideMeterActivatedAt!).inSeconds /
-        60.0;
-    return openRideBaseFare + minutesSinceActivation * openRidePerMinuteRate;
+    final billableMinutes = openRideMeterElapsed.inSeconds / 60.0;
+    return openRideBaseFare + billableMinutes * openRidePerMinuteRate;
   }
 
-  // Called whenever fresh GPS movement is reported, and once a second while
-  // idle, so idle time (not just distance) can trigger the meter.
-  void _checkOpenRideMeterActivation() {
-    if (_openRideMeterActivatedAt != null) return;
-    if (_openRideDistanceKm > openRideFreeDistanceKm) {
-      _openRideMeterActivatedAt = DateTime.now();
-      return;
-    }
-    if (_openRideLastMovementTime != null &&
-        DateTime.now().difference(_openRideLastMovementTime!) >
-            openRideIdleThreshold) {
-      _openRideMeterActivatedAt = DateTime.now();
-    }
-  }
-
-  // Reported by OpenRideActiveScreen on every real GPS position update.
+  // Reported by OpenRideActiveScreen on every real GPS position update -
+  // movement, so bank whatever billable idle time the stop that just ended
+  // accrued before resetting the idle clock for this new movement.
   void updateOpenRideDistance(double totalDistanceKm) {
+    _openRideAccumulatedIdleSeconds += _currentBillableIdleSeconds();
     _openRideDistanceKm = totalDistanceKm;
     _openRideLastMovementTime = DateTime.now();
-    _checkOpenRideMeterActivation();
     notifyListeners();
   }
 
@@ -326,7 +328,7 @@ class AppStateProvider extends ChangeNotifier {
     _openRideTicker?.cancel();
     _openRideStartTime = null;
     _openRideLastMovementTime = null;
-    _openRideMeterActivatedAt = null;
+    _openRideAccumulatedIdleSeconds = 0.0;
     _openRideDistanceKm = 0.0;
     notifyListeners();
     AuthRepository().signOut().catchError((_) {});
@@ -776,11 +778,13 @@ class AppStateProvider extends ChangeNotifier {
       if (_activeTrip!.isOpenRide) {
         _openRideStartTime = DateTime.now();
         _openRideLastMovementTime = DateTime.now();
-        _openRideMeterActivatedAt = null;
+        _openRideAccumulatedIdleSeconds = 0.0;
         _openRideDistanceKm = 0.0;
         _openRideTicker?.cancel();
+        // Just ticks notifyListeners() every second so the live fare/time
+        // display keeps updating while stationary - openRideFare and
+        // openRideMeterElapsed compute their own values from timestamps.
         _openRideTicker = Timer.periodic(const Duration(seconds: 1), (_) {
-          _checkOpenRideMeterActivation();
           notifyListeners();
         });
       }
@@ -933,7 +937,7 @@ class AppStateProvider extends ChangeNotifier {
       _openRideTicker = null;
       _openRideStartTime = null;
       _openRideLastMovementTime = null;
-      _openRideMeterActivatedAt = null;
+      _openRideAccumulatedIdleSeconds = 0.0;
       _openRideDistanceKm = 0.0;
     }
   }
@@ -1062,7 +1066,7 @@ class AppStateProvider extends ChangeNotifier {
     _openRideTicker = null;
     _openRideStartTime = null;
     _openRideLastMovementTime = null;
-    _openRideMeterActivatedAt = null;
+    _openRideAccumulatedIdleSeconds = 0.0;
     _openRideDistanceKm = 0.0;
     notifyListeners();
 
