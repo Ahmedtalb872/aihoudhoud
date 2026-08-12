@@ -38,17 +38,18 @@ class AppStateProvider extends ChangeNotifier {
 
   // Open ride live meter, two independent components on top of the 100 MRU
   // base fare (which covers the first 3 km):
-  // - Distance: every km beyond the free 3 km bills at the same per-km rate
-  //   implied by the base fare (100 / 3), so pricing stays consistent
-  //   throughout the trip instead of the first 3 km being a different rate
-  //   from the rest.
+  // - Distance: every meter beyond the free 3 km bills at the per-meter
+  //   rate implied by the base fare (100 / 3000), so pricing stays
+  //   consistent throughout the trip instead of the first 3 km being a
+  //   different rate from the rest - billed continuously by the meter,
+  //   not rounded up to the next whole km.
   // - Waiting time: bills 50 MRU/minute, but only while the captain is
   //   actually stationary (no GPS movement) beyond a 5-minute grace period
   //   per stop, pausing the instant they're moving again.
   static const double openRideBaseFare = 100.0;
   static const double openRideFreeDistanceKm = 3.0;
-  static const double openRidePerKmRate =
-      openRideBaseFare / openRideFreeDistanceKm;
+  static const double openRidePerMeterRate =
+      openRideBaseFare / (openRideFreeDistanceKm * 1000);
   static const double openRidePerMinuteRate = 50.0;
   static const Duration openRideIdleThreshold = Duration(minutes: 5);
   DateTime? _openRideStartTime;
@@ -131,10 +132,10 @@ class AppStateProvider extends ChangeNotifier {
   );
 
   double get openRideFare {
-    final extraKm = _openRideDistanceKm > openRideFreeDistanceKm
-        ? _openRideDistanceKm - openRideFreeDistanceKm
+    final extraMeters = _openRideDistanceKm > openRideFreeDistanceKm
+        ? (_openRideDistanceKm - openRideFreeDistanceKm) * 1000
         : 0.0;
-    final distanceFare = extraKm * openRidePerKmRate;
+    final distanceFare = extraMeters * openRidePerMeterRate;
     final billableMinutes = openRideMeterElapsed.inSeconds / 60.0;
     final waitingFare = billableMinutes * openRidePerMinuteRate;
     return openRideBaseFare + distanceFare + waitingFare;
