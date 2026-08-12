@@ -271,58 +271,6 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
           ),
         ),
 
-        // Status indicator banner
-        Positioned(
-          top: 110,
-          left: 20,
-          right: 20,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.95),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: const [
-                BoxShadow(color: Colors.black12, blurRadius: 6),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      provider.isCaptainOnline
-                          ? Icons.check_circle_rounded
-                          : Icons.info_outline_rounded,
-                      color: provider.isCaptainOnline
-                          ? AppColors.success
-                          : AppColors.error,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        provider.isCaptainOnline
-                            ? 'أنت متاح لاستقبال المشاوير وبث الطلبات القريبة.'
-                            : 'قم بتفعيل زر الاتصال بالأعلى لبدء استقبال المشاوير.',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.darkText,
-                          fontFamily: 'Cairo',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                // Delivery-mode toggle now lives on the profile screen
-                // instead of here - this banner was filling up too much of
-                // the home screen.
-              ],
-            ),
-          ),
-        ),
-
         // Incoming Trip Request overlay dialog (Full screen popup when new request arrives)
         if (provider.incomingRequest != null)
           _buildIncomingRequestOverlay(provider),
