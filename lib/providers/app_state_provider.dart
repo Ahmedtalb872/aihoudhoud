@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
 import '../dummy_data/dummy_data.dart';
 import '../core/supabase/auth_repository.dart';
+import '../core/supabase/auth_exception.dart';
 import '../core/services/new_trip_alert.dart';
 
 class AppStateProvider extends ChangeNotifier {
@@ -543,16 +544,19 @@ class AppStateProvider extends ChangeNotifier {
         .catchError((_) {});
   }
 
-  Future<void> acceptIncomingRequest() async {
+  // Returns an Arabic error message on failure (e.g. someone else claimed
+  // the trip first, or the captain went offline in the meantime) so the UI
+  // can show it - null means the trip was accepted successfully.
+  Future<String?> acceptIncomingRequest() async {
     _countdownTimer?.cancel();
     final request = _incomingRequest;
-    if (request == null) return;
+    if (request == null) return null;
     _incomingRequest = null;
     notifyListeners();
 
     if (request.isRemote) {
       final uid = _userId;
-      if (uid == null) return;
+      if (uid == null) return null;
       try {
         // Atomic, server-checked claim: captain_accept_trip() re-verifies
         // the captain is approved/online (and, for a delivery, a motorcycle
@@ -560,9 +564,12 @@ class AppStateProvider extends ChangeNotifier {
         // it raises if someone else claimed it first or the captain isn't
         // eligible, either of which just means moving on to the next one.
         await AuthRepository().acceptTrip(request.id);
+      } on AppAuthException catch (e) {
+        _maybeShowNextPendingRide();
+        return e.message;
       } catch (_) {
         _maybeShowNextPendingRide();
-        return;
+        return 'تعذر قبول الطلب، حاول مرة أخرى.';
       }
     }
 
@@ -596,6 +603,7 @@ class AppStateProvider extends ChangeNotifier {
     );
     _startStepReminder();
     notifyListeners();
+    return null;
   }
 
   void ignoreIncomingRequest() {

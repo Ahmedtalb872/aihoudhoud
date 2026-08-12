@@ -287,11 +287,22 @@ class AuthRepository {
   /// before handing it over. Throws if the trip is no longer available or
   /// the captain isn't eligible.
   Future<Map<String, dynamic>> acceptTrip(String tripId) async {
-    final result = await _client.rpc(
-      'captain_accept_trip',
-      params: {'p_trip_id': tripId},
-    );
-    return result as Map<String, dynamic>;
+    try {
+      final result = await _client.rpc(
+        'captain_accept_trip',
+        params: {'p_trip_id': tripId},
+      );
+      return result as Map<String, dynamic>;
+    } on PostgrestException catch (e) {
+      debugPrint('acceptTrip failed: ${e.message}');
+      if (e.message.contains('TRIP_UNAVAILABLE')) {
+        throw AppAuthException('تم قبول هذا الطلب من كابتن آخر، أو لم يعد متاحًا.');
+      }
+      if (e.message.contains('approved, online captain')) {
+        throw AppAuthException('يجب أن يكون حسابك معتمدًا ومتصلاً لقبول الطلبات.');
+      }
+      throw AppAuthException('تعذر قبول الطلب، حاول مرة أخرى.');
+    }
   }
 
   Future<void> signOut() async {

@@ -480,9 +480,23 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {
-                            provider.acceptIncomingRequest();
+                          onPressed: () async {
+                            final error = await provider
+                                .acceptIncomingRequest();
                             // Navigation to Active Trip screen occurs automatically via state listener
+                            if (error != null && context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    error,
+                                    style: const TextStyle(
+                                      fontFamily: 'Cairo',
+                                    ),
+                                  ),
+                                  backgroundColor: AppColors.error,
+                                ),
+                              );
+                            }
                           },
                           child: Text(
                             trip.isDelivery ? 'قبول التوصيل' : 'قبول المشوار',
