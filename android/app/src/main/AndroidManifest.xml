@@ -15,6 +15,15 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyCsp2LwsRAitjwA1nt3aTleQM5-cqG29_U" />
+        <!-- google_maps_flutter's native map view is a PlatformView, which
+             Flutter's newer Impeller renderer has known compositing bugs
+             with on some Android devices/GPU drivers - it can render
+             completely blank even though the SDK, key, and billing are all
+             fine. Falling back to the older Skia renderer is the standard
+             fix. -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableImpeller"
+            android:value="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
