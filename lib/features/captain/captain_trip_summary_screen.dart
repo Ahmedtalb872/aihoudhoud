@@ -204,7 +204,7 @@ class CaptainTripSummaryScreen extends StatelessWidget {
                       ),
                       _buildSummaryRow(
                         'المسافة والمدة',
-                        '${trip.distance} كم (${trip.duration} دقيقة)',
+                        '${trip.distance.toStringAsFixed(1)} كم (${trip.duration} دقيقة)',
                       ),
                     ],
                   ),

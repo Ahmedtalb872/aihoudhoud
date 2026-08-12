@@ -503,7 +503,9 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildQuietStat('المسافة ${trip.distance} كم'),
+                        _buildQuietStat(
+                          'المسافة ${trip.distance.toStringAsFixed(1)} كم',
+                        ),
                         _buildQuietStat('المدة ${trip.duration} د'),
                         _buildQuietStat(
                           'الأجرة ${trip.price} أوقية',

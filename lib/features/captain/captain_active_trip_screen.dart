@@ -151,7 +151,7 @@ class CaptainActiveTripScreen extends StatelessWidget {
                       child: Column(
                         children: [
                           Text(
-                            '${trip.distance} كم',
+                            '${trip.distance.toStringAsFixed(1)} كم',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
