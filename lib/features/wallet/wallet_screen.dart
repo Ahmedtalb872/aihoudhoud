@@ -58,7 +58,7 @@ class _WalletScreenState extends State<WalletScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'تم تحويل ${amount.toStringAsFixed(0)} أوقية من محفظة الهدايا إلى رصيدك.',
+            'تم تحويل ${amount.toStringAsFixed(0)} أوقية من مكافأتي إلى رصيدك.',
             style: const TextStyle(fontFamily: 'Cairo'),
           ),
           backgroundColor: AppColors.success,
@@ -303,7 +303,7 @@ class _WalletScreenState extends State<WalletScreen> {
               const SizedBox(width: 8),
               const Expanded(
                 child: Text(
-                  'محفظة الهدايا',
+                  'مكافأتي',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,

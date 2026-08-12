@@ -58,7 +58,7 @@ class WalletRepository {
       final result = await _client.rpc('get_captain_gift_balance');
       return (result as num).toDouble();
     } on PostgrestException {
-      throw AppAuthException('تعذر تحميل رصيد محفظة الهدايا.');
+      throw AppAuthException('تعذر تحميل رصيد مكافأتي.');
     }
   }
 

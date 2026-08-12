@@ -980,7 +980,7 @@ class AppStateProvider extends ChangeNotifier {
         id: 'tx_gift_${DateTime.now().millisecondsSinceEpoch}',
         amount: amount,
         type: TransactionType.reward,
-        title: 'تحويل من محفظة الهدايا',
+        title: 'تحويل من مكافأتي',
         date: DateTime.now().toString().substring(0, 16),
         isCredit: true,
       ),
