@@ -169,6 +169,20 @@ class AuthRepository {
     }
   }
 
+  /// A temporary signed URL for the captain's uploaded profile photo (the
+  /// `captain-documents` bucket is private, so it isn't reachable by a
+  /// plain public URL). Returns null if no photo has been uploaded yet -
+  /// callers should fall back to a placeholder avatar in that case.
+  Future<String?> getProfilePhotoUrl(String captainId) async {
+    try {
+      return await _client.storage
+          .from('captain-documents')
+          .createSignedUrl('$captainId/profile_photo.jpg', 3600);
+    } on StorageException {
+      return null;
+    }
+  }
+
   Future<Map<String, dynamic>> getProfile(String userId) async {
     try {
       return await _client.from('profiles').select().eq('id', userId).single();

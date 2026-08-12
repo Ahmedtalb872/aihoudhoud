@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
+import '../../core/supabase/auth_repository.dart';
 import '../../models/models.dart';
 import '../../core/widgets/real_map_widget.dart';
 import '../../core/widgets/app_logo.dart';
@@ -14,7 +15,6 @@ import '../profile/profile_screen.dart';
 import 'captain_active_trip_screen.dart';
 import 'leaderboard_screen.dart';
 import '../onboarding/auth_choice_screen.dart';
-import '../../dummy_data/dummy_data.dart';
 
 class CaptainHomeScreen extends StatefulWidget {
   const CaptainHomeScreen({super.key});
@@ -564,9 +564,27 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
         children: [
           UserAccountsDrawerHeader(
             decoration: const BoxDecoration(color: AppColors.primary),
-            currentAccountPicture: CircleAvatar(
-              backgroundImage: NetworkImage(DummyData.dummyCaptain.user.avatar),
-              backgroundColor: Colors.white,
+            currentAccountPicture: FutureBuilder<String?>(
+              future: provider.userId == null
+                  ? null
+                  : AuthRepository().getProfilePhotoUrl(provider.userId!),
+              builder: (context, snapshot) {
+                final url = snapshot.data;
+                if (url == null) {
+                  return const CircleAvatar(
+                    backgroundColor: Colors.white,
+                    child: Icon(
+                      Icons.person_rounded,
+                      color: AppColors.primary,
+                      size: 32,
+                    ),
+                  );
+                }
+                return CircleAvatar(
+                  backgroundImage: NetworkImage(url),
+                  backgroundColor: Colors.white,
+                );
+              },
             ),
             otherAccountsPictures: const [
               Padding(padding: EdgeInsets.all(6.0), child: AppLogo(width: 40)),
