@@ -36,12 +36,19 @@ class AppStateProvider extends ChangeNotifier {
   int _countdownSeconds = 45;
   bool _isSearching = false;
 
-  // Open ride live meter: flat 100 MRU base fare. The 50 MRU/minute rate
-  // only bills actual waiting time - it accrues while the captain is
-  // stationary (no GPS movement) beyond a 5-minute grace period per stop,
-  // and pauses the instant they're moving again. Moving distance alone,
-  // however far, never adds to the fare on its own.
+  // Open ride live meter, two independent components on top of the 100 MRU
+  // base fare (which covers the first 3 km):
+  // - Distance: every km beyond the free 3 km bills at the same per-km rate
+  //   implied by the base fare (100 / 3), so pricing stays consistent
+  //   throughout the trip instead of the first 3 km being a different rate
+  //   from the rest.
+  // - Waiting time: bills 50 MRU/minute, but only while the captain is
+  //   actually stationary (no GPS movement) beyond a 5-minute grace period
+  //   per stop, pausing the instant they're moving again.
   static const double openRideBaseFare = 100.0;
+  static const double openRideFreeDistanceKm = 3.0;
+  static const double openRidePerKmRate =
+      openRideBaseFare / openRideFreeDistanceKm;
   static const double openRidePerMinuteRate = 50.0;
   static const Duration openRideIdleThreshold = Duration(minutes: 5);
   DateTime? _openRideStartTime;
@@ -124,8 +131,13 @@ class AppStateProvider extends ChangeNotifier {
   );
 
   double get openRideFare {
+    final extraKm = _openRideDistanceKm > openRideFreeDistanceKm
+        ? _openRideDistanceKm - openRideFreeDistanceKm
+        : 0.0;
+    final distanceFare = extraKm * openRidePerKmRate;
     final billableMinutes = openRideMeterElapsed.inSeconds / 60.0;
-    return openRideBaseFare + billableMinutes * openRidePerMinuteRate;
+    final waitingFare = billableMinutes * openRidePerMinuteRate;
+    return openRideBaseFare + distanceFare + waitingFare;
   }
 
   // Reported by OpenRideActiveScreen on every real GPS position update -
