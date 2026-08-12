@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
 import '../../core/widgets/real_map_widget.dart';
+import '../../core/widgets/route_row.dart';
 import '../../core/services/phone_caller.dart';
 import '../support/chat_screen.dart';
 import 'cancel_trip_dialog.dart';
@@ -264,7 +265,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                               ),
                             ),
                             Text(
-                              trip.pickupLocation,
+                              RouteRow.shortAddress(trip.pickupLocation),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,

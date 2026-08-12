@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../constants/colors.dart';
 
-/// A single pickup/destination line: a colored dot followed by the address,
-/// with an optional trailing note (e.g. a distance). Two of these stacked -
-/// green dot for pickup, red for destination - is the app's standard way of
+/// A single pickup/destination line: a colored dot followed by a shortened
+/// address (just the point and wilaya, not the full geocoded string), with
+/// an optional trailing note (e.g. a distance). Two of these stacked - green
+/// dot for pickup, red for destination - is the app's standard way of
 /// showing a trip's route, each point on its own line.
 class RouteRow extends StatelessWidget {
   final Color dotColor;
@@ -18,6 +19,22 @@ class RouteRow extends StatelessWidget {
     this.trailing,
     this.label,
   });
+
+  // The full geocoded address ("point, quarter, moughataa, wilaya, ...") is
+  // too much detail for this compact row - just the specific point and the
+  // wilaya (its first and last comma-separated parts) is enough to place it.
+  static String shortAddress(String raw) {
+    final parts = raw
+        .split(',')
+        .map((p) => p.trim())
+        .where((p) => p.isNotEmpty)
+        .toList();
+    if (parts.length <= 2) return raw.trim();
+    final point = parts.first;
+    final wilaya = parts.last;
+    if (point == wilaya) return point;
+    return '$point، $wilaya';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,10 +63,8 @@ class RouteRow extends StatelessWidget {
           const SizedBox(width: 6),
         ],
         Expanded(
-          // Two lines instead of one so long geocoded addresses aren't cut
-          // off almost immediately - still ellipsized past that.
           child: Text(
-            text,
+            shortAddress(text),
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.bold,

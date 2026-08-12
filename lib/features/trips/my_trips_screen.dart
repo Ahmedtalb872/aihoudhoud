@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
 import '../../models/models.dart';
+import '../../core/widgets/route_row.dart';
 
 class MyTripsScreen extends StatelessWidget {
   final bool showAppBar;
@@ -215,7 +216,7 @@ class _TripListTab extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            trip.pickupLocation,
+                            RouteRow.shortAddress(trip.pickupLocation),
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
@@ -227,7 +228,11 @@ class _TripListTab extends StatelessWidget {
                           ),
                           const SizedBox(height: 18),
                           Text(
-                            trip.destinationLocation ?? 'مشوار مفتوح',
+                            trip.destinationLocation == null
+                                ? 'مشوار مفتوح'
+                                : RouteRow.shortAddress(
+                                    trip.destinationLocation!,
+                                  ),
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
