@@ -22,27 +22,32 @@ class RouteRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           width: 8,
           height: 8,
-          margin: const EdgeInsets.only(left: 10),
+          margin: const EdgeInsets.only(left: 10, top: 4),
           decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
         ),
         if (label != null) ...[
-          Text(
-            label!,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: AppColors.secondaryText,
-              fontFamily: 'Cairo',
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Text(
+              label!,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: AppColors.secondaryText,
+                fontFamily: 'Cairo',
+              ),
             ),
           ),
           const SizedBox(width: 6),
         ],
         Expanded(
+          // Two lines instead of one so long geocoded addresses aren't cut
+          // off almost immediately - still ellipsized past that.
           child: Text(
             text,
             style: const TextStyle(
@@ -51,18 +56,21 @@ class RouteRow extends StatelessWidget {
               color: AppColors.darkText,
               fontFamily: 'Cairo',
             ),
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
         ),
         if (trailing != null) ...[
           const SizedBox(width: 8),
-          Text(
-            trailing!,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.secondaryText,
-              fontFamily: 'Cairo',
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Text(
+              trailing!,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.secondaryText,
+                fontFamily: 'Cairo',
+              ),
             ),
           ),
         ],
