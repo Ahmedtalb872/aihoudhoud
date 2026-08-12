@@ -7,7 +7,12 @@ import 'package:http/http.dart' as http;
 /// pickup/destination when this returns null (no network, API error, or
 /// the API key doesn't have Directions API enabled yet).
 class DirectionsService {
-  static const _apiKey = 'AIzaSyCsp2LwsRAitjwA1nt3aTleQM5-cqG29_U';
+  // Deliberately a separate, unrestricted key from the Maps SDK one used in
+  // AndroidManifest.xml/Info.plist/web/index.html - Google's "Android apps"
+  // key restriction only works for the native Maps SDK, not REST calls like
+  // this one, so this key must stay unrestricted (or IP-restricted) rather
+  // than sharing the Android-app-restricted key.
+  static const _apiKey = 'AIzaSyCxcJ5UKVOiRyIL3Ra4n2upXE0e9dWvdUM';
 
   static Future<List<LatLng>?> fetchRoute({
     required double originLat,
