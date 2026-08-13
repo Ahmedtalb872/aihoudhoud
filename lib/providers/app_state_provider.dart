@@ -36,20 +36,15 @@ class AppStateProvider extends ChangeNotifier {
   int _countdownSeconds = 45;
   bool _isSearching = false;
 
-  // Open ride live meter, two independent components on top of the 100 MRU
-  // base fare (which covers the first 3 km):
-  // - Distance: every meter beyond the free 3 km bills at the per-meter
-  //   rate implied by the base fare (100 / 3000), so pricing stays
-  //   consistent throughout the trip instead of the first 3 km being a
-  //   different rate from the rest - billed continuously by the meter,
-  //   not rounded up to the next whole km.
-  // - Waiting time: bills 50 MRU/minute, but only while the captain is
+  // Open ride live meter, two independent components:
+  // - Distance: the whole trip bills at 0.26 MRU/meter, continuously (not
+  //   rounded up to the next whole km), with a 100 MRU minimum fare for
+  //   the trip regardless of how short it is.
+  // - Waiting time: bills 5 MRU/minute, but only while the captain is
   //   actually stationary (no GPS movement) beyond a 4-minute grace period
   //   per stop, pausing the instant they're moving again.
-  static const double openRideBaseFare = 100.0;
-  static const double openRideFreeDistanceKm = 3.0;
-  static const double openRidePerMeterRate =
-      openRideBaseFare / (openRideFreeDistanceKm * 1000);
+  static const double openRideMinimumFare = 100.0;
+  static const double openRidePerMeterRate = 0.26;
   static const double openRidePerMinuteRate = 5.0;
   static const Duration openRideIdleThreshold = Duration(minutes: 4);
   DateTime? _openRideStartTime;
@@ -111,7 +106,7 @@ class AppStateProvider extends ChangeNotifier {
   bool get isOpenRideMeterActive => openRideMeterElapsed > Duration.zero;
 
   // Billable seconds of the *current* stop only - 0 while moving, and 0
-  // for the first 5 minutes of any stop (the free grace period), only
+  // for the first 4 minutes of any stop (the free grace period), only
   // counting up past that.
   double _currentBillableIdleSeconds() {
     if (_openRideLastMovementTime == null) return 0;
@@ -132,13 +127,14 @@ class AppStateProvider extends ChangeNotifier {
   );
 
   double get openRideFare {
-    final extraMeters = _openRideDistanceKm > openRideFreeDistanceKm
-        ? (_openRideDistanceKm - openRideFreeDistanceKm) * 1000
-        : 0.0;
-    final distanceFare = extraMeters * openRidePerMeterRate;
+    final distanceMeters = _openRideDistanceKm * 1000;
+    final distanceFare = distanceMeters * openRidePerMeterRate;
     final billableMinutes = openRideMeterElapsed.inSeconds / 60.0;
     final waitingFare = billableMinutes * openRidePerMinuteRate;
-    return openRideBaseFare + distanceFare + waitingFare;
+    return (distanceFare < openRideMinimumFare
+            ? openRideMinimumFare
+            : distanceFare) +
+        waitingFare;
   }
 
   // Reported by OpenRideActiveScreen on every real GPS position update -
@@ -269,7 +265,7 @@ class AppStateProvider extends ChangeNotifier {
       destLng: destLng,
       distance: distanceKm,
       duration: durationMin,
-      price: isOpenRide ? openRideBaseFare : price,
+      price: isOpenRide ? openRideMinimumFare : price,
       paymentMethod: paymentMethod,
       status: _mapDbTripStatus(row['status'] as String?),
       carType: vehicleType,
@@ -627,7 +623,7 @@ class AppStateProvider extends ChangeNotifier {
       destLng: destLng,
       distance: distanceKm,
       duration: durationMin,
-      price: isOpenRide ? openRideBaseFare : price,
+      price: isOpenRide ? openRideMinimumFare : price,
       paymentMethod: paymentMethod,
       status: TripStatus.searching,
       carType: vehicleType,

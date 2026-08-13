@@ -408,7 +408,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                           ),
                         ),
                         Text(
-                          'يبدأ من ${AppStateProvider.openRideBaseFare.toStringAsFixed(0)} أوقية',
+                          'يبدأ من ${AppStateProvider.openRideMinimumFare.toStringAsFixed(0)} أوقية',
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
