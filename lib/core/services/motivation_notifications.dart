@@ -100,6 +100,8 @@ class MotivationNotifications {
         scheduled,
         const NotificationDetails(android: _channel),
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: DateTimeComponents.time,
       );
     } catch (_) {
