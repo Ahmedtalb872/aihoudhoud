@@ -37,14 +37,14 @@ class AppStateProvider extends ChangeNotifier {
   bool _isSearching = false;
 
   // Open ride live meter, two independent components:
-  // - Distance: the whole trip bills at 0.26 MRU/meter, continuously (not
+  // - Distance: the whole trip bills at 0.23 MRU/meter, continuously (not
   //   rounded up to the next whole km), with a 100 MRU minimum fare for
   //   the trip regardless of how short it is.
   // - Waiting time: bills 5 MRU/minute, but only while the captain is
   //   actually stationary (no GPS movement) beyond a 4-minute grace period
   //   per stop, pausing the instant they're moving again.
   static const double openRideMinimumFare = 100.0;
-  static const double openRidePerMeterRate = 0.26;
+  static const double openRidePerMeterRate = 0.23;
   static const double openRidePerMinuteRate = 5.0;
   static const Duration openRideIdleThreshold = Duration(minutes: 4);
   DateTime? _openRideStartTime;
