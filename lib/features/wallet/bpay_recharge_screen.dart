@@ -109,6 +109,13 @@ class _BpayRechargeScreenState extends State<BpayRechargeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Center(
+                child: Image.asset(
+                  'assets/images/bankily_logo.jpeg',
+                  height: 90,
+                ),
+              ),
+              const SizedBox(height: 20),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
