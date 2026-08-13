@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geolocator_android/geolocator_android.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
 import '../dummy_data/dummy_data.dart';
@@ -60,6 +62,15 @@ class AppStateProvider extends ChangeNotifier {
   double? _openRideLastLat;
   double? _openRideLastLng;
   Timer? _openRideTicker;
+
+  // Keeps the app alive (via an Android foreground-service notification,
+  // same mechanism as the open-ride meter) for as long as the captain is
+  // online and waiting for a request - otherwise Android kills the
+  // backgrounded app between requests, and the captain loses their online
+  // status (and misses requests) without noticing until they reopen the
+  // app. Paused while an active trip is in progress so it doesn't run
+  // alongside OpenRideActiveScreen's own tracking stream.
+  StreamSubscription<Position>? _onlinePresenceSub;
 
   // Nudges the captain every couple of minutes to complete whatever step of
   // the active trip they're currently on, so a step doesn't get forgotten.
@@ -219,7 +230,14 @@ class AppStateProvider extends ChangeNotifier {
           ? 'motorcycle'
           : 'car';
       _deliveryModeEnabled = captain['accepts_delivery'] as bool? ?? false;
+      // Restores online status across an app relaunch too - otherwise a
+      // captain silently drops offline (and stops receiving requests)
+      // every time Android kills the backgrounded app, with no visible
+      // sign anything changed until they happen to check.
+      _isCaptainOnline = captain['is_online'] as bool? ?? false;
+      if (_isCaptainOnline) _subscribeToPendingRides();
     }
+    _syncOnlinePresenceTracking();
     notifyListeners();
   }
 
@@ -329,6 +347,7 @@ class AppStateProvider extends ChangeNotifier {
     if (isOpenRide && _activeTrip!.status == TripStatus.started) {
       _restoreOpenRideMeter(row);
     }
+    _syncOnlinePresenceTracking();
     _startStepReminder();
     notifyListeners();
   }
@@ -419,6 +438,8 @@ class AppStateProvider extends ChangeNotifier {
     _openRideDistanceKm = 0.0;
     _openRideLastLat = null;
     _openRideLastLng = null;
+    _onlinePresenceSub?.cancel();
+    _onlinePresenceSub = null;
     notifyListeners();
     AuthRepository().signOut().catchError((_) {});
   }
@@ -436,7 +457,74 @@ class AppStateProvider extends ChangeNotifier {
     if (_userId != null) {
       AuthRepository().setCaptainOnline(_userId!, _isCaptainOnline);
     }
+    _syncOnlinePresenceTracking();
     notifyListeners();
+  }
+
+  // Starts/stops the online-presence foreground tracking to match the
+  // current state: should run only while online with no active trip. Safe
+  // to call from anywhere online status or activeTrip might have changed -
+  // it's a no-op if already in the right state.
+  void _syncOnlinePresenceTracking() {
+    final shouldTrack = _isCaptainOnline && _activeTrip == null;
+    if (shouldTrack && _onlinePresenceSub == null) {
+      _startOnlinePresenceTracking();
+    } else if (!shouldTrack && _onlinePresenceSub != null) {
+      _onlinePresenceSub?.cancel();
+      _onlinePresenceSub = null;
+    }
+  }
+
+  Future<void> _startOnlinePresenceTracking() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return;
+      }
+      // A caller may have gone offline (or accepted a trip) while
+      // permissions were being requested above.
+      if (!_isCaptainOnline || _activeTrip != null) return;
+
+      final isAndroid =
+          !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+      final LocationSettings locationSettings = isAndroid
+          ? AndroidSettings(
+              accuracy: LocationAccuracy.high,
+              distanceFilter: 50,
+              foregroundNotificationConfig: const ForegroundNotificationConfig(
+                notificationTitle: 'الهدهد',
+                notificationText: 'متصل الآن - بانتظار الطلبات',
+                enableWakeLock: true,
+              ),
+            )
+          : const LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 50);
+
+      _onlinePresenceSub =
+          Geolocator.getPositionStream(locationSettings: locationSettings).listen((
+            position,
+          ) {
+            final uid = _userId;
+            if (uid == null) return;
+            Supabase.instance.client
+                .from('captain_locations')
+                .upsert({
+                  'captain_id': uid,
+                  'lat': position.latitude,
+                  'lng': position.longitude,
+                  'heading': position.heading,
+                  'updated_at': DateTime.now().toIso8601String(),
+                })
+                .catchError((_) {});
+          });
+    } catch (_) {
+      // No GPS available; presence tracking just doesn't start.
+    }
   }
 
   // Used when a captain accepts a ride browsed from the open trips list.
@@ -811,6 +899,7 @@ class AppStateProvider extends ChangeNotifier {
       serviceType: request.serviceType,
       packageDescription: request.packageDescription,
     );
+    _syncOnlinePresenceTracking();
     _startStepReminder();
     notifyListeners();
     return null;
@@ -1182,6 +1271,7 @@ class AppStateProvider extends ChangeNotifier {
     _openRideDistanceKm = 0.0;
     _openRideLastLat = null;
     _openRideLastLng = null;
+    _syncOnlinePresenceTracking();
     notifyListeners();
 
     // Ready for the next request if still online
@@ -1190,6 +1280,7 @@ class AppStateProvider extends ChangeNotifier {
 
   void confirmCaptainSummary() {
     _activeTrip = null;
+    _syncOnlinePresenceTracking();
     notifyListeners();
     // Ready for next request if online
     _maybeShowNextPendingRide();
