@@ -7,6 +7,7 @@ import '../../providers/app_state_provider.dart';
 import '../captain/captain_home_screen.dart';
 import 'auth_choice_screen.dart';
 import 'pending_review_screen.dart';
+import 'widgets/splash_route_map.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -107,120 +108,126 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.sizeOf(context);
+    // Scales the logo puck to the screen instead of a fixed 180px, so it
+    // stays proportionate on small phones and large tablets alike.
+    final logoSize = (screenSize.shortestSide * 0.42).clamp(120.0, 200.0);
+
     return Scaffold(
       backgroundColor: AppColors.primary,
       body: Stack(
         children: [
-          // Background subtle pattern
-          Positioned(
-            top: -100,
-            right: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.darkText.withOpacity(0.05),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -50,
-            left: -50,
-            child: Container(
-              width: 250,
-              height: 250,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.darkText.withOpacity(0.03),
-              ),
-            ),
-          ),
+          // Animated map of Nouakchott with the الهدهد car driving along a
+          // route, tinted with the brand gold so it reads as a backdrop
+          // rather than competing with the logo on top of it.
+          const Positioned.fill(child: SplashRouteMap()),
 
-          // Main content
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ScaleTransition(
-                  scale: _scaleAnimation,
-                  child: FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: Container(
-                      width: 180,
-                      height: 180,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 24,
-                            offset: Offset(0, 10),
-                          ),
-                        ],
+          // Main content - kept inside SafeArea so nothing sits under a
+          // notch/Dynamic Island (iOS) or a status/navigation bar (Android).
+          SafeArea(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: Container(
+                        width: logoSize,
+                        height: logoSize,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 24,
+                              offset: Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: Image.asset('assets/images/logo_splash.png'),
+                        ),
                       ),
-                      child: Image.asset('assets/images/logo_splash.png'),
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: Column(
-                    children: [
-                      const Text(
-                        'الهدهد',
-                        style: TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.darkText,
-                          fontFamily: 'Cairo',
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.darkText.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        child: const Text(
-                          'نقل سريع، آمن وأسهل',
+                  const SizedBox(height: 20),
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Column(
+                      children: [
+                        const Text(
+                          'الهدهد',
                           style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 36,
+                            fontWeight: FontWeight.w900,
                             color: AppColors.darkText,
                             fontFamily: 'Cairo',
+                            letterSpacing: 1.5,
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.darkText.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: const Text(
+                            'نقل سريع، آمن وأسهل',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.darkText,
+                              fontFamily: 'Cairo',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
 
-          // Bottom loading/progress indicator
+          // Bottom loading indicator + status text, inset by SafeArea so it
+          // never sits under a home indicator/gesture bar.
           Positioned(
-            bottom: 60,
             left: 0,
             right: 0,
-            child: Center(
-              child: SizedBox(
-                width: 40,
-                height: 40,
-                child: CircularProgressIndicator(
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    AppColors.darkText,
+            bottom: MediaQuery.paddingOf(context).bottom + 40,
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: CircularProgressIndicator(
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        AppColors.darkText,
+                      ),
+                      strokeWidth: 3,
+                      backgroundColor: AppColors.darkText.withOpacity(0.15),
+                    ),
                   ),
-                  strokeWidth: 3,
-                  backgroundColor: AppColors.darkText.withOpacity(0.15),
-                ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'جاري التحميل...',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.darkText.withOpacity(0.85),
+                      fontFamily: 'Cairo',
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
