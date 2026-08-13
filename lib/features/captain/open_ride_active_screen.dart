@@ -36,10 +36,13 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
     // already-in-progress open ride (e.g. restored after the app was killed
     // and relaunched) - otherwise the on-screen distance would start over
     // from zero even though the provider already restored the real total.
-    _distanceKm = Provider.of<AppStateProvider>(
-      context,
-      listen: false,
-    ).openRideDistanceKm;
+    // Seeding _lastLat/_lastLng too means the very next GPS fix measures
+    // the actual gap covered while the app was down, instead of silently
+    // dropping that stretch of driving.
+    final provider = Provider.of<AppStateProvider>(context, listen: false);
+    _distanceKm = provider.openRideDistanceKm;
+    _lastLat = provider.openRideLastLat;
+    _lastLng = provider.openRideLastLng;
     _startTrackingDistance();
   }
 
@@ -81,10 +84,12 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
               _carLng = position.longitude;
             });
             if (mounted) {
-              Provider.of<AppStateProvider>(
-                context,
-                listen: false,
-              ).updateOpenRideDistance(_distanceKm);
+              Provider.of<AppStateProvider>(context, listen: false)
+                  .updateOpenRideDistance(
+                    _distanceKm,
+                    lat: position.latitude,
+                    lng: position.longitude,
+                  );
             }
           });
     } catch (_) {

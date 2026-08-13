@@ -54,6 +54,11 @@ class AppStateProvider extends ChangeNotifier {
   // _currentBillableIdleSeconds().
   double _openRideAccumulatedIdleSeconds = 0.0;
   double _openRideDistanceKm = 0.0;
+  // Last known GPS point, persisted alongside the distance so a resumed
+  // session (after the app was killed/relaunched mid-outage) can measure
+  // the gap it missed instead of silently dropping that stretch of driving.
+  double? _openRideLastLat;
+  double? _openRideLastLng;
   Timer? _openRideTicker;
 
   // Nudges the captain every couple of minutes to complete whatever step of
@@ -104,6 +109,8 @@ class AppStateProvider extends ChangeNotifier {
       : DateTime.now().difference(_openRideStartTime!);
 
   double get openRideDistanceKm => _openRideDistanceKm;
+  double? get openRideLastLat => _openRideLastLat;
+  double? get openRideLastLng => _openRideLastLng;
 
   bool get isOpenRideMeterActive => openRideMeterElapsed > Duration.zero;
 
@@ -141,11 +148,21 @@ class AppStateProvider extends ChangeNotifier {
 
   // Reported by OpenRideActiveScreen on every real GPS position update -
   // movement, so bank whatever billable idle time the stop that just ended
-  // accrued before resetting the idle clock for this new movement.
-  void updateOpenRideDistance(double totalDistanceKm) {
+  // accrued before resetting the idle clock for this new movement. Also
+  // tracks the current point so a killed-and-relaunched session can measure
+  // the gap it missed instead of dropping that stretch of driving.
+  void updateOpenRideDistance(
+    double totalDistanceKm, {
+    double? lat,
+    double? lng,
+  }) {
     _openRideAccumulatedIdleSeconds += _currentBillableIdleSeconds();
     _openRideDistanceKm = totalDistanceKm;
     _openRideLastMovementTime = DateTime.now();
+    if (lat != null && lng != null) {
+      _openRideLastLat = lat;
+      _openRideLastLng = lng;
+    }
     _persistOpenRideProgress();
     notifyListeners();
   }
@@ -173,6 +190,8 @@ class AppStateProvider extends ChangeNotifier {
         .update({
           'live_distance_km': _openRideDistanceKm,
           'live_idle_seconds': _openRideAccumulatedIdleSeconds,
+          if (_openRideLastLat != null) 'live_last_lat': _openRideLastLat,
+          if (_openRideLastLng != null) 'live_last_lng': _openRideLastLng,
         })
         .eq('id', trip.id)
         .catchError((_) {});
@@ -326,6 +345,8 @@ class AppStateProvider extends ChangeNotifier {
     _openRideDistanceKm = (row['live_distance_km'] as num?)?.toDouble() ?? 0.0;
     _openRideAccumulatedIdleSeconds =
         (row['live_idle_seconds'] as num?)?.toDouble() ?? 0.0;
+    _openRideLastLat = (row['live_last_lat'] as num?)?.toDouble();
+    _openRideLastLng = (row['live_last_lng'] as num?)?.toDouble();
     // Treat the moment the app comes back as "just moved" rather than
     // assuming the whole outage was idle time - a captain who was actually
     // driving with no connection shouldn't get billed as if they'd stopped.
@@ -396,6 +417,8 @@ class AppStateProvider extends ChangeNotifier {
     _openRideLastMovementTime = null;
     _openRideAccumulatedIdleSeconds = 0.0;
     _openRideDistanceKm = 0.0;
+    _openRideLastLat = null;
+    _openRideLastLng = null;
     notifyListeners();
     AuthRepository().signOut().catchError((_) {});
   }
@@ -846,6 +869,8 @@ class AppStateProvider extends ChangeNotifier {
         _openRideLastMovementTime = DateTime.now();
         _openRideAccumulatedIdleSeconds = 0.0;
         _openRideDistanceKm = 0.0;
+        _openRideLastLat = null;
+        _openRideLastLng = null;
         _openRideTicker?.cancel();
         // Just ticks notifyListeners() every second so the live fare/time
         // display keeps updating while stationary - openRideFare and
@@ -1006,6 +1031,8 @@ class AppStateProvider extends ChangeNotifier {
       _openRideLastMovementTime = null;
       _openRideAccumulatedIdleSeconds = 0.0;
       _openRideDistanceKm = 0.0;
+      _openRideLastLat = null;
+      _openRideLastLng = null;
     }
   }
 
@@ -1135,6 +1162,8 @@ class AppStateProvider extends ChangeNotifier {
     _openRideLastMovementTime = null;
     _openRideAccumulatedIdleSeconds = 0.0;
     _openRideDistanceKm = 0.0;
+    _openRideLastLat = null;
+    _openRideLastLng = null;
     notifyListeners();
 
     // Ready for the next request if still online
