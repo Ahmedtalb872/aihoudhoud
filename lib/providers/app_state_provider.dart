@@ -1146,8 +1146,8 @@ class AppStateProvider extends ChangeNotifier {
   void _finalizeCompletedTrip(double price) {
     _activeTrip!.status = TripStatus.completed;
 
-    // Calculate earnings (85% net, 15% commission)
-    double commission = double.parse((price * 0.15).toStringAsFixed(1));
+    // Calculate earnings (90% net, 10% commission)
+    double commission = double.parse((price * 0.10).toStringAsFixed(1));
     double net = price - commission;
     String destinationLabel = _activeTrip!.destinationLocation ?? 'مشوار مفتوح';
 
