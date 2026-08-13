@@ -31,8 +31,8 @@ const List<RechargeBank> kRechargeBanks = [
     name: 'Bankily بنكيلي',
     color: Color(0xFF1CADE4),
     icon: Icons.smartphone_rounded,
-    companyAccountLabel: 'رقم بنكيلي الهدهد',
-    companyAccountNumber: '00 00 00 00',
+    companyAccountLabel: 'كود تاجر الهدهد على Bankily (AL HODHOD)',
+    companyAccountNumber: '027575',
   ),
   RechargeBank(
     id: 'sedad',
