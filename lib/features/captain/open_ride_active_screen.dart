@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geolocator_android/geolocator_android.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
 import '../../core/widgets/real_map_widget.dart';
@@ -60,12 +62,29 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
         return;
       }
 
-      _positionSub =
-          Geolocator.getPositionStream(
-            locationSettings: const LocationSettings(
+      // On Android, run the location updates as a foreground service with a
+      // persistent notification for as long as this screen is open -
+      // otherwise Android kills the app in the background to save battery,
+      // wiping the live fare meter (distance/time) mid-trip.
+      final isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+      final LocationSettings locationSettings = isAndroid
+          ? AndroidSettings(
               accuracy: LocationAccuracy.high,
               distanceFilter: 10,
-            ),
+              foregroundNotificationConfig: const ForegroundNotificationConfig(
+                notificationTitle: 'الهدهد',
+                notificationText: 'مشوار جارٍ الآن',
+                enableWakeLock: true,
+              ),
+            )
+          : const LocationSettings(
+              accuracy: LocationAccuracy.high,
+              distanceFilter: 10,
+            );
+
+      _positionSub =
+          Geolocator.getPositionStream(
+            locationSettings: locationSettings,
           ).listen((position) {
             if (!mounted) return;
             if (_lastLat != null && _lastLng != null) {

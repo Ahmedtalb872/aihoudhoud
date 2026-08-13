@@ -4,6 +4,11 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Lets the open-ride live-tracking screen run as a foreground service
+         with a persistent notification, so Android doesn't kill the app
+         (losing the fare meter) while a trip is actively being driven. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <application
         android:label="الهدهد Captain"
