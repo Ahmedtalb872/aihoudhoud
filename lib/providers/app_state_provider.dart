@@ -1179,21 +1179,14 @@ class AppStateProvider extends ChangeNotifier {
 
     _captainTripHistory.insert(0, finishedTrip);
 
-    _captainWalletBalance += net;
+    // The captain collects the full fare directly (cash, or the customer's
+    // own payment method) - the app never holds it. The captain's own
+    // الهدهد wallet only tracks what they owe the company, so completing a
+    // trip deducts the commission from it rather than crediting anything;
+    // "today's earnings" still reflects their real net profit for display.
+    _captainWalletBalance -= commission;
     _captainTodayEarnings += net;
     _captainTripsCount += 1;
-
-    _captainTransactions.insert(
-      0,
-      WalletTransaction(
-        id: 'tx_${DateTime.now().millisecondsSinceEpoch}',
-        amount: net,
-        type: TransactionType.charge,
-        title: 'صافي أرباح رحلة إلى $destinationLabel',
-        date: DateTime.now().toString().substring(0, 16),
-        isCredit: true,
-      ),
-    );
 
     _captainTransactions.insert(
       0,
