@@ -909,16 +909,34 @@ class AppStateProvider extends ChangeNotifier {
   // Fire-and-forget: keeps the customer app's copy of the trip in sync.
   // Local captain state has already moved on by the time this resolves, so
   // failures here don't need to roll anything back - just log and continue.
+  // 'completed'/'cancelled' get a few retries: if that write never lands
+  // (e.g. a connectivity drop at the exact moment the captain ends the
+  // trip) the row is stuck looking active forever, and restoreActiveTripIfAny()
+  // would keep bringing the same already-finished trip back on every future
+  // app launch - worth a bit of extra effort to avoid.
   void _updateRemoteTripStatus(
     String tripId,
     String status, {
     Map<String, dynamic>? extra,
+    int attempt = 0,
   }) {
+    final isTerminal = status == 'completed' || status == 'cancelled';
     Supabase.instance.client
         .from('trips')
         .update({'status': status, ...?extra})
         .eq('id', tripId)
-        .catchError((_) {});
+        .catchError((_) {
+          if (isTerminal && attempt < 4) {
+            Future.delayed(Duration(seconds: 3 * (attempt + 1)), () {
+              _updateRemoteTripStatus(
+                tripId,
+                status,
+                extra: extra,
+                attempt: attempt + 1,
+              );
+            });
+          }
+        });
   }
 
   void _startStepReminder() {
