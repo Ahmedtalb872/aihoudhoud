@@ -32,6 +32,14 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
   @override
   void initState() {
     super.initState();
+    // Seeds from the provider in case this screen is a fresh instance of an
+    // already-in-progress open ride (e.g. restored after the app was killed
+    // and relaunched) - otherwise the on-screen distance would start over
+    // from zero even though the provider already restored the real total.
+    _distanceKm = Provider.of<AppStateProvider>(
+      context,
+      listen: false,
+    ).openRideDistanceKm;
     _startTrackingDistance();
   }
 

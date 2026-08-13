@@ -103,6 +103,8 @@ class AppStateProvider extends ChangeNotifier {
       ? Duration.zero
       : DateTime.now().difference(_openRideStartTime!);
 
+  double get openRideDistanceKm => _openRideDistanceKm;
+
   bool get isOpenRideMeterActive => openRideMeterElapsed > Duration.zero;
 
   // Billable seconds of the *current* stop only - 0 while moving, and 0
@@ -144,7 +146,36 @@ class AppStateProvider extends ChangeNotifier {
     _openRideAccumulatedIdleSeconds += _currentBillableIdleSeconds();
     _openRideDistanceKm = totalDistanceKm;
     _openRideLastMovementTime = DateTime.now();
+    _persistOpenRideProgress();
     notifyListeners();
+  }
+
+  DateTime? _openRideProgressLastPersisted;
+
+  // Saves the live meter (distance + banked idle time) to the trip row so
+  // it survives the app being killed and relaunched (e.g. after a network
+  // drop) - without this, restoreActiveTripIfAny() would bring the trip
+  // back but the meter would restart from zero. Throttled to avoid writing
+  // on every single GPS ping while driving.
+  void _persistOpenRideProgress({bool force = false}) {
+    final trip = _activeTrip;
+    if (trip == null || !trip.isOpenRide || !trip.isRemote) return;
+    final now = DateTime.now();
+    if (!force &&
+        _openRideProgressLastPersisted != null &&
+        now.difference(_openRideProgressLastPersisted!) <
+            const Duration(seconds: 15)) {
+      return;
+    }
+    _openRideProgressLastPersisted = now;
+    Supabase.instance.client
+        .from('trips')
+        .update({
+          'live_distance_km': _openRideDistanceKm,
+          'live_idle_seconds': _openRideAccumulatedIdleSeconds,
+        })
+        .eq('id', trip.id)
+        .catchError((_) {});
   }
 
   // Hydrate state from a Supabase `profiles` row after a real sign-in/sign-up.
@@ -276,8 +307,34 @@ class AppStateProvider extends ChangeNotifier {
       serviceType: serviceType,
       packageDescription: packageDescription,
     );
+    if (isOpenRide && _activeTrip!.status == TripStatus.started) {
+      _restoreOpenRideMeter(row);
+    }
     _startStepReminder();
     notifyListeners();
+  }
+
+  // Brings the live fare meter back after the app was killed and relaunched
+  // mid open-ride, using whatever progress was last saved by
+  // _persistOpenRideProgress() - otherwise the meter would silently restart
+  // from zero even though the trip (and its distance so far) is still real.
+  void _restoreOpenRideMeter(Map<String, dynamic> row) {
+    final boardedAt = row['boarded_at'] as String?;
+    _openRideStartTime = boardedAt != null
+        ? DateTime.tryParse(boardedAt) ?? DateTime.now()
+        : DateTime.now();
+    _openRideDistanceKm = (row['live_distance_km'] as num?)?.toDouble() ?? 0.0;
+    _openRideAccumulatedIdleSeconds =
+        (row['live_idle_seconds'] as num?)?.toDouble() ?? 0.0;
+    // Treat the moment the app comes back as "just moved" rather than
+    // assuming the whole outage was idle time - a captain who was actually
+    // driving with no connection shouldn't get billed as if they'd stopped.
+    _openRideLastMovementTime = DateTime.now();
+    _openRideTicker?.cancel();
+    _openRideTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      _persistOpenRideProgress();
+      notifyListeners();
+    });
   }
 
   TripStatus _mapDbTripStatus(String? dbStatus) {
@@ -794,6 +851,7 @@ class AppStateProvider extends ChangeNotifier {
         // display keeps updating while stationary - openRideFare and
         // openRideMeterElapsed compute their own values from timestamps.
         _openRideTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+          _persistOpenRideProgress();
           notifyListeners();
         });
       }
