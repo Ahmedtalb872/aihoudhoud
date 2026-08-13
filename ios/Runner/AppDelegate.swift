@@ -8,9 +8,10 @@ import UIKit
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    // Same key as Android for now - create a separate iOS-restricted key
-    // (by bundle ID) in Google Cloud Console when convenient.
-    GMSServices.provideAPIKey("AIzaSyCsp2LwsRAitjwA1nt3aTleQM5-cqG29_U")
+    // iOS-restricted key (by bundle ID), separate from the Android key in
+    // AndroidManifest.xml - an "Android apps" restricted key can't be used
+    // from iOS at all, which is why this is its own key.
+    GMSServices.provideAPIKey("AIzaSyCdN--P9n6AHU3J1Lf7PDYSiceRDL2Q-Bo")
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
