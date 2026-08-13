@@ -3,22 +3,22 @@ import 'auth_exception.dart';
 import 'supabase_config.dart';
 
 /// Recharging the wallet is currently a manual-review flow: the captain
-/// transfers money to our own account with the chosen provider outside the
-/// app, then submits the amount + the transaction reference here for an
-/// admin to verify and credit manually - because we don't yet have merchant
-/// API access with any of Bankily/Sedad/Click.
+/// pays our Bpay merchant code through Bankily outside the app, then
+/// submits the amount + their own Bankily number + Bankily's verification
+/// code here for an admin to verify and credit manually - because we don't
+/// yet have live merchant API access with Bankily/Bpay.
 ///
-/// Once we do, only [submitRechargeRequest] needs to change: call the
-/// provider's verification API instead of just inserting a pending row, and
-/// credit the wallet immediately on a successful response instead of
-/// waiting on admin review.
+/// Once we do, only [submitRechargeRequest] needs to change: call Bpay's
+/// verification API with the same three fields instead of just inserting a
+/// pending row, and credit the wallet immediately on a successful response
+/// instead of waiting on admin review.
 class WalletRepository {
   SupabaseClient get _client => SupabaseConfig.client;
 
   Future<void> submitRechargeRequest({
-    required String bankId,
     required double amount,
-    required String transactionReference,
+    required String payerPhone,
+    required String verificationCode,
   }) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) {
@@ -27,9 +27,10 @@ class WalletRepository {
     try {
       await _client.from('wallet_recharge_requests').insert({
         'captain_id': userId,
-        'bank': bankId,
+        'bank': 'bankily',
         'amount': amount,
-        'transaction_reference': transactionReference,
+        'payer_phone': payerPhone,
+        'transaction_reference': verificationCode,
       });
     } on PostgrestException {
       throw AppAuthException('تعذر إرسال طلب الشحن، حاول مرة أخرى.');

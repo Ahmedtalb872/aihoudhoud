@@ -1,80 +1,76 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/colors.dart';
-import '../../core/constants/recharge_banks.dart';
 import '../../core/supabase/auth_exception.dart';
 import '../../core/supabase/wallet_repository.dart';
 
-/// Second step of wallet recharge: the captain enters the amount they
-/// already transferred to our own account with [bank], plus the transaction
-/// reference their banking app gave them, and submits it for admin review.
-class RechargeFormScreen extends StatefulWidget {
-  final RechargeBank bank;
-  const RechargeFormScreen({super.key, required this.bank});
+/// Our merchant identification code with Bankily's Bpay service (BPM),
+/// shown to the captain so they can pay it directly from their Bankily app.
+const String _kBpayMerchantCode = '027575';
+
+/// Wallet recharge via Bankily's Bpay: the captain pays our merchant code
+/// from their own Bankily app, then reports back the amount, the Bankily
+/// number they paid from, and the verification code Bankily gave them, for
+/// an admin to confirm and credit manually - see WalletRepository for where
+/// this plugs into a live Bpay verification API once we have one.
+class BpayRechargeScreen extends StatefulWidget {
+  const BpayRechargeScreen({super.key});
 
   @override
-  State<RechargeFormScreen> createState() => _RechargeFormScreenState();
+  State<BpayRechargeScreen> createState() => _BpayRechargeScreenState();
 }
 
-class _RechargeFormScreenState extends State<RechargeFormScreen> {
+class _BpayRechargeScreenState extends State<BpayRechargeScreen> {
   final _repository = WalletRepository();
   final _amountController = TextEditingController();
-  final _referenceController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _codeController = TextEditingController();
   bool _isSubmitting = false;
 
   @override
   void dispose() {
     _amountController.dispose();
-    _referenceController.dispose();
+    _phoneController.dispose();
+    _codeController.dispose();
     super.dispose();
   }
 
-  void _copyAccountNumber() {
-    Clipboard.setData(ClipboardData(text: widget.bank.companyAccountNumber));
+  void _copyMerchantCode() {
+    Clipboard.setData(const ClipboardData(text: _kBpayMerchantCode));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('تم نسخ الرقم', style: TextStyle(fontFamily: 'Cairo')),
+        content: Text('تم نسخ الكود', style: TextStyle(fontFamily: 'Cairo')),
       ),
     );
   }
 
   Future<void> _submit() async {
     final amount = double.tryParse(_amountController.text.trim());
-    final reference = _referenceController.text.trim();
+    final phone = _phoneController.text.trim();
+    final code = _codeController.text.trim();
+
     if (amount == null || amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'أدخل مبلغًا صحيحًا.',
-            style: TextStyle(fontFamily: 'Cairo'),
-          ),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      _showError('أدخل مبلغًا صحيحًا.');
       return;
     }
-    if (reference.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'أدخل رقم عملية التحويل.',
-            style: TextStyle(fontFamily: 'Cairo'),
-          ),
-          backgroundColor: AppColors.error,
-        ),
-      );
+    if (phone.isEmpty) {
+      _showError('أدخل رقم Bankily الذي دفعت منه.');
+      return;
+    }
+    if (code.isEmpty) {
+      _showError('أدخل رمز التحقق الذي وصلك من Bankily.');
       return;
     }
 
     setState(() => _isSubmitting = true);
     try {
       await _repository.submitRechargeRequest(
-        bankId: widget.bank.id,
         amount: amount,
-        transactionReference: reference,
+        payerPhone: phone,
+        verificationCode: code,
       );
       if (!mounted) return;
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -87,23 +83,26 @@ class _RechargeFormScreenState extends State<RechargeFormScreen> {
       );
     } on AppAuthException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message, style: const TextStyle(fontFamily: 'Cairo')),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      _showError(e.message);
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(fontFamily: 'Cairo')),
+        backgroundColor: AppColors.error,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final bank = widget.bank;
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: Text(bank.name)),
+      appBar: AppBar(title: const Text('دفع BPAY')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -114,54 +113,54 @@ class _RechargeFormScreenState extends State<RechargeFormScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: bank.color.withOpacity(0.08),
+                  color: AppColors.primary.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: bank.color.withOpacity(0.25)),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '١) حوّل المبلغ من تطبيق ${bank.name} إلى:',
-                      style: const TextStyle(
+                    const Text(
+                      'ادفع كود Bpay من تطبيق Bankily، ثم أدخل تفاصيل الدفع أدناه.',
+                      style: TextStyle(
                         fontSize: 13,
                         fontFamily: 'Cairo',
                         color: AppColors.secondaryText,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Row(
                       children: [
-                        Text(
-                          bank.companyAccountNumber,
+                        const Text(
+                          'كود Bpay الهدهد: ',
                           style: TextStyle(
+                            fontSize: 15,
+                            fontFamily: 'Cairo',
+                            color: AppColors.darkText,
+                          ),
+                        ),
+                        Text(
+                          _kBpayMerchantCode,
+                          style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: bank.color,
+                            color: AppColors.primaryDark,
                             fontFamily: 'Cairo',
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 4),
                         IconButton(
                           icon: const Icon(Icons.copy_rounded, size: 18),
-                          onPressed: _copyAccountNumber,
+                          onPressed: _copyMerchantCode,
                         ),
                       ],
-                    ),
-                    Text(
-                      bank.companyAccountLabel,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.secondaryText,
-                        fontFamily: 'Cairo',
-                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               const Text(
-                '٢) أدخل بيانات التحويل الذي أجريته',
+                'أدخل تفاصيل الدفع',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
@@ -169,24 +168,35 @@ class _RechargeFormScreenState extends State<RechargeFormScreen> {
                   fontFamily: 'Cairo',
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 4),
+              const Text(
+                'أدخل المبلغ ورقم Bankily ورمز الدفع.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.secondaryText,
+                  fontFamily: 'Cairo',
+                ),
+              ),
+              const SizedBox(height: 14),
               TextField(
                 controller: _amountController,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
                 decoration: const InputDecoration(
-                  labelText: 'المبلغ الذي حوّلته',
-                  suffixText: 'أوقية',
+                  labelText: 'المبلغ (MRU)',
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
-                controller: _referenceController,
-                decoration: const InputDecoration(
-                  labelText: 'رقم عملية التحويل (Transaction ID)',
-                  hintText: 'كما يظهر في تطبيق البنك بعد التحويل',
-                ),
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(labelText: 'رقم Bankily'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _codeController,
+                decoration: const InputDecoration(labelText: 'رمز التحقق'),
               ),
               const SizedBox(height: 24),
               ElevatedButton(
@@ -200,7 +210,7 @@ class _RechargeFormScreenState extends State<RechargeFormScreen> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text('إرسال طلب الشحن'),
+                    : const Text('ادفع الآن'),
               ),
             ],
           ),
