@@ -6,6 +6,7 @@ import 'core/constants/colors.dart';
 import 'core/theme/app_theme.dart';
 import 'core/supabase/supabase_config.dart';
 import 'core/services/new_trip_alert.dart';
+import 'core/services/motivation_notifications.dart';
 import 'providers/app_state_provider.dart';
 import 'features/onboarding/splash_screen.dart';
 
@@ -13,6 +14,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SupabaseConfig.initialize();
   await NewTripAlert.initialize();
+  await MotivationNotifications.initialize();
   // Gold status bar matching the app's brand color, instead of the
   // platform default - AppBarTheme.systemOverlayStyle keeps this in sync
   // on screens with their own AppBar, which would otherwise reset it.
