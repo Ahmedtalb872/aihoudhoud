@@ -816,6 +816,7 @@ class AppStateProvider extends ChangeNotifier {
       } else {
         timer.cancel();
         if (_incomingRequest?.id == tripId) {
+          NewTripAlert.stop();
           _ignoredRideIds.add(tripId);
           _markIgnoredOnServer(row);
           _incomingRequest = null;
@@ -847,6 +848,7 @@ class AppStateProvider extends ChangeNotifier {
   // can show it - null means the trip was accepted successfully.
   Future<String?> acceptIncomingRequest() async {
     _countdownTimer?.cancel();
+    NewTripAlert.stop();
     final request = _incomingRequest;
     if (request == null) return null;
     _incomingRequest = null;
@@ -907,6 +909,7 @@ class AppStateProvider extends ChangeNotifier {
 
   void ignoreIncomingRequest() {
     _countdownTimer?.cancel();
+    NewTripAlert.stop();
     if (_incomingRequest != null) {
       final id = _incomingRequest!.id;
       _ignoredRideIds.add(id);
