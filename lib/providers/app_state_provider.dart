@@ -1301,6 +1301,26 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Reflects a successful WalletRepository.submitRechargeRequest() Bpay
+  // call: the wallet was already credited server-side (see
+  // credit_captain_wallet_from_bpay), this just updates the locally-tracked
+  // balance/history to match, the same way gift redemption does above.
+  void creditWalletFromBpayRecharge(double amount) {
+    _captainWalletBalance += amount;
+    _captainTransactions.insert(
+      0,
+      WalletTransaction(
+        id: 'tx_bpay_${DateTime.now().millisecondsSinceEpoch}',
+        amount: amount,
+        type: TransactionType.charge,
+        title: 'شحن رصيد عبر Bpay',
+        date: DateTime.now().toString().substring(0, 16),
+        isCredit: true,
+      ),
+    );
+    notifyListeners();
+  }
+
   // Messaging / Chatting with the customer on the active trip
   void sendChatMessage(String content) {
     final newMessage = Message(

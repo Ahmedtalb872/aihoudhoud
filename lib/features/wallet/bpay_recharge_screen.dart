@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_exception.dart';
 import '../../core/supabase/wallet_repository.dart';
+import '../../providers/app_state_provider.dart';
 
 /// Our merchant identification code with Bankily's Bpay service (BPM),
 /// shown to the captain so they can pay it directly from their Bankily app.
 const String _kBpayMerchantCode = '027575';
 
-/// Wallet recharge via Bankily's Bpay: the captain pays our merchant code
-/// from their own Bankily app, then reports back the amount, the Bankily
-/// number they paid from, and the verification code Bankily gave them, for
-/// an admin to confirm and credit manually - see WalletRepository for where
-/// this plugs into a live Bpay verification API once we have one.
+/// Wallet recharge via Bankily's Bpay: the captain enters the amount, the
+/// Bankily number to charge, and the passcode Bankily gave them, and
+/// WalletRepository submits it to the live bpay-payment Edge Function -
+/// the wallet is credited automatically the moment the bank confirms it,
+/// no admin review involved.
 class BpayRechargeScreen extends StatefulWidget {
   const BpayRechargeScreen({super.key});
 
@@ -64,21 +66,33 @@ class _BpayRechargeScreenState extends State<BpayRechargeScreen> {
 
     setState(() => _isSubmitting = true);
     try {
-      await _repository.submitRechargeRequest(
+      final result = await _repository.submitRechargeRequest(
         amount: amount,
         payerPhone: phone,
         verificationCode: code,
       );
       if (!mounted) return;
+
+      if (result.status == BpayRechargeStatus.failed) {
+        _showError(result.message);
+        return;
+      }
+
+      if (result.status == BpayRechargeStatus.success) {
+        Provider.of<AppStateProvider>(
+          context,
+          listen: false,
+        ).creditWalletFromBpayRecharge(amount);
+      }
+
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'تم إرسال طلب الشحن، سيُضاف المبلغ لرصيدك بعد مراجعته من الإدارة.',
-            style: TextStyle(fontFamily: 'Cairo'),
-          ),
-          backgroundColor: AppColors.success,
-          duration: Duration(seconds: 5),
+        SnackBar(
+          content: Text(result.message, style: const TextStyle(fontFamily: 'Cairo')),
+          backgroundColor: result.status == BpayRechargeStatus.success
+              ? AppColors.success
+              : AppColors.primary,
+          duration: const Duration(seconds: 5),
         ),
       );
     } on AppAuthException catch (e) {

@@ -2,39 +2,70 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_exception.dart';
 import 'supabase_config.dart';
 
-/// Recharging the wallet is currently a manual-review flow: the captain
-/// pays our Bpay merchant code through Bankily outside the app, then
-/// submits the amount + their own Bankily number + Bankily's verification
-/// code here for an admin to verify and credit manually - because we don't
-/// yet have live merchant API access with Bankily/Bpay.
-///
-/// Once we do, only [submitRechargeRequest] needs to change: call Bpay's
-/// verification API with the same three fields instead of just inserting a
-/// pending row, and credit the wallet immediately on a successful response
-/// instead of waiting on admin review.
+/// Outcome of a live Bpay recharge call - mirrors the three statuses the
+/// bpay-payment Edge Function can resolve to (see checkTransaction's
+/// TS/TF/TA in Bankily's B-PAY spec): success credits the wallet
+/// immediately, pending means the bank is still confirming and the wallet
+/// will be credited automatically once it does, failed means it didn't go
+/// through at all.
+enum BpayRechargeStatus { success, pending, failed }
+
+class BpayRechargeResult {
+  final BpayRechargeStatus status;
+  final String message;
+  const BpayRechargeResult(this.status, this.message);
+}
+
+/// Recharging the wallet calls Bankily's live Bpay merchant API through the
+/// bpay-payment Edge Function (see supabase/functions/bpay-payment), which
+/// holds the merchant credentials server-side - they must never live in the
+/// Flutter client. The captain's wallet is credited automatically the
+/// moment the bank confirms the payment, no admin review needed.
 class WalletRepository {
   SupabaseClient get _client => SupabaseConfig.client;
 
-  Future<void> submitRechargeRequest({
+  Future<BpayRechargeResult> submitRechargeRequest({
     required double amount,
     required String payerPhone,
     required String verificationCode,
   }) async {
-    final userId = _client.auth.currentUser?.id;
-    if (userId == null) {
+    if (_client.auth.currentUser == null) {
       throw AppAuthException('يجب تسجيل الدخول أولاً.');
     }
     try {
-      await _client.from('wallet_recharge_requests').insert({
-        'captain_id': userId,
-        'bank': 'bankily',
-        'amount': amount,
-        'payer_phone': payerPhone,
-        'transaction_reference': verificationCode,
-      });
-    } on PostgrestException {
-      throw AppAuthException('تعذر إرسال طلب الشحن، حاول مرة أخرى.');
+      final response = await _client.functions.invoke(
+        'bpay-payment',
+        body: {
+          'amount': amount,
+          'payerPhone': payerPhone,
+          'passcode': verificationCode,
+        },
+      );
+      return _parseRechargeResult(response.data);
+    } on FunctionException catch (e) {
+      return _parseRechargeResult(e.details);
+    } catch (_) {
+      return const BpayRechargeResult(
+        BpayRechargeStatus.failed,
+        'تعذر الاتصال بخدمة الدفع، حاول مرة أخرى.',
+      );
     }
+  }
+
+  BpayRechargeResult _parseRechargeResult(dynamic data) {
+    if (data is! Map) {
+      return const BpayRechargeResult(
+        BpayRechargeStatus.failed,
+        'تعذر الاتصال بخدمة الدفع، حاول مرة أخرى.',
+      );
+    }
+    final status = BpayRechargeStatus.values.firstWhere(
+      (s) => s.name == data['status'],
+      orElse: () => BpayRechargeStatus.failed,
+    );
+    final message = data['message'] as String? ??
+        'تعذر إتمام عملية الدفع، حاول مرة أخرى.';
+    return BpayRechargeResult(status, message);
   }
 
   Future<List<Map<String, dynamic>>> getMyRechargeRequests() async {
