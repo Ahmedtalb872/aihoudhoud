@@ -9,6 +9,7 @@ import '../dummy_data/dummy_data.dart';
 import '../core/supabase/auth_repository.dart';
 import '../core/supabase/auth_exception.dart';
 import '../core/services/new_trip_alert.dart';
+import '../core/services/push_notifications.dart';
 
 class AppStateProvider extends ChangeNotifier {
   // Auth state
@@ -238,6 +239,10 @@ class AppStateProvider extends ChangeNotifier {
       if (_isCaptainOnline) _subscribeToPendingRides();
     }
     _syncOnlinePresenceTracking();
+    // Registers this device for new-trip push alerts (rings/full-screens
+    // even if the app is backgrounded or killed) - fire-and-forget, a
+    // failure here shouldn't block login.
+    PushNotifications.syncToken();
     notifyListeners();
   }
 

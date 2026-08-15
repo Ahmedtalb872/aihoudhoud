@@ -58,6 +58,12 @@ dependencies:
   # 0.11.7 still used the removed v1 Android embedding (PluginRegistry.
   # Registrar), which no longer exists on current Flutter - needs 1.x.
   flutter_webrtc: ^1.6.0
+  # Push notifications so a new-trip alert rings/full-screens the captain
+  # even when the app is backgrounded or fully killed, not just while it's
+  # open (in-app alerts only fire from running Dart code - see
+  # lib/core/services/push_notifications.dart).
+  firebase_core: ^4.13.0
+  firebase_messaging: ^16.5.0
 
 
 dev_dependencies:
