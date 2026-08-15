@@ -4,6 +4,8 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- In-app voice calling between captain and customer (call_service.dart). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- Lets the open-ride live-tracking screen run as a foreground service
          with a persistent notification, so Android doesn't kill the app
          (losing the fare meter) while a trip is actively being driven. -->

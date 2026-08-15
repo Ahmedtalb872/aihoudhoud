@@ -51,6 +51,11 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   timezone: ^0.10.1
   url_launcher: ^6.3.1
+  # In-app voice calling between captain and customer over a trip - see
+  # lib/core/services/call_service.dart. Signaling rides on a Supabase
+  # Realtime broadcast channel (call_signaling_service.dart), no new
+  # backend/TURN server needed; audio only, STUN-only NAT traversal.
+  flutter_webrtc: ^0.11.7
 
 
 dev_dependencies:

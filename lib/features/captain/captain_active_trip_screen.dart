@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
@@ -6,15 +7,72 @@ import '../../models/models.dart';
 import '../../core/widgets/real_map_widget.dart';
 import '../../core/widgets/trip_progress_rail.dart';
 import '../../core/widgets/route_row.dart';
-import '../../core/services/phone_caller.dart';
+import '../../core/services/call_signaling_service.dart';
+import '../calls/call_screen.dart';
 import '../support/chat_screen.dart';
 import 'captain_trip_summary_screen.dart';
 import 'open_ride_active_screen.dart';
 import 'cancel_trip_dialog.dart';
 import 'collect_payment_dialog.dart';
 
-class CaptainActiveTripScreen extends StatelessWidget {
+class CaptainActiveTripScreen extends StatefulWidget {
   const CaptainActiveTripScreen({super.key});
+
+  @override
+  State<CaptainActiveTripScreen> createState() => _CaptainActiveTripScreenState();
+}
+
+class _CaptainActiveTripScreenState extends State<CaptainActiveTripScreen> {
+  CallSignalingService? _callSignaling;
+  String? _callSignalingTripId;
+  StreamSubscription<CallSignal>? _incomingCallSub;
+  bool _callScreenOpen = false;
+
+  @override
+  void dispose() {
+    _incomingCallSub?.cancel();
+    _callSignaling?.dispose();
+    super.dispose();
+  }
+
+  /// Trip id is only known once the provider has an active trip to read in
+  /// build() (there's no constructor param like the customer app's
+  /// TripTrackingScreen(tripId: ...) to key off in initState), so the
+  /// signaling channel is lazily started here instead - guarded so it only
+  /// (re)starts when the trip id actually changes, not on every rebuild.
+  void _ensureCallSignaling(String tripId) {
+    if (_callSignalingTripId == tripId) return;
+    _incomingCallSub?.cancel();
+    _callSignaling?.dispose();
+    final signaling = CallSignalingService(tripId: tripId, selfRole: 'captain')..start();
+    _callSignaling = signaling;
+    _callSignalingTripId = tripId;
+    _incomingCallSub = signaling.onOffer.listen(_onIncomingCallOffer);
+  }
+
+  void _onIncomingCallOffer(CallSignal signal) {
+    if (!mounted || _callScreenOpen || signal.sdp == null) return;
+    final trip = Provider.of<AppStateProvider>(context, listen: false).activeTrip;
+    if (trip == null) return;
+    _openCallScreen(trip, incomingOfferSdp: signal.sdp);
+  }
+
+  void _openCallScreen(Trip trip, {String? incomingOfferSdp}) {
+    final signaling = _callSignaling;
+    if (signaling == null) return;
+    _callScreenOpen = true;
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (context) => CallScreen(
+              signaling: signaling,
+              peerName: trip.customerName,
+              incomingOfferSdp: incomingOfferSdp,
+            ),
+          ),
+        )
+        .then((_) => _callScreenOpen = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +108,8 @@ class CaptainActiveTripScreen extends StatelessWidget {
         ),
       );
     }
+
+    _ensureCallSignaling(trip.id);
 
     // Auto transition to Trip Summary screen once completed
     if (trip.status == TripStatus.completed) {
@@ -271,7 +331,7 @@ class CaptainActiveTripScreen extends StatelessWidget {
                           color: AppColors.primary,
                           size: 20,
                         ),
-                        onPressed: () => PhoneCaller.call(trip.customerPhone),
+                        onPressed: () => _openCallScreen(trip),
                       ),
                     ],
                   ),

@@ -8,7 +8,9 @@ import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
 import '../../core/widgets/real_map_widget.dart';
 import '../../core/widgets/route_row.dart';
-import '../../core/services/phone_caller.dart';
+import '../../core/services/call_signaling_service.dart';
+import '../../models/models.dart';
+import '../calls/call_screen.dart';
 import '../support/chat_screen.dart';
 import 'cancel_trip_dialog.dart';
 import 'collect_payment_dialog.dart';
@@ -30,6 +32,51 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
   double? _lastLng;
   double? _carLat;
   double? _carLng;
+
+  // Owns its own call-signaling subscription, independent from
+  // CaptainActiveTripScreen's - the two screens are never both the active
+  // trip's rendered UI at once (that screen delegates to this one entirely
+  // once an open ride starts), so each just subscribes to the same
+  // call_trip_<id> channel while it's the one on screen. See
+  // CaptainActiveTripScreen._ensureCallSignaling for why this is lazy.
+  CallSignalingService? _callSignaling;
+  String? _callSignalingTripId;
+  StreamSubscription<CallSignal>? _incomingCallSub;
+  bool _callScreenOpen = false;
+
+  void _ensureCallSignaling(String tripId) {
+    if (_callSignalingTripId == tripId) return;
+    _incomingCallSub?.cancel();
+    _callSignaling?.dispose();
+    final signaling = CallSignalingService(tripId: tripId, selfRole: 'captain')..start();
+    _callSignaling = signaling;
+    _callSignalingTripId = tripId;
+    _incomingCallSub = signaling.onOffer.listen(_onIncomingCallOffer);
+  }
+
+  void _onIncomingCallOffer(CallSignal signal) {
+    if (!mounted || _callScreenOpen || signal.sdp == null) return;
+    final trip = Provider.of<AppStateProvider>(context, listen: false).activeTrip;
+    if (trip == null) return;
+    _openCallScreen(trip, incomingOfferSdp: signal.sdp);
+  }
+
+  void _openCallScreen(Trip trip, {String? incomingOfferSdp}) {
+    final signaling = _callSignaling;
+    if (signaling == null) return;
+    _callScreenOpen = true;
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (context) => CallScreen(
+              signaling: signaling,
+              peerName: trip.customerName,
+              incomingOfferSdp: incomingOfferSdp,
+            ),
+          ),
+        )
+        .then((_) => _callScreenOpen = false);
+  }
 
   @override
   void initState() {
@@ -139,6 +186,8 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
   @override
   void dispose() {
     _positionSub?.cancel();
+    _incomingCallSub?.cancel();
+    _callSignaling?.dispose();
     super.dispose();
   }
 
@@ -156,6 +205,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
     final provider = Provider.of<AppStateProvider>(context, listen: false);
     final trip = provider.activeTrip;
     if (trip == null) return const SizedBox.shrink();
+    _ensureCallSignaling(trip.id);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -389,7 +439,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                           color: AppColors.primary,
                           size: 20,
                         ),
-                        onPressed: () => PhoneCaller.call(trip.customerPhone),
+                        onPressed: () => _openCallScreen(trip),
                       ),
                     ],
                   ),
