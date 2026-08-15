@@ -6,6 +6,7 @@ import '../../providers/app_state_provider.dart';
 import '../../models/models.dart';
 import '../../core/widgets/real_map_widget.dart';
 import '../../core/widgets/trip_progress_rail.dart';
+import '../../core/widgets/call_options_sheet.dart';
 import '../../core/widgets/route_row.dart';
 import '../../core/services/call_signaling_service.dart';
 import '../calls/call_screen.dart';
@@ -331,7 +332,11 @@ class _CaptainActiveTripScreenState extends State<CaptainActiveTripScreen> {
                           color: AppColors.primary,
                           size: 20,
                         ),
-                        onPressed: () => _openCallScreen(trip),
+                        onPressed: () => showCallOptionsSheet(
+                          context,
+                          phone: trip.customerPhone,
+                          onInAppCall: () => _openCallScreen(trip),
+                        ),
                       ),
                     ],
                   ),

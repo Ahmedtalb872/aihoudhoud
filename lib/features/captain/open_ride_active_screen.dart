@@ -7,6 +7,7 @@ import 'package:geolocator_android/geolocator_android.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
 import '../../core/widgets/real_map_widget.dart';
+import '../../core/widgets/call_options_sheet.dart';
 import '../../core/widgets/route_row.dart';
 import '../../core/services/call_signaling_service.dart';
 import '../../models/models.dart';
@@ -439,7 +440,11 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                           color: AppColors.primary,
                           size: 20,
                         ),
-                        onPressed: () => _openCallScreen(trip),
+                        onPressed: () => showCallOptionsSheet(
+                          context,
+                          phone: trip.customerPhone,
+                          onInAppCall: () => _openCallScreen(trip),
+                        ),
                       ),
                     ],
                   ),
