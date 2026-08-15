@@ -124,9 +124,30 @@ class _BpayRechargeScreenState extends State<BpayRechargeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
-                child: Image.asset(
-                  'assets/images/bankily_logo.jpeg',
-                  height: 90,
+                child: Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.primary.withOpacity(0.12),
+                        AppColors.primaryDark.withOpacity(0.08),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primaryDark.withOpacity(0.12),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Image.asset(
+                    'assets/images/bankily_logo_transparent.png',
+                    height: 84,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
