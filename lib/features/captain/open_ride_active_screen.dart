@@ -33,6 +33,11 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
   double? _lastLng;
   double? _carLat;
   double? _carLng;
+  // Counts every GPS fix the stream actually delivers, shown next to the
+  // "كم" chip - tells a captain (and us, from a screenshot) whether GPS
+  // fixes are arriving at all versus arriving but not adding up to any
+  // distance, which are two very different problems to chase.
+  int _gpsFixCount = 0;
 
   // Owns its own call-signaling subscription, independent from
   // CaptainActiveTripScreen's - the two screens are never both the active
@@ -122,7 +127,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
       final LocationSettings locationSettings = isAndroid
           ? AndroidSettings(
               accuracy: LocationAccuracy.high,
-              distanceFilter: 10,
+              distanceFilter: 5,
               foregroundNotificationConfig: const ForegroundNotificationConfig(
                 notificationTitle: 'الهدهد',
                 notificationText: 'مشوار جارٍ الآن',
@@ -131,7 +136,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
             )
           : const LocationSettings(
               accuracy: LocationAccuracy.high,
-              distanceFilter: 10,
+              distanceFilter: 5,
             );
 
       _positionSub =
@@ -153,6 +158,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
               _lastLng = position.longitude;
               _carLat = position.latitude;
               _carLng = position.longitude;
+              _gpsFixCount++;
             });
             if (mounted) {
               Provider.of<AppStateProvider>(context, listen: false)
@@ -179,7 +185,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
       SnackBar(
         content: Text(message, style: const TextStyle(fontFamily: 'Cairo')),
         backgroundColor: AppColors.error,
-        duration: const Duration(seconds: 6),
+        duration: const Duration(seconds: 12),
       ),
     );
   }
@@ -290,6 +296,18 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                       builder: (context, provider, _) => Column(
                         children: [
                           _buildStatChip(_distanceKm.toStringAsFixed(1), 'كم'),
+                          const SizedBox(height: 4),
+                          // Temporary diagnostic: how many GPS fixes have
+                          // actually arrived, so a stuck "كم" chip can be
+                          // told apart from a genuinely-empty GPS stream.
+                          Text(
+                            'GPS: $_gpsFixCount',
+                            style: const TextStyle(
+                              fontSize: 9,
+                              color: AppColors.secondaryText,
+                              fontFamily: 'Cairo',
+                            ),
+                          ),
                           const SizedBox(height: 8),
                           _buildStatChip(
                             _formatElapsed(provider.openRideMeterElapsed),
