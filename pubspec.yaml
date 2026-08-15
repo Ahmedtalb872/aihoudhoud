@@ -55,7 +55,9 @@ dependencies:
   # lib/core/services/call_service.dart. Signaling rides on a Supabase
   # Realtime broadcast channel (call_signaling_service.dart), no new
   # backend/TURN server needed; audio only, STUN-only NAT traversal.
-  flutter_webrtc: ^0.11.7
+  # 0.11.7 still used the removed v1 Android embedding (PluginRegistry.
+  # Registrar), which no longer exists on current Flutter - needs 1.x.
+  flutter_webrtc: ^1.6.0
 
 
 dev_dependencies:
