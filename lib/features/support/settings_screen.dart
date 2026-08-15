@@ -260,6 +260,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const Divider(height: 1, indent: 16, endIndent: 16),
                   ListTile(
                     leading: const Icon(
+                      Icons.description_outlined,
+                      color: AppColors.secondaryText,
+                    ),
+                    title: const Text(
+                      'شروط الاستخدام',
+                      style: TextStyle(fontFamily: 'Cairo', fontSize: 14),
+                    ),
+                    trailing: const Icon(Icons.chevron_left_rounded),
+                    onTap: () => launchUrl(
+                      Uri.parse(kTermsUrl),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                  ),
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  ListTile(
+                    leading: const Icon(
                       Icons.delete_forever_rounded,
                       color: AppColors.error,
                     ),

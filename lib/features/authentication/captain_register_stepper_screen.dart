@@ -1360,15 +1360,24 @@ class _CaptainRegisterStepperScreenState
             ),
           ],
         ),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: () => launchUrl(
-              Uri.parse(kPrivacyPolicyUrl),
-              mode: LaunchMode.externalApplication,
+        Wrap(
+          alignment: WrapAlignment.end,
+          children: [
+            TextButton(
+              onPressed: () => launchUrl(
+                Uri.parse(kTermsUrl),
+                mode: LaunchMode.externalApplication,
+              ),
+              child: const Text('اطّلع على شروط الاستخدام'),
             ),
-            child: const Text('اطّلع على سياسة الخصوصية'),
-          ),
+            TextButton(
+              onPressed: () => launchUrl(
+                Uri.parse(kPrivacyPolicyUrl),
+                mode: LaunchMode.externalApplication,
+              ),
+              child: const Text('اطّلع على سياسة الخصوصية'),
+            ),
+          ],
         ),
       ],
     );
