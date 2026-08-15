@@ -51,7 +51,10 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
   Future<void> _startTrackingDistance() async {
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) return;
+      if (!serviceEnabled) {
+        _showLocationWarning('خدمة الموقع (GPS) مُغلقة، فعّلها لتحديث المسافة والأجرة.');
+        return;
+      }
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -59,6 +62,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
       }
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
+        _showLocationWarning('صلاحية الموقع غير ممنوحة، فعّلها من إعدادات التطبيق لتحديث المسافة والأجرة.');
         return;
       }
 
@@ -110,10 +114,26 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                     lng: position.longitude,
                   );
             }
+          }, onError: (_) {
+            // The stream itself can fail mid-trip (GPS turned off, permission
+            // revoked, ...) - surface that instead of the meter just
+            // silently freezing with no explanation.
+            _showLocationWarning('انقطع تتبع الموقع، تحقق من صلاحية GPS.');
           });
     } catch (_) {
-      // No GPS available in this environment; distance just stays at 0.
+      _showLocationWarning('تعذر تفعيل تتبع الموقع، تحقق من صلاحيات GPS.');
     }
+  }
+
+  void _showLocationWarning(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(fontFamily: 'Cairo')),
+        backgroundColor: AppColors.error,
+        duration: const Duration(seconds: 6),
+      ),
+    );
   }
 
   @override
