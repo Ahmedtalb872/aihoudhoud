@@ -19,6 +19,7 @@ create table if not exists public.bpay_transactions (
 
 alter table public.bpay_transactions enable row level security;
 
+drop policy if exists "captains_view_own_bpay_transactions" on public.bpay_transactions;
 create policy "captains_view_own_bpay_transactions"
   on public.bpay_transactions
   for select
