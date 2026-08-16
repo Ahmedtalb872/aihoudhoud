@@ -204,11 +204,20 @@ class AppStateProvider extends ChangeNotifier {
 
   DateTime? _openRideProgressLastPersisted;
 
-  // Saves the live meter (distance + banked idle time) to the trip row so
-  // it survives the app being killed and relaunched (e.g. after a network
+  // Saves the live meter (distance + idle time) to the trip row so it
+  // survives the app being killed and relaunched (e.g. after a network
   // drop) - without this, restoreActiveTripIfAny() would bring the trip
   // back but the meter would restart from zero. Throttled to avoid writing
   // on every single GPS ping while driving.
+  //
+  // Idle time is saved as _openRideAccumulatedIdleSeconds (already-banked
+  // stops) *plus* _currentBillableIdleSeconds() (whatever the captain's
+  // current stop, if any, has racked up so far) - the banked total alone
+  // only grows when a real movement event closes out a stop, so a captain
+  // who'd been waiting continuously (no movement in between) had that
+  // entire wait vanish if the app got killed mid-stop: distance survived
+  // (it's just a running total) but the time counter reset to whatever it
+  // was at the *start* of the current stop, not its actual value.
   void _persistOpenRideProgress({bool force = false}) {
     final trip = _activeTrip;
     if (trip == null || !trip.isOpenRide || !trip.isRemote) return;
@@ -224,7 +233,8 @@ class AppStateProvider extends ChangeNotifier {
         .from('trips')
         .update({
           'live_distance_km': _openRideDistanceKm,
-          'live_idle_seconds': _openRideAccumulatedIdleSeconds,
+          'live_idle_seconds':
+              _openRideAccumulatedIdleSeconds + _currentBillableIdleSeconds(),
           if (_openRideLastLat != null) 'live_last_lat': _openRideLastLat,
           if (_openRideLastLng != null) 'live_last_lng': _openRideLastLng,
         })
