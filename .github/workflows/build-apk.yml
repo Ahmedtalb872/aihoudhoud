@@ -28,6 +28,19 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Give this build a unique version code
+        # pubspec.yaml's build number (the part after "+") was hardcoded at
+        # 1 forever, so every APK this workflow ever produced had the exact
+        # same Android versionCode. Android's installer treats "same
+        # versionCode" as "not a new version" and can silently refuse to
+        # overwrite the already-installed copy - a captain testing a fix
+        # would download the new APK, install it, and keep running the old
+        # code with no error shown. github.run_number strictly increases
+        # on every run of this workflow, so it's a safe, always-fresh
+        # versionCode.
+        run: |
+          sed -i -E "s/^version: [0-9]+\.[0-9]+\.[0-9]+\+[0-9]+/version: 1.0.0+${{ github.run_number }}/" pubspec.yaml
+
       - name: Write Supabase config
         run: |
           cat > env.json <<'EOF'
