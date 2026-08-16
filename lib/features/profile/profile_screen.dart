@@ -141,36 +141,35 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
         ]),
-        // Only for motorcycle captains - car captains never receive
-        // delivery requests regardless of this toggle.
-        if (provider.isMotorcycleCaptain) ...[
-          const SizedBox(height: 16),
-          _buildMenuCard([
-            ListTile(
-              leading: Icon(
-                Icons.inventory_2_rounded,
-                color: provider.deliveryModeEnabled
-                    ? AppColors.primaryDark
-                    : AppColors.secondaryText,
-                size: 22,
-              ),
-              title: const Text(
-                'قبول طلبات توصيل',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.darkText,
-                  fontFamily: 'Cairo',
-                ),
-              ),
-              trailing: Switch(
-                value: provider.deliveryModeEnabled,
-                activeColor: AppColors.primaryDark,
-                onChanged: (_) => provider.toggleDeliveryMode(),
+        // Available to every captain: for a motorcycle captain this is the
+        // only kind of request they ever receive; for a car captain it's
+        // on top of their normal passenger rides.
+        const SizedBox(height: 16),
+        _buildMenuCard([
+          ListTile(
+            leading: Icon(
+              Icons.inventory_2_rounded,
+              color: provider.deliveryModeEnabled
+                  ? AppColors.primaryDark
+                  : AppColors.secondaryText,
+              size: 22,
+            ),
+            title: const Text(
+              'قبول طلبات توصيل',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppColors.darkText,
+                fontFamily: 'Cairo',
               ),
             ),
-          ]),
-        ],
+            trailing: Switch(
+              value: provider.deliveryModeEnabled,
+              activeColor: AppColors.primaryDark,
+              onChanged: (_) => provider.toggleDeliveryMode(),
+            ),
+          ),
+        ]),
         const SizedBox(height: 16),
         _buildMenuCard([
           _buildMenuItem(

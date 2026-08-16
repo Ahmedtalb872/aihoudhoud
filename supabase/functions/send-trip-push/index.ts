@@ -139,7 +139,9 @@ Deno.serve(async (req: Request) => {
     }
 
     // Mirrors AppStateProvider._maybeShowNextPendingRide's eligibility
-    // rules: a delivery only wakes motorcycle captains who opted in.
+    // rules: a motorcycle captain only ever wakes for delivery requests
+    // (and only once opted in); a car captain wakes for regular rides
+    // always, deliveries too once opted in.
     let query = supabase
       .from("captains")
       .select("fcm_token")
@@ -147,7 +149,9 @@ Deno.serve(async (req: Request) => {
       .eq("is_online", true)
       .not("fcm_token", "is", null);
     if (trip.service_type === "delivery") {
-      query = query.eq("vehicle_type", "motorcycle").eq("accepts_delivery", true);
+      query = query.eq("accepts_delivery", true);
+    } else {
+      query = query.neq("vehicle_type", "motorcycle");
     }
     const { data: captains, error: captainsError } = await query;
     if (captainsError) return json({ error: captainsError.message }, 500);

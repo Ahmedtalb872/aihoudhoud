@@ -403,21 +403,18 @@ class AppStateProvider extends ChangeNotifier {
   }
 
   // Reflects a vehicle-category change made from CaptainEditInfoScreen
-  // locally. Switching away from motorcycle also turns delivery mode off
-  // locally (the server-side accepts_delivery flag is irrelevant anyway
-  // once vehicle_type isn't 'motorcycle', since both the RPC and RLS check
-  // it - this just keeps the UI in sync without an extra round trip).
+  // locally - both car and motorcycle captains can have delivery mode on,
+  // so this no longer needs to reset it.
   void updateVehicleCategoryLocally(String vehicleType) {
     _vehicleCategory = vehicleType == 'motorcycle' ? 'motorcycle' : 'car';
-    if (_vehicleCategory != 'motorcycle') _deliveryModeEnabled = false;
     notifyListeners();
   }
 
-  // Motorcycle captains can opt in/out of receiving delivery requests
-  // alongside their normal passenger requests. Has no effect for car
-  // captains, who never see delivery requests regardless of this flag.
+  // Any captain (car or motorcycle) can opt in/out of delivery requests.
+  // For a motorcycle captain this is the *only* kind of request they'll
+  // ever receive; for a car captain it's on top of their normal passenger
+  // rides - see _maybeShowNextPendingRide.
   void toggleDeliveryMode() {
-    if (!isMotorcycleCaptain) return;
     _deliveryModeEnabled = !_deliveryModeEnabled;
     notifyListeners();
     if (_userId != null) {
@@ -689,11 +686,14 @@ class AppStateProvider extends ChangeNotifier {
     for (final row in _lastPendingRides) {
       final id = row['id'] as String;
       final serviceType = row['service_type'] as String? ?? 'ride';
-      // Delivery requests only ever reach a motorcycle captain who has
-      // opted in - a car captain (or one with delivery mode off) skips
-      // past them entirely, no matter their online status.
-      if (serviceType == 'delivery' &&
-          !(isMotorcycleCaptain && _deliveryModeEnabled)) {
+      final isDelivery = serviceType == 'delivery';
+      // A motorcycle captain only ever receives delivery requests, and
+      // only once they've opted in - never regular passenger rides. A car
+      // captain always receives regular rides, plus delivery requests too
+      // once they've opted in via the same toggle.
+      if (isMotorcycleCaptain) {
+        if (!isDelivery || !_deliveryModeEnabled) continue;
+      } else if (isDelivery && !_deliveryModeEnabled) {
         continue;
       }
       if (row['captain_id'] == null &&
