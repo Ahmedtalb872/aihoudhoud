@@ -9,13 +9,13 @@ GeneratedPluginRegistrant.java
 
 # Remember to never publicly share your keystore.
 # See https://flutter.dev/to/reference-keystore
+#
+# Now that this app is being published on the Play Store, the release key
+# must never be committed - CI reconstructs key.properties and the .jks
+# from repository secrets at build time instead (see build-apk.yml). A
+# previous key was briefly committed here under the old assumption that
+# there was no Play Store presence yet; it's been rotated out and this
+# negation removed.
 key.properties
 **/*.keystore
 **/*.jks
-# This app has no Play Store presence and is only ever distributed as a
-# directly-downloaded APK for internal testing, so the tradeoff here is
-# committing this specific release key rather than every CI build getting
-# a fresh random debug key (which made every new build uninstallable-over
-# the last one). Deliberately checked in - see build.gradle.kts.
-!key.properties
-!app/upload-keystore.jks

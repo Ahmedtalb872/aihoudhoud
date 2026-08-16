@@ -50,6 +50,27 @@ jobs:
           }
           EOF
 
+      - name: Write Android release signing config
+        # Reconstructs the release keystore from repository secrets instead
+        # of committing it - see android/.gitignore. Skipped entirely if the
+        # secret isn't set yet (e.g. right after this was wired up, before
+        # it's been added in repo Settings), in which case build.gradle.kts
+        # falls back to debug signing so the build still succeeds.
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/upload-keystore.jks
+          cat > android/key.properties <<EOF
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=upload-keystore.jks
+          EOF
+
       - name: Build release APK
         run: flutter build apk --release --dart-define-from-file=env.json
 
