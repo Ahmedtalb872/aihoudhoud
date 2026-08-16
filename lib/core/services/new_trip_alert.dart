@@ -54,6 +54,26 @@ class NewTripAlert {
     }
   }
 
+  // Android 14+ (API 34) added a *separate* permission from the ordinary
+  // notification permission for a full-screen-intent notification to
+  // actually pop the app open - without it, the new-trip alert still rings
+  // and shows a normal heads-up notification, but never wakes/opens the
+  // screen like the "درجة الأولوية" call/alarm behavior it's meant to
+  // mimic. Older Android versions no-op this call harmlessly. Call once
+  // (e.g. from the onboarding permissions screen) - it opens a system
+  // settings screen if the permission isn't already granted.
+  static Future<void> requestFullScreenIntentPermission() async {
+    try {
+      final androidImpl = _notifications
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      await androidImpl?.requestFullScreenIntentPermission();
+    } catch (_) {
+      // Not Android, or plugin doesn't support this on the current OS
+      // version - the regular notification still works either way.
+    }
+  }
+
   // Keeps ringing/vibrating until stop() is called - callers must stop it
   // once the captain accepts, ignores, or the request times out, or it'll
   // ring indefinitely.

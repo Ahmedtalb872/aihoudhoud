@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/colors.dart';
+import '../../core/services/new_trip_alert.dart';
 import '../../core/widgets/app_logo.dart';
 
 /// Shown once right after login/registration: asks the captain to enable
@@ -25,6 +26,15 @@ class _PermissionsScreenState extends State<PermissionsScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _refreshStatuses();
+    // Unconditional, not just on the notification button press below: this
+    // screen shows on every login (not only first-time onboarding), and a
+    // captain who granted the ordinary notification permission on an older
+    // app version - before this Android 14+ full-screen-intent permission
+    // existed - would otherwise never be asked for it, since the
+    // notification card already shows granted and its button never
+    // appears. The native call is a no-op if already granted, so this
+    // never interrupts a captain who's already set up.
+    NewTripAlert.requestFullScreenIntentPermission();
   }
 
   @override
@@ -64,6 +74,10 @@ class _PermissionsScreenState extends State<PermissionsScreen>
     if (!mounted) return;
     setState(() => _notificationStatus = status);
     if (status.isPermanentlyDenied) _showOpenSettingsSnack();
+    // Separate from the notification permission above on Android 14+ -
+    // without it, the new-trip alert rings but never actually opens the
+    // app on top of the lock screen the way it's supposed to.
+    await NewTripAlert.requestFullScreenIntentPermission();
   }
 
   // Some platforms (e.g. web) don't implement every Permission; fall back to
