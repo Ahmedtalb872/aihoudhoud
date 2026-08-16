@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:vibration/vibration.dart';
 
 import '../../core/constants/colors.dart';
 import '../../core/services/call_service.dart';
@@ -42,7 +44,7 @@ class CallScreen extends StatefulWidget {
   State<CallScreen> createState() => _CallScreenState();
 }
 
-class _CallScreenState extends State<CallScreen> {
+class _CallScreenState extends State<CallScreen> with SingleTickerProviderStateMixin {
   late final CallService _call;
   late _CallPhase _phase;
   Timer? _durationTimer;
@@ -50,6 +52,13 @@ class _CallScreenState extends State<CallScreen> {
   Duration _elapsed = Duration.zero;
   bool _muted = false;
   bool _speakerOn = false;
+
+  // Local ringtone for an *incoming* call on this device - the signaling
+  // channel only carries WebRTC offer/answer/ICE, it never made a sound on
+  // its own, so an incoming call used to sit there completely silent with
+  // only the on-screen text giving it away.
+  final AudioPlayer _ringPlayer = AudioPlayer();
+  late final AnimationController _pulseController;
 
   StreamSubscription<CallConnectionStatus>? _statusSub;
   StreamSubscription<void>? _remoteHangupSub;
@@ -61,13 +70,48 @@ class _CallScreenState extends State<CallScreen> {
     _phase = widget.incomingOfferSdp != null
         ? _CallPhase.ringingIncoming
         : _CallPhase.ringingOutgoing;
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1300),
+    )..repeat(reverse: true);
     _statusSub = _call.onStatusChange.listen(_onStatusChange);
     _remoteHangupSub = _call.onRemoteHangup.listen((_) => _endCall(notifyPeer: false));
 
     if (widget.incomingOfferSdp == null) {
       _startOutgoingCall();
       _ringTimeoutTimer = Timer(_ringTimeout, _onRingTimeout);
+    } else {
+      _startRinging();
     }
+  }
+
+  Future<void> _startRinging() async {
+    unawaited(_vibrateRingLoop());
+    try {
+      await _ringPlayer.setReleaseMode(ReleaseMode.loop);
+      await _ringPlayer.play(AssetSource('sounds/new_trip_chime.wav'));
+    } catch (_) {
+      // No audio output available in this environment; ignore.
+    }
+  }
+
+  Future<void> _vibrateRingLoop() async {
+    try {
+      if (await Vibration.hasVibrator()) {
+        Vibration.vibrate(pattern: [0, 500, 300, 500, 300], repeat: 0);
+      }
+    } catch (_) {
+      // No vibration hardware/permission on this platform; ignore.
+    }
+  }
+
+  Future<void> _stopRinging() async {
+    try {
+      await _ringPlayer.stop();
+    } catch (_) {}
+    try {
+      await Vibration.cancel();
+    } catch (_) {}
   }
 
   Future<void> _startOutgoingCall() async {
@@ -80,6 +124,7 @@ class _CallScreenState extends State<CallScreen> {
   }
 
   Future<void> _acceptIncomingCall() async {
+    _stopRinging();
     setState(() => _phase = _CallPhase.connecting);
     try {
       await _call.startAsCallee(widget.incomingOfferSdp!);
@@ -94,6 +139,7 @@ class _CallScreenState extends State<CallScreen> {
     if (!mounted) return;
     switch (status) {
       case CallConnectionStatus.connected:
+        _stopRinging();
         _ringTimeoutTimer?.cancel();
         setState(() => _phase = _CallPhase.inCall);
         _startTimer();
@@ -132,6 +178,7 @@ class _CallScreenState extends State<CallScreen> {
   /// message/status that already means the other side is gone.
   void _endCall({required bool notifyPeer}) {
     if (_phase == _CallPhase.ended || _phase == _CallPhase.noAnswer) return;
+    _stopRinging();
     _durationTimer?.cancel();
     _ringTimeoutTimer?.cancel();
     if (notifyPeer) {
@@ -151,6 +198,9 @@ class _CallScreenState extends State<CallScreen> {
     _ringTimeoutTimer?.cancel();
     _statusSub?.cancel();
     _remoteHangupSub?.cancel();
+    _pulseController.dispose();
+    _ringPlayer.dispose();
+    unawaited(Vibration.cancel());
     // Covers every way off this screen that isn't already-handled by
     // _endCall (back button, swipe-back, a parent navigator popping this
     // route) - hangUp (not just dispose) so the other party is told the
@@ -183,52 +233,125 @@ class _CallScreenState extends State<CallScreen> {
     }
   }
 
+  bool get _isRinging =>
+      _phase == _CallPhase.ringingIncoming || _phase == _CallPhase.ringingOutgoing;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary,
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 56),
-            _buildAvatar(),
-            const SizedBox(height: 20),
-            Text(
-              widget.peerName,
-              style: const TextStyle(
-                fontFamily: 'Cairo',
-                fontWeight: FontWeight.bold,
-                fontSize: 22,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _statusText,
-              style: TextStyle(
-                fontFamily: 'Cairo',
-                fontSize: 14,
-                color: Colors.white.withOpacity(0.85),
-              ),
-            ),
-            const Spacer(),
-            _buildControls(),
-            const SizedBox(height: 56),
-          ],
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [AppColors.primary, AppColors.primaryDark],
+          ),
         ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              const SizedBox(height: 24),
+              _buildTypeBadge(),
+              const Spacer(flex: 3),
+              _buildAvatar(),
+              const SizedBox(height: 24),
+              Text(
+                widget.peerName,
+                style: const TextStyle(
+                  fontFamily: 'Cairo',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _buildStatusPill(),
+              const Spacer(flex: 4),
+              _buildControlsPanel(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.14),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.wifi_calling_3_rounded, color: Colors.white, size: 16),
+          SizedBox(width: 6),
+          Text(
+            'مكالمة داخل التطبيق',
+            style: TextStyle(
+              fontFamily: 'Cairo',
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusPill() {
+    IconData icon;
+    switch (_phase) {
+      case _CallPhase.ringingOutgoing:
+      case _CallPhase.connecting:
+        icon = Icons.call_made_rounded;
+      case _CallPhase.ringingIncoming:
+        icon = Icons.call_received_rounded;
+      case _CallPhase.inCall:
+        icon = Icons.graphic_eq_rounded;
+      case _CallPhase.noAnswer:
+        icon = Icons.call_missed_rounded;
+      case _CallPhase.ended:
+        icon = Icons.call_end_rounded;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white.withOpacity(0.9), size: 16),
+          const SizedBox(width: 6),
+          Text(
+            _statusText,
+            style: TextStyle(
+              fontFamily: 'Cairo',
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.white.withOpacity(0.95),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildAvatar() {
     final url = widget.peerAvatarUrl;
-    return Container(
+    final core = Container(
       width: 110,
       height: 110,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Colors.white.withOpacity(0.15),
-        border: Border.all(color: Colors.white.withOpacity(0.4), width: 2),
+        border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
       ),
       child: (url != null && url.isNotEmpty)
           ? ClipOval(child: Image.network(url, fit: BoxFit.cover))
@@ -243,6 +366,55 @@ class _CallScreenState extends State<CallScreen> {
                 ),
               ),
             ),
+    );
+
+    if (!_isRinging) return core;
+
+    // A soft breathing ring around the avatar while it's ringing (either
+    // direction) - the only visual cue that used to exist was the static
+    // status text, easy to miss at a glance.
+    return AnimatedBuilder(
+      animation: _pulseController,
+      builder: (context, child) {
+        final scale = 1.0 + (_pulseController.value * 0.16);
+        final opacity = 0.35 * (1 - _pulseController.value);
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            Transform.scale(
+              scale: scale,
+              child: Container(
+                width: 110,
+                height: 110,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withOpacity(opacity),
+                    width: 3,
+                  ),
+                ),
+              ),
+            ),
+            child!,
+          ],
+        );
+      },
+      child: core,
+    );
+  }
+
+  /// Groups the call controls into a distinct rounded panel at the bottom
+  /// instead of leaving them floating loosely on the gradient - the biggest
+  /// contributor to the screen reading as unorganized.
+  Widget _buildControlsPanel() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 28, 24, 36),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.14),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      child: _buildControls(),
     );
   }
 
@@ -269,6 +441,7 @@ class _CallScreenState extends State<CallScreen> {
 
     if (_phase == _CallPhase.inCall) {
       return Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -297,7 +470,7 @@ class _CallScreenState extends State<CallScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 28),
           _CallButton(
             icon: Icons.call_end_rounded,
             label: 'إنهاء المكالمة',
@@ -308,12 +481,14 @@ class _CallScreenState extends State<CallScreen> {
       );
     }
 
-    // Outgoing/connecting/no-answer/ended: a single hang-up button.
-    return _CallButton(
-      icon: Icons.call_end_rounded,
-      label: 'إنهاء',
-      color: AppColors.error,
-      onPressed: () => _endCall(notifyPeer: true),
+    // Outgoing/connecting/no-answer/ended: a single centered hang-up button.
+    return Center(
+      child: _CallButton(
+        icon: Icons.call_end_rounded,
+        label: 'إنهاء',
+        color: AppColors.error,
+        onPressed: () => _endCall(notifyPeer: true),
+      ),
     );
   }
 }
