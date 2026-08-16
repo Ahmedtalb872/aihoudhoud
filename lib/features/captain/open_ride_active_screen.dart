@@ -310,7 +310,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                           ),
                           const SizedBox(height: 8),
                           _buildStatChip(
-                            _formatElapsed(provider.openRideElapsed),
+                            _formatElapsed(provider.openRideMeterElapsed),
                             'الوقت',
                           ),
                         ],
