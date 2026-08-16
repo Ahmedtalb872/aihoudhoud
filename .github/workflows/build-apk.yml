@@ -33,7 +33,7 @@ jobs:
           cat > env.json <<'EOF'
           {
             "SUPABASE_URL": "https://hdjxtnzwxqkrihhvssej.supabase.co",
-            "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhkanh0bnp3eHFrcmloaHZzc2VqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4MzkyOTAsImV4cCI6MjA5OTQxNTI5MH0.1bDOUcN5g6I4VWTA4HE8wXhSz30CsAXyCOAkSRvgnhs"
+            "SUPABASE_ANON_KEY": "sb_publishable_K63bm3UI9aVz6U7z03agDQ_j8_LkL8v"
           }
           EOF
 
