@@ -111,8 +111,9 @@ Deno.serve(async (req: Request) => {
       return json({ error: "firebase_not_configured" }, 500);
     }
 
-    const { trip_id } = await req.json();
+    const { trip_id, event_type } = await req.json();
     if (!trip_id) return json({ error: "missing_trip_id" }, 400);
+    const isCancel = event_type === "cancelled";
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const serviceAccount = JSON.parse(FIREBASE_SERVICE_ACCOUNT_JSON);
@@ -156,12 +157,14 @@ Deno.serve(async (req: Request) => {
     const { data: captains, error: captainsError } = await query;
     if (captainsError) return json({ error: captainsError.message }, 500);
 
-    const pushData = {
-      type: "new_trip",
-      tripId: String(trip.id),
-      customerName,
-      pickup: trip.pickup_address ?? "",
-    };
+    const pushData = isCancel
+      ? { type: "trip_cancelled", tripId: String(trip.id) }
+      : {
+          type: "new_trip",
+          tripId: String(trip.id),
+          customerName,
+          pickup: trip.pickup_address ?? "",
+        };
 
     const results = await Promise.allSettled(
       (captains ?? [])

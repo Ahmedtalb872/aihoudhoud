@@ -11,12 +11,21 @@ import 'new_trip_alert.dart';
 /// keep the @pragma so the engine can find it from a cold isolate.
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  if (message.data['type'] != 'new_trip') return;
-  await NewTripAlert.initialize();
-  await NewTripAlert.play(
-    customerName: message.data['customerName'],
-    pickup: message.data['pickup'],
-  );
+  final type = message.data['type'];
+  if (type == 'new_trip') {
+    await NewTripAlert.initialize();
+    await NewTripAlert.play(
+      customerName: message.data['customerName'],
+      pickup: message.data['pickup'],
+    );
+  } else if (type == 'trip_cancelled') {
+    // The customer cancelled (or another captain claimed it) before this
+    // one answered - silences the ring/full-screen alert from the
+    // 'new_trip' push above so it doesn't keep going for a request that no
+    // longer exists. Harmless no-op if this device was never ringing for
+    // it in the first place.
+    await NewTripAlert.stop();
+  }
 }
 
 /// Registers this device for push notifications and keeps

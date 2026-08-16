@@ -661,6 +661,21 @@ class AppStateProvider extends ChangeNotifier {
         .order('requested_at', ascending: true)
         .listen((rows) {
           _lastPendingRides = rows;
+          // The request currently ringing may have just left 'searching'
+          // (the customer cancelled it, it expired, or another captain
+          // claimed it first) - this stream only ever lists rows still
+          // 'searching', so its disappearance is exactly that signal.
+          // Without this check the alert would keep ringing indefinitely
+          // for a request that no longer exists.
+          final incoming = _incomingRequest;
+          if (incoming != null &&
+              incoming.isRemote &&
+              !rows.any((r) => r['id'] == incoming.id)) {
+            _countdownTimer?.cancel();
+            NewTripAlert.stop();
+            _incomingRequest = null;
+            notifyListeners();
+          }
           _maybeShowNextPendingRide();
         });
   }
