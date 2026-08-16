@@ -5,6 +5,7 @@ import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_exception.dart';
 import '../../core/supabase/wallet_repository.dart';
 import '../../providers/app_state_provider.dart';
+import 'bpay_success_screen.dart';
 
 /// Our merchant identification code with Bankily's Bpay service (BPM),
 /// shown to the captain so they can pay it directly from their Bankily app.
@@ -83,15 +84,21 @@ class _BpayRechargeScreenState extends State<BpayRechargeScreen> {
           context,
           listen: false,
         ).creditWalletFromBpayRecharge(amount);
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => BpaySuccessScreen(amount: amount),
+          ),
+        );
+        return;
       }
 
+      // Pending (still being confirmed by the bank) - not a full success
+      // screen, just a heads-up before returning to the wallet.
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result.message, style: const TextStyle(fontFamily: 'Cairo')),
-          backgroundColor: result.status == BpayRechargeStatus.success
-              ? AppColors.success
-              : AppColors.primary,
+          backgroundColor: AppColors.primary,
           duration: const Duration(seconds: 5),
         ),
       );
