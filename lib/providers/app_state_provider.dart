@@ -44,12 +44,12 @@ class AppStateProvider extends ChangeNotifier {
   //   rounded up to the next whole km), with a 100 MRU minimum fare for
   //   the trip regardless of how short it is.
   // - Waiting time: bills 5 MRU/minute, but only while the captain is
-  //   actually stationary (no GPS movement) beyond a 4-minute grace period
+  //   actually stationary (no GPS movement) beyond a 3-minute grace period
   //   per stop, pausing the instant they're moving again.
   static const double openRideMinimumFare = 100.0;
   static const double openRidePerMeterRate = 0.023;
   static const double openRidePerMinuteRate = 5.0;
-  static const Duration openRideIdleThreshold = Duration(minutes: 4);
+  static const Duration openRideIdleThreshold = Duration(minutes: 3);
   DateTime? _openRideStartTime;
   DateTime? _openRideLastMovementTime;
   // Billable idle seconds already banked from earlier stops this trip -
