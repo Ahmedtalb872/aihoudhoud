@@ -29,6 +29,20 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-internal-secret",
 };
 
+// Matches AppStateProvider._pendingRideRadiusMeters - a captain shouldn't
+// be woken for a request further than this from their last known position.
+const PENDING_RIDE_RADIUS_METERS = 2000;
+
+function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const R = 6371000;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -121,7 +135,7 @@ Deno.serve(async (req: Request) => {
     const { data: trip, error: tripError } = await supabase
       .from("trips")
       .select(
-        "id, service_type, pickup_address, customer_id, recipient_name",
+        "id, service_type, pickup_address, customer_id, recipient_name, pickup_lat, pickup_lng",
       )
       .eq("id", trip_id)
       .maybeSingle();
@@ -145,7 +159,7 @@ Deno.serve(async (req: Request) => {
     // always, deliveries too once opted in.
     let query = supabase
       .from("captains")
-      .select("fcm_token")
+      .select("id, fcm_token")
       .eq("status", "approved")
       .eq("is_online", true)
       .not("fcm_token", "is", null);
@@ -154,8 +168,44 @@ Deno.serve(async (req: Request) => {
     } else {
       query = query.neq("vehicle_type", "motorcycle");
     }
-    const { data: captains, error: captainsError } = await query;
+    const { data: captainsRaw, error: captainsError } = await query;
     if (captainsError) return json({ error: captainsError.message }, 500);
+    let captains = captainsRaw ?? [];
+
+    // Never wake a captain who already has a trip in progress - mirrors
+    // AppStateProvider._maybeShowNextPendingRide's `_activeTrip != null`
+    // guard, which only applies while the app is actually running.
+    if (!isCancel && captains.length > 0) {
+      const { data: busy } = await supabase
+        .from("trips")
+        .select("captain_id")
+        .in("status", ["accepted", "arrived", "in_progress", "boarded"])
+        .in("captain_id", captains.map((c) => c.id));
+      const busyIds = new Set((busy ?? []).map((b) => b.captain_id));
+      captains = captains.filter((c) => !busyIds.has(c.id));
+    }
+
+    // Only wake captains within _pendingRideRadiusMeters of the pickup -
+    // mirrors the same radius AppStateProvider._maybeShowNextPendingRide
+    // applies in-app. A captain with no known location is skipped rather
+    // than woken for a request that might actually be far away.
+    const pickupLat = typeof trip.pickup_lat === "number" ? trip.pickup_lat : null;
+    const pickupLng = typeof trip.pickup_lng === "number" ? trip.pickup_lng : null;
+    if (!isCancel && pickupLat != null && pickupLng != null && captains.length > 0) {
+      const { data: locations } = await supabase
+        .from("captain_locations")
+        .select("captain_id, lat, lng")
+        .in("captain_id", captains.map((c) => c.id));
+      const locByCaptain = new Map(
+        (locations ?? []).map((l) => [l.captain_id, l]),
+      );
+      captains = captains.filter((c) => {
+        const loc = locByCaptain.get(c.id);
+        if (!loc) return false;
+        return haversineMeters(pickupLat, pickupLng, loc.lat, loc.lng) <=
+          PENDING_RIDE_RADIUS_METERS;
+      });
+    }
 
     const pushData = isCancel
       ? { type: "trip_cancelled", tripId: String(trip.id) }

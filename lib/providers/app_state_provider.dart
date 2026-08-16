@@ -91,6 +91,18 @@ class AppStateProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _lastPendingRides = [];
   final Set<String> _ignoredRideIds = {};
 
+  // Latest fix from the online-presence tracking stream (see
+  // _startOnlinePresenceTracking) - kept locally too, not just upserted to
+  // captain_locations, so _maybeShowNextPendingRide can filter pending
+  // rides by distance without an extra DB round-trip.
+  double? _myLat;
+  double? _myLng;
+
+  // A pending ride farther than this from the captain's last known
+  // position is never surfaced to them - matches the same radius the
+  // send-trip-push Edge Function applies for background/killed-app pushes.
+  static const double _pendingRideRadiusMeters = 2000.0;
+
   // Getters
   bool get isLoggedIn => _isLoggedIn;
   String? get userId => _userId;
@@ -546,6 +558,8 @@ class AppStateProvider extends ChangeNotifier {
           ) {
             final uid = _userId;
             if (uid == null) return;
+            _myLat = position.latitude;
+            _myLng = position.longitude;
             Supabase.instance.client
                 .from('captain_locations')
                 .upsert({
@@ -556,6 +570,10 @@ class AppStateProvider extends ChangeNotifier {
                   'updated_at': DateTime.now().toIso8601String(),
                 })
                 .catchError((_) {});
+            // A ride may have been skipped earlier for lacking a location
+            // fix to compare against (or the captain has simply moved
+            // closer to one since) - re-evaluate now that it's fresh.
+            _maybeShowNextPendingRide();
           });
     } catch (_) {
       // No GPS available; presence tracking just doesn't start.
@@ -744,6 +762,25 @@ class AppStateProvider extends ChangeNotifier {
       } else if (isDelivery && !_deliveryModeEnabled) {
         continue;
       }
+      // Only surface requests within _pendingRideRadiusMeters of the
+      // captain's last known position - without a fix yet to compare
+      // against, skip rather than show a request that might actually be
+      // far away (a fresh fix re-triggers this check, see
+      // _startOnlinePresenceTracking's listener).
+      final myLat = _myLat;
+      final myLng = _myLng;
+      final pickupLat = (row['pickup_lat'] as num?)?.toDouble();
+      final pickupLng = (row['pickup_lng'] as num?)?.toDouble();
+      if (myLat == null || myLng == null || pickupLat == null || pickupLng == null) {
+        continue;
+      }
+      final distanceMeters = Geolocator.distanceBetween(
+        myLat,
+        myLng,
+        pickupLat,
+        pickupLng,
+      );
+      if (distanceMeters > _pendingRideRadiusMeters) continue;
       if (row['captain_id'] == null &&
           !_ignoredRideIds.contains(id) &&
           !_isIgnoredByMe(row)) {
