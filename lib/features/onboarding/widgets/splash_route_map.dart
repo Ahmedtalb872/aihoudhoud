@@ -4,8 +4,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../core/constants/colors.dart';
 
 /// Animated Google Map background for the splash screen: a muted map of
-/// central Nouakchott with the الهدهد car icon driving smoothly along
-/// [_routePoints], leaving a glowing orange trail behind it.
+/// central Nouakchott with a glowing orange trail animating along
+/// [_routePoints].
 ///
 /// This is purely decorative - it does not use the device's real location,
 /// so no location permission is requested for it. [_routePoints] is a
@@ -64,7 +64,6 @@ class _SplashRouteMapState extends State<SplashRouteMap>
   late final AnimationController _controller;
   late final List<double> _segmentLengths;
   late final double _totalLength;
-  BitmapDescriptor? _carIcon;
 
   @override
   void initState() {
@@ -80,25 +79,11 @@ class _SplashRouteMapState extends State<SplashRouteMap>
     ];
     _totalLength = _segmentLengths.fold(0.0, (sum, d) => sum + d);
 
-    // reverse: true so the car drives the route, then back along it,
-    // instead of snapping from the last point back to the first each lap.
+    // reverse: true so the trail animates forward along the route, then
+    // back along it, instead of snapping from the last point back to the
+    // first each lap.
     _controller = AnimationController(vsync: this, duration: animationDuration)
       ..repeat(reverse: true);
-
-    _loadCarIcon();
-  }
-
-  Future<void> _loadCarIcon() async {
-    try {
-      final icon = await BitmapDescriptor.fromAssetImage(
-        const ImageConfiguration(size: Size(64, 64)),
-        'assets/images/logo_icon.png',
-      );
-      if (mounted) setState(() => _carIcon = icon);
-    } catch (_) {
-      // Falls back to the default marker icon below if the asset can't be
-      // decoded as a marker bitmap on this platform.
-    }
   }
 
   @override
@@ -222,19 +207,6 @@ class _SplashRouteMapState extends State<SplashRouteMap>
                   jointType: JointType.round,
                   startCap: Cap.roundCap,
                   endCap: Cap.roundCap,
-                ),
-              },
-              markers: {
-                Marker(
-                  markerId: const MarkerId('car'),
-                  position: frame.position,
-                  rotation: frame.heading,
-                  anchor: const Offset(0.5, 0.5),
-                  flat: true,
-                  icon: _carIcon ??
-                      BitmapDescriptor.defaultMarkerWithHue(
-                        BitmapDescriptor.hueOrange,
-                      ),
                 ),
               },
             );
