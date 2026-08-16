@@ -144,8 +144,9 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
             locationSettings: locationSettings,
           ).listen((position) {
             if (!mounted) return;
+            double? meters;
             if (_lastLat != null && _lastLng != null) {
-              final meters = Geolocator.distanceBetween(
+              meters = Geolocator.distanceBetween(
                 _lastLat!,
                 _lastLng!,
                 position.latitude,
@@ -166,6 +167,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                     _distanceKm,
                     lat: position.latitude,
                     lng: position.longitude,
+                    distanceMeters: meters,
                   );
             }
           }, onError: (_) {

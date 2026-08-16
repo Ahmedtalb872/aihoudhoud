@@ -158,19 +158,39 @@ class AppStateProvider extends ChangeNotifier {
         waitingFare;
   }
 
+  // A stationary phone's GPS fix still drifts by several meters between
+  // readings from pure signal noise - well past the 5m distanceFilter the
+  // position stream is already set to. Without this, every jittery fix
+  // reset the idle clock, so a captain genuinely stopped for many minutes
+  // never crossed the grace period: openRideMeterElapsed stayed at 0
+  // forever. Only a fix that moved the car by more than this counts as
+  // real movement for idle-tracking purposes (still fine for a slow crawl
+  // in traffic - it just takes one more fix to register).
+  static const double _idleMovementThresholdMeters = 20.0;
+
   // Reported by OpenRideActiveScreen on every real GPS position update -
   // movement, so bank whatever billable idle time the stop that just ended
   // accrued before resetting the idle clock for this new movement. Also
   // tracks the current point so a killed-and-relaunched session can measure
   // the gap it missed instead of dropping that stretch of driving.
+  //
+  // [distanceMeters] is the raw distance covered since the previous fix
+  // (null for the very first fix) - used only to decide whether this
+  // update counts as real movement for the idle clock; [totalDistanceKm]
+  // is still the running total shown to the captain regardless.
   void updateOpenRideDistance(
     double totalDistanceKm, {
     double? lat,
     double? lng,
+    double? distanceMeters,
   }) {
-    _openRideAccumulatedIdleSeconds += _currentBillableIdleSeconds();
+    final isRealMovement =
+        distanceMeters == null || distanceMeters >= _idleMovementThresholdMeters;
+    if (isRealMovement) {
+      _openRideAccumulatedIdleSeconds += _currentBillableIdleSeconds();
+      _openRideLastMovementTime = DateTime.now();
+    }
     _openRideDistanceKm = totalDistanceKm;
-    _openRideLastMovementTime = DateTime.now();
     if (lat != null && lng != null) {
       _openRideLastLat = lat;
       _openRideLastLng = lng;
