@@ -147,15 +147,18 @@ class AppStateProvider extends ChangeNotifier {
         .round(),
   );
 
+  // The 100 MRU minimum applies to the *combined* distance+waiting total,
+  // not to the distance portion alone with waiting always stacked on top -
+  // otherwise a short ride with a long wait could be overcharged (e.g. 30
+  // MRU of distance + 90 MRU of waiting is a fair 120, not 100+90=190).
+  // Once the natural total reaches 100, the fare keeps climbing past it.
   double get openRideFare {
     final distanceMeters = _openRideDistanceKm * 1000;
     final distanceFare = distanceMeters * openRidePerMeterRate;
     final billableMinutes = openRideMeterElapsed.inSeconds / 60.0;
     final waitingFare = billableMinutes * openRidePerMinuteRate;
-    return (distanceFare < openRideMinimumFare
-            ? openRideMinimumFare
-            : distanceFare) +
-        waitingFare;
+    final total = distanceFare + waitingFare;
+    return total < openRideMinimumFare ? openRideMinimumFare : total;
   }
 
   // A stationary phone's GPS fix still drifts by several meters between
