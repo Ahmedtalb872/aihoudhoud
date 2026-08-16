@@ -145,6 +145,17 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
           ).listen((position) {
             if (!mounted) return;
             double? meters;
+            // Only credit distance - and only move the reference point
+            // fresh comparisons are measured from - once the car has
+            // actually covered real ground since it, not on every GPS fix.
+            // A stationary phone's fix still drifts a few meters from pure
+            // signal noise, well past the 5m distanceFilter this stream
+            // already applies; without this floor that drift kept adding
+            // up as "distance" driven while genuinely parked. A fix that
+            // doesn't clear it just leaves the reference point where it
+            // was, so slow real movement still accumulates correctly
+            // across several fixes instead of being silently dropped.
+            var realMovement = true;
             if (_lastLat != null && _lastLng != null) {
               meters = Geolocator.distanceBetween(
                 _lastLat!,
@@ -152,11 +163,14 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                 position.latitude,
                 position.longitude,
               );
-              _distanceKm += meters / 1000;
+              realMovement = meters >= AppStateProvider.idleMovementThresholdMeters;
+              if (realMovement) _distanceKm += meters / 1000;
             }
             setState(() {
-              _lastLat = position.latitude;
-              _lastLng = position.longitude;
+              if (realMovement) {
+                _lastLat = position.latitude;
+                _lastLng = position.longitude;
+              }
               _carLat = position.latitude;
               _carLng = position.longitude;
               _gpsFixCount++;

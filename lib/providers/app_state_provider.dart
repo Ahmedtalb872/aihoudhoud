@@ -180,8 +180,12 @@ class AppStateProvider extends ChangeNotifier {
   // never crossed the grace period: openRideMeterElapsed stayed at 0
   // forever. Only a fix that moved the car by more than this counts as
   // real movement for idle-tracking purposes (still fine for a slow crawl
-  // in traffic - it just takes one more fix to register).
-  static const double _idleMovementThresholdMeters = 20.0;
+  // in traffic - it just takes one more fix to register). Public because
+  // OpenRideActiveScreen applies the exact same floor before crediting
+  // distance too - otherwise the same GPS noise this exists to filter out
+  // of the idle clock was still quietly adding "distance driven" while
+  // the car sat parked.
+  static const double idleMovementThresholdMeters = 20.0;
 
   // Reported by OpenRideActiveScreen on every real GPS position update -
   // movement, so bank whatever billable idle time the stop that just ended
@@ -200,7 +204,7 @@ class AppStateProvider extends ChangeNotifier {
     double? distanceMeters,
   }) {
     final isRealMovement =
-        distanceMeters == null || distanceMeters >= _idleMovementThresholdMeters;
+        distanceMeters == null || distanceMeters >= idleMovementThresholdMeters;
     if (isRealMovement) {
       _openRideAccumulatedIdleSeconds += _currentBillableIdleSeconds();
       _openRideLastMovementTime = DateTime.now();
