@@ -12,6 +12,13 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # GitHub Actions rejects the whole workflow file at validation time
+      # (zero jobs ever run, no useful error surfaced anywhere obvious) if
+      # an `if:` conditional references `secrets.*` directly - it has to go
+      # through `env` first, so this is set here and the signing step below
+      # checks env.HAS_ANDROID_KEYSTORE instead of secrets.* directly.
+      HAS_ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -56,7 +63,7 @@ jobs:
         # secret isn't set yet (e.g. right after this was wired up, before
         # it's been added in repo Settings), in which case build.gradle.kts
         # falls back to debug signing so the build still succeeds.
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.HAS_ANDROID_KEYSTORE == 'true' }}
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
