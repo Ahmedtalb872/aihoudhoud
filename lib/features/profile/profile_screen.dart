@@ -6,7 +6,6 @@ import '../wallet/wallet_screen.dart';
 import '../trips/my_trips_screen.dart';
 import '../support/support_screen.dart';
 import '../support/settings_screen.dart';
-import '../admin/admin_dashboard_screen.dart';
 import 'captain_edit_info_screen.dart';
 import '../../dummy_data/dummy_data.dart';
 
@@ -131,22 +130,6 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildCaptainMenu(BuildContext context, AppStateProvider provider) {
     return Column(
       children: [
-        // Only ever visible to the one account(s) flagged
-        // profiles.is_admin - every other captain never sees this card.
-        if (provider.isAdmin) ...[
-          _buildMenuCard([
-            _buildMenuItem(
-              icon: Icons.admin_panel_settings_rounded,
-              title: 'لوحة التحكم',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const AdminDashboardScreen(),
-                ),
-              ),
-            ),
-          ]),
-          const SizedBox(height: 16),
-        ],
         _buildMenuCard([
           _buildMenuItem(
             icon: Icons.edit_rounded,

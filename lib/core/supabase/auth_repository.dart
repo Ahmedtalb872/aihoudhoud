@@ -301,41 +301,6 @@ class AuthRepository {
     }
   }
 
-  /// Every captain merged with their profile's name/phone, for the admin
-  /// dashboard - only readable at all by an account with profiles.is_admin
-  /// (see migration 0024's "admins_view_all_captains" policy); an ordinary
-  /// captain's own RLS only ever returns their own row, so this silently
-  /// comes back as a single-row list for them instead of erroring.
-  Future<List<Map<String, dynamic>>> getAllCaptainsForAdmin() async {
-    try {
-      final captains = await _client
-          .from('captains')
-          .select()
-          .order('created_at', ascending: false);
-      final ids = (captains as List)
-          .map((c) => c['id'] as String)
-          .toList();
-      if (ids.isEmpty) return [];
-      final profiles = await _client
-          .from('profiles')
-          .select('id, full_name, phone')
-          .inFilter('id', ids);
-      final profileById = {
-        for (final p in profiles as List) p['id'] as String: p,
-      };
-      return captains.map((c) {
-        final profile = profileById[c['id']] ?? const {};
-        return {
-          ...c as Map<String, dynamic>,
-          'full_name': profile['full_name'],
-          'phone': profile['phone'],
-        };
-      }).toList();
-    } on PostgrestException {
-      throw AppAuthException('تعذر تحميل قائمة الكباتن.');
-    }
-  }
-
   Future<void> setCaptainOnline(String captainId, bool isOnline) async {
     try {
       await _client

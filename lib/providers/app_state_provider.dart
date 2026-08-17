@@ -21,9 +21,6 @@ class AppStateProvider extends ChangeNotifier {
   bool _isCaptainOnline = false;
   String _captainName = DummyData.dummyCaptain.user.name;
   String _captainPhone = DummyData.dummyCaptain.user.phone;
-  // Unlocks the admin dashboard entry in the profile menu - set from
-  // profiles.is_admin on login, off for every ordinary captain account.
-  bool _isAdmin = false;
   // 'car' or 'motorcycle' - derived from captains.vehicle_type at login
   // (motorcycle is just another value of that same column, not a separate
   // one). Only motorcycle captains can see/toggle delivery requests.
@@ -110,7 +107,6 @@ class AppStateProvider extends ChangeNotifier {
   bool get isLoggedIn => _isLoggedIn;
   String? get userId => _userId;
   String get captainEmail => _captainEmail;
-  bool get isAdmin => _isAdmin;
 
   bool get isCaptainOnline => _isCaptainOnline;
   String get captainName => _captainName;
@@ -277,7 +273,6 @@ class AppStateProvider extends ChangeNotifier {
     if (fullName != null && fullName.isNotEmpty) _captainName = fullName;
     if (phone != null && phone.isNotEmpty) _captainPhone = phone;
     _captainEmail = email;
-    _isAdmin = profile['is_admin'] as bool? ?? false;
     if (captain != null) {
       // Motorcycle isn't a separate column - it's just another value of
       // captains.vehicle_type (alongside economy/comfort/family for cars).
