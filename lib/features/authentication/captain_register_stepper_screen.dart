@@ -52,6 +52,12 @@ class _CaptainRegisterStepperScreenState
   final _carPlateController = TextEditingController(text: '1234 AA 00');
   int _carSeats = 4;
 
+  // Which service the company should pay this captain through - collected
+  // at registration instead of only via a later profile edit, so it's on
+  // file from the very first payout.
+  String _payoutMethod = 'bankily';
+  final _payoutPhoneController = TextEditingController();
+
   // Step 3 Upload states - keyed by document_type.
   final Map<String, bool> _uploadStates = {
     for (final docType in kCaptainDocTypes.keys) docType: false,
@@ -74,6 +80,7 @@ class _CaptainRegisterStepperScreenState
     _carYearController.dispose();
     _carColorController.dispose();
     _carPlateController.dispose();
+    _payoutPhoneController.dispose();
     super.dispose();
   }
 
@@ -470,9 +477,17 @@ class _CaptainRegisterStepperScreenState
         if (_isMotorcycle) {
           await _authRepository.setAcceptsDelivery(captainId, true);
         }
+        if (_payoutPhoneController.text.trim().isNotEmpty) {
+          await _authRepository.updateCaptainPayoutInfo(
+            captainId: captainId,
+            payoutMethod: _payoutMethod,
+            payoutPhone: _payoutPhoneController.text.trim(),
+          );
+        }
       } on AppAuthException catch (_) {
         // Non-fatal: the captain row still exists (bare) from sign-up: the
-        // vehicle details can be corrected later from the profile screen.
+        // vehicle/payout details can be corrected later from the profile
+        // screen.
       }
 
       // A brand-new captain is never pre-approved, so this always lands on
@@ -961,7 +976,74 @@ class _CaptainRegisterStepperScreenState
             ),
           ),
         ],
+
+        const SizedBox(height: 28),
+        const Text(
+          'معلومات استلام المدفوعات',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.darkText,
+            fontFamily: 'Cairo',
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'تستخدمها الشركة لتحويل مستحقاتك أو أي مكافأة إليك.',
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.secondaryText,
+            fontFamily: 'Cairo',
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _buildPayoutMethodCard('bankily', 'Bankily'),
+            const SizedBox(width: 8),
+            _buildPayoutMethodCard('masrvi', 'Masrvi'),
+            const SizedBox(width: 8),
+            _buildPayoutMethodCard('sedad', 'Sedad'),
+            const SizedBox(width: 8),
+            _buildPayoutMethodCard('other', 'أخرى'),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildTextField(
+          'رقم الهاتف على هذه الخدمة',
+          _payoutPhoneController,
+          hint: 'مثال: 22XXXXXXXX',
+        ),
       ],
+    );
+  }
+
+  Widget _buildPayoutMethodCard(String method, String label) {
+    bool isSel = _payoutMethod == method;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _payoutMethod = method),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSel ? AppColors.primary : Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSel ? AppColors.primary : AppColors.border,
+            ),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isSel ? Colors.white : AppColors.darkText,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Cairo',
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
