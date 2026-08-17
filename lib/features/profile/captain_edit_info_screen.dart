@@ -39,6 +39,12 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
   final _carPlateController = TextEditingController();
   int _carSeats = 4;
 
+  // Which service the company should pay this captain through - Mauritania's
+  // three national mobile-payment services, or "other" for anything else
+  // (bank transfer, cash arrangement, ...).
+  String _payoutMethod = 'bankily';
+  final _payoutPhoneController = TextEditingController();
+
   // document_type -> {'status': ..., 'rejection_reason': ...}
   Map<String, Map<String, dynamic>> _docDataByKey = {};
   String? _uploadingDoc;
@@ -62,6 +68,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
     _carYearController.dispose();
     _carColorController.dispose();
     _carPlateController.dispose();
+    _payoutPhoneController.dispose();
     super.dispose();
   }
 
@@ -91,6 +98,8 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
         _carColorController.text = captain['vehicle_color'] as String? ?? '';
         _carPlateController.text = captain['vehicle_plate'] as String? ?? '';
         _carSeats = (captain['vehicle_seats'] as num?)?.toInt() ?? 4;
+        _payoutMethod = captain['payout_method'] as String? ?? 'bankily';
+        _payoutPhoneController.text = captain['payout_phone'] as String? ?? '';
         _docDataByKey = {
           for (final row in docs) row['document_type'] as String: row,
         };
@@ -135,6 +144,13 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
         vehiclePlate: _carPlateController.text.trim(),
         vehicleSeats: _carSeats,
       );
+      if (_payoutPhoneController.text.trim().isNotEmpty) {
+        await _authRepository.updateCaptainPayoutInfo(
+          captainId: userId,
+          payoutMethod: _payoutMethod,
+          payoutPhone: _payoutPhoneController.text.trim(),
+        );
+      }
       if (!mounted) return;
       final provider = Provider.of<AppStateProvider>(context, listen: false);
       provider.updateCaptainDisplayName(_nameController.text.trim());
@@ -452,6 +468,44 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                     const SizedBox(height: 28),
 
                     const Text(
+                      'معلومات استلام المدفوعات',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.darkText,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'تستخدمها الشركة لتحويل مستحقاتك أو أي مكافأة إليك.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.secondaryText,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _buildPayoutMethodChip('bankily', 'Bankily'),
+                        const SizedBox(width: 8),
+                        _buildPayoutMethodChip('masrvi', 'Masrvi'),
+                        const SizedBox(width: 8),
+                        _buildPayoutMethodChip('sedad', 'Sedad'),
+                        const SizedBox(width: 8),
+                        _buildPayoutMethodChip('other', 'أخرى'),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTextField(
+                      'رقم الهاتف على هذه الخدمة',
+                      _payoutPhoneController,
+                      hint: 'مثال: 22XXXXXXXX',
+                    ),
+                    const SizedBox(height: 28),
+
+                    const Text(
                       'المستندات',
                       style: TextStyle(
                         fontSize: 16,
@@ -716,6 +770,35 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _carType = type),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSel ? AppColors.primary : Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSel ? AppColors.primary : AppColors.border,
+            ),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isSel ? Colors.white : AppColors.darkText,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Cairo',
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPayoutMethodChip(String method, String label) {
+    bool isSel = _payoutMethod == method;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _payoutMethod = method),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(

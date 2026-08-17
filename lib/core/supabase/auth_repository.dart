@@ -282,6 +282,25 @@ class AuthRepository {
     }
   }
 
+  // Which mobile-payment service (and phone number on it) the company
+  // should use to pay this captain - salary settlements, bonuses/rewards.
+  // Purely informational for now: an admin reads it directly from the
+  // captains table when it's time to pay, there's no in-app payout flow.
+  Future<void> updateCaptainPayoutInfo({
+    required String captainId,
+    required String payoutMethod,
+    required String payoutPhone,
+  }) async {
+    try {
+      await _client
+          .from('captains')
+          .update({'payout_method': payoutMethod, 'payout_phone': payoutPhone})
+          .eq('id', captainId);
+    } on PostgrestException {
+      throw AppAuthException('تعذر حفظ معلومات استلام المدفوعات.');
+    }
+  }
+
   Future<void> setCaptainOnline(String captainId, bool isOnline) async {
     try {
       await _client
