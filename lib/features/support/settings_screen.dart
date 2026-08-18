@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_links.dart';
 import '../../core/constants/colors.dart';
+import '../../core/supabase/auth_exception.dart';
+import '../../core/supabase/auth_repository.dart';
 import '../../providers/app_state_provider.dart';
 import '../onboarding/auth_choice_screen.dart';
 
@@ -18,6 +20,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _darkModeEnabled = false;
   bool _shareLocationEnabled = true;
   String _selectedLanguage = 'العربية';
+  bool _isDeletingAccount = false;
 
   void _showDeleteAccountDialog() {
     showDialog(
@@ -49,7 +52,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                _handleLogout();
+                _deleteAccount();
               },
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
               child: const Text('نعم، احذف الحساب'),
@@ -58,6 +61,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       },
     );
+  }
+
+  // Actually deletes the account server-side (auth user + profile +
+  // captain data + documents, see delete_my_account in migration 0025) -
+  // this used to just log out, which Play's data-deletion policy treats
+  // as a violation once the store listing declares in-app deletion.
+  Future<void> _deleteAccount() async {
+    setState(() => _isDeletingAccount = true);
+    try {
+      await AuthRepository().deleteMyAccount();
+      if (!mounted) return;
+      _handleLogout();
+    } on AppAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message, style: const TextStyle(fontFamily: 'Cairo')),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isDeletingAccount = false);
+    }
   }
 
   void _handleLogout() {

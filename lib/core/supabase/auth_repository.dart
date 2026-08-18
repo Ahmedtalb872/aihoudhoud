@@ -301,6 +301,25 @@ class AuthRepository {
     }
   }
 
+  /// Permanently deletes the signed-in captain's account and data via the
+  /// delete_my_account RPC (migration 0025): auth user, profile, captain
+  /// row, documents (rows + storage files), wallet, locations - with their
+  /// trips kept but anonymized. Signs out locally afterwards.
+  Future<void> deleteMyAccount() async {
+    _requireConfigured();
+    try {
+      await _client.rpc('delete_my_account');
+    } on PostgrestException {
+      throw AppAuthException('تعذر حذف الحساب، حاول مرة أخرى أو تواصل مع الدعم.');
+    }
+    try {
+      await _client.auth.signOut();
+    } catch (_) {
+      // The server-side account is already gone; a failed local sign-out
+      // just leaves a dead session that stops working on its own.
+    }
+  }
+
   Future<void> setCaptainOnline(String captainId, bool isOnline) async {
     try {
       await _client
