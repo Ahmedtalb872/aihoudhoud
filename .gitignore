@@ -4,6 +4,12 @@
 *.pyc
 *.swp
 .DS_Store
+
+# Source-hand-off bundles for the iOS developer - regenerated on demand,
+# and SECRETS_HANDOFF.md embeds env values that must never leave a private
+# channel.
+alhudhud_captain_source.zip
+SECRETS_HANDOFF.md
 .atom/
 .build/
 .buildlog/
