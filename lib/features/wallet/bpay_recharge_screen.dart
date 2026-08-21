@@ -122,8 +122,13 @@ class _BpayRechargeScreenState extends State<BpayRechargeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('دفع BPAY')),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text('دفع BPAY'),
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.darkText,
+        elevation: 0,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -131,30 +136,9 @@ class _BpayRechargeScreenState extends State<BpayRechargeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
-                child: Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppColors.primary.withOpacity(0.12),
-                        AppColors.primaryDark.withOpacity(0.08),
-                      ],
-                    ),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primaryDark.withOpacity(0.12),
-                        blurRadius: 18,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Image.asset(
-                    'assets/images/bankily_logo_transparent.png',
-                    height: 84,
-                  ),
+                child: Image.asset(
+                  'assets/images/bankily_logo_transparent.png',
+                  height: 110,
                 ),
               ),
               const SizedBox(height: 20),

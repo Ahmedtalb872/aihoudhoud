@@ -4,7 +4,7 @@ import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_exception.dart';
 import '../../core/supabase/wallet_repository.dart';
 import '../../providers/app_state_provider.dart';
-import 'bpay_recharge_screen.dart';
+import 'wallet_recharge_options_screen.dart';
 
 const double _kGiftRedeemThreshold = 10;
 
@@ -162,7 +162,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (context) => const BpayRechargeScreen(),
+                      builder: (context) => const WalletRechargeOptionsScreen(),
                     ),
                   );
                 },
