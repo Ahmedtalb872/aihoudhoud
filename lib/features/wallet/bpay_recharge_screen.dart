@@ -74,32 +74,23 @@ class _BpayRechargeScreenState extends State<BpayRechargeScreen> {
       );
       if (!mounted) return;
 
-      if (result.status == BpayRechargeStatus.failed) {
-        _showError(result.message);
-        return;
-      }
-
       if (result.status == BpayRechargeStatus.success) {
         Provider.of<AppStateProvider>(
           context,
           listen: false,
         ).creditWalletFromBpayRecharge(amount);
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => BpaySuccessScreen(amount: amount),
-          ),
-        );
-        return;
       }
 
-      // Pending (still being confirmed by the bank) - not a full success
-      // screen, just a heads-up before returning to the wallet.
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.message, style: const TextStyle(fontFamily: 'Cairo')),
-          backgroundColor: AppColors.primary,
-          duration: const Duration(seconds: 5),
+      // Every outcome (success / failure / pending) now lands on the
+      // result screen, so the captain sees the bank's own message and
+      // the amount instead of a red toast that disappears in 4 seconds.
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => BpaySuccessScreen(
+            amount: amount,
+            status: result.status,
+            bankMessage: result.message,
+          ),
         ),
       );
     } on AppAuthException catch (e) {
