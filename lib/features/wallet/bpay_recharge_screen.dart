@@ -64,6 +64,10 @@ class _BpayRechargeScreenState extends State<BpayRechargeScreen> {
       _showError('أدخل رمز التحقق الذي وصلك من Bankily.');
       return;
     }
+    if (code.length != 4 || int.tryParse(code) == null) {
+      _showError('رمز التحقق يجب أن يكون 4 أرقام بالضبط.');
+      return;
+    }
 
     setState(() => _isSubmitting = true);
     try {
@@ -220,7 +224,13 @@ class _BpayRechargeScreenState extends State<BpayRechargeScreen> {
               const SizedBox(height: 12),
               TextField(
                 controller: _codeController,
-                decoration: const InputDecoration(labelText: 'رمز التحقق'),
+                keyboardType: TextInputType.number,
+                maxLength: 4,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: const InputDecoration(
+                  labelText: 'رمز التحقق (4 أرقام)',
+                  counterText: '',
+                ),
               ),
               const SizedBox(height: 24),
               ElevatedButton(

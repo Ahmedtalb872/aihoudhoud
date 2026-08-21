@@ -94,8 +94,15 @@ function translateBankError(message: string | null | undefined): string {
     "Le numéro de mobile n'est pas enregistré": "رقم Bankily الذي أدخلته غير مسجل.",
     "Les détails du retrait spécifiés ne correspondent pas aux détails présents dans le système":
       "رمز التحقق الذي أدخلته غير صحيح.",
+    "4 digits for passcode": "رمز التحقق يجب أن يكون 4 أرقام بالضبط.",
+    "le MPIN n'a pas été changé après la souscription":
+      "يجب تغيير رمز MPIN في تطبيق Bankily أولاً قبل استخدامه للدفع.",
+    "Error occurred. Please try again later":
+      "حدث خطأ لدى البنك، انتظر لحظة ثم أعد المحاولة.",
+    "Solde insuffisant": "رصيد Bankily غير كافٍ لإتمام العملية.",
+    "Insufficient balance": "رصيد Bankily غير كافٍ لإتمام العملية.",
   };
-  return known[message] ?? "فشلت عملية الدفع، تحقق من البيانات وحاول مرة أخرى.";
+  return known[message] ?? `${message}`;
 }
 
 Deno.serve(async (req: Request) => {
