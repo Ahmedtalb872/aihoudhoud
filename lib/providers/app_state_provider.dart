@@ -19,8 +19,11 @@ class AppStateProvider extends ChangeNotifier {
 
   // Captain state
   bool _isCaptainOnline = false;
-  String _captainName = DummyData.dummyCaptain.user.name;
-  String _captainPhone = DummyData.dummyCaptain.user.phone;
+  // Filled in from the profiles row at login - kept empty pre-login so a
+  // fresh install never shows the DummyData placeholder identity to a real
+  // captain.
+  String _captainName = '';
+  String _captainPhone = '';
   // 'car' or 'motorcycle' - derived from captains.vehicle_type at login
   // (motorcycle is just another value of that same column, not a separate
   // one). Only motorcycle captains can see/toggle delivery requests.
@@ -80,11 +83,14 @@ class AppStateProvider extends ChangeNotifier {
   Timer? _stepReminderTicker;
   DateTime? _tripStepStartedAt;
 
-  // Chat state
-  final List<Message> _chatMessages = List.from(DummyData.dummyMessages);
+  // Chat state - empty for a real account; a message appears here only
+  // once one comes in through the messages table.
+  final List<Message> _chatMessages = [];
 
-  // Trip history
-  final List<Trip> _captainTripHistory = List.from(DummyData.dummyCaptainTrips);
+  // Trip history - accumulates from actually-completed trips only; the
+  // dummy pre-populated list made a brand-new captain look like they
+  // already had a busy history behind them.
+  final List<Trip> _captainTripHistory = [];
 
   // Captain incoming request state: sourced live from the `trips` table
   // (real requests created by the customer app), while the captain is online.
