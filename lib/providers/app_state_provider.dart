@@ -26,12 +26,14 @@ class AppStateProvider extends ChangeNotifier {
   // one). Only motorcycle captains can see/toggle delivery requests.
   String _vehicleCategory = 'car';
   bool _deliveryModeEnabled = false;
-  double _captainWalletBalance = 1250.0;
-  double _captainTodayEarnings = 425.0;
-  int _captainTripsCount = DummyData.dummyCaptain.user.tripsCount;
-  final List<WalletTransaction> _captainTransactions = List.from(
-    DummyData.dummyCaptainTransactions,
-  );
+  // A brand-new captain starts at 0 on every field - the dummy 1250/425
+  // wallet+earnings from the design mock made it look like their account
+  // was pre-funded, and let them go online (and try to accept trips) with
+  // no real balance behind them.
+  double _captainWalletBalance = 0.0;
+  double _captainTodayEarnings = 0.0;
+  int _captainTripsCount = 0;
+  final List<WalletTransaction> _captainTransactions = [];
 
   // Active Trip states
   Trip? _activeTrip;
@@ -280,11 +282,27 @@ class AppStateProvider extends ChangeNotifier {
           ? 'motorcycle'
           : 'car';
       _deliveryModeEnabled = captain['accepts_delivery'] as bool? ?? false;
+      // Server-side truth wins over the local 0 default so refunds/
+      // recharges/commissions credited on other devices (or by admin)
+      // survive a re-login here.
+      final serverBalance = captain['wallet_balance'];
+      if (serverBalance != null) {
+        _captainWalletBalance = (serverBalance as num).toDouble();
+      }
       // Restores online status across an app relaunch too - otherwise a
       // captain silently drops offline (and stops receiving requests)
       // every time Android kills the backgrounded app, with no visible
       // sign anything changed until they happen to check.
       _isCaptainOnline = captain['is_online'] as bool? ?? false;
+      // A zero-balance captain can't accept trips at all (see
+      // toggleCaptainOnline), so don't leave them silently online in that
+      // state - flip them offline and let them come back after a recharge.
+      if (_isCaptainOnline && _captainWalletBalance <= 0) {
+        _isCaptainOnline = false;
+        if (_userId != null) {
+          AuthRepository().setCaptainOnline(_userId!, false);
+        }
+      }
       if (_isCaptainOnline) _subscribeToPendingRides();
     }
     _syncOnlinePresenceTracking();
@@ -495,9 +513,16 @@ class AppStateProvider extends ChangeNotifier {
     AuthRepository().signOut().catchError((_) {});
   }
 
-  // Captain Switch Online/Offline
-  void toggleCaptainOnline() {
-    _isCaptainOnline = !_isCaptainOnline;
+  // Captain Switch Online/Offline. Returns null on success or an Arabic
+  // reason string when the toggle is refused (currently: trying to go
+  // online with an empty wallet, since the platform commission would put
+  // the wallet into the negative on the very first accepted trip).
+  String? toggleCaptainOnline() {
+    final goingOnline = !_isCaptainOnline;
+    if (goingOnline && _captainWalletBalance <= 0) {
+      return 'يجب شحن محفظتك أولًا قبل الاتصال واستقبال الطلبات.';
+    }
+    _isCaptainOnline = goingOnline;
     if (!_isCaptainOnline) {
       _incomingRequest = null;
       _countdownTimer?.cancel();
@@ -510,6 +535,7 @@ class AppStateProvider extends ChangeNotifier {
     }
     _syncOnlinePresenceTracking();
     notifyListeners();
+    return null;
   }
 
   // Starts/stops the online-presence foreground tracking to match the

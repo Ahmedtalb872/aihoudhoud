@@ -181,7 +181,27 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
 
                 // Online/Offline status switch badge
                 GestureDetector(
-                  onTap: () => provider.toggleCaptainOnline(),
+                  onTap: () {
+                    final error = provider.toggleCaptainOnline();
+                    if (error != null && mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            error,
+                            style: const TextStyle(fontFamily: 'Cairo'),
+                          ),
+                          backgroundColor: AppColors.error,
+                          action: SnackBarAction(
+                            label: 'شحن المحفظة',
+                            textColor: Colors.white,
+                            onPressed: () {
+                              setState(() => _currentIndex = 2); // Wallet tab
+                            },
+                          ),
+                        ),
+                      );
+                    }
+                  },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 250),
                     padding: const EdgeInsets.symmetric(
