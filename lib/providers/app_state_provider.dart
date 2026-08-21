@@ -5,7 +5,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geolocator_android/geolocator_android.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
-import '../dummy_data/dummy_data.dart';
 import '../core/supabase/auth_repository.dart';
 import '../core/supabase/auth_exception.dart';
 import '../core/services/new_trip_alert.dart';
@@ -28,7 +27,24 @@ class AppStateProvider extends ChangeNotifier {
   // (motorcycle is just another value of that same column, not a separate
   // one). Only motorcycle captains can see/toggle delivery requests.
   String _vehicleCategory = 'car';
+  // Vehicle details written into every accepted trip so the customer sees
+  // the real car/plate to look for at pickup - filled in from the captains
+  // row at login. Blank until then; a captain with no vehicle recorded
+  // just gets an empty vehicleName rather than the DummyData placeholder.
+  String _captainVehicleBrand = '';
+  String _captainVehicleModel = '';
+  int? _captainVehicleYear;
+  String _captainVehiclePlate = '';
   bool _deliveryModeEnabled = false;
+
+  String get _captainVehicleName {
+    final parts = <String>[
+      _captainVehicleBrand,
+      _captainVehicleModel,
+      if (_captainVehicleYear != null) _captainVehicleYear.toString(),
+    ].where((p) => p.trim().isNotEmpty).toList();
+    return parts.join(' ');
+  }
   // A brand-new captain starts at 0 on every field - the dummy 1250/425
   // wallet+earnings from the design mock made it look like their account
   // was pre-funded, and let them go online (and try to accept trips) with
@@ -288,6 +304,10 @@ class AppStateProvider extends ChangeNotifier {
           ? 'motorcycle'
           : 'car';
       _deliveryModeEnabled = captain['accepts_delivery'] as bool? ?? false;
+      _captainVehicleBrand = (captain['vehicle_brand'] as String?) ?? '';
+      _captainVehicleModel = (captain['vehicle_model'] as String?) ?? '';
+      _captainVehicleYear = captain['vehicle_year'] as int?;
+      _captainVehiclePlate = (captain['vehicle_plate'] as String?) ?? '';
       // Server-side truth wins over the local 0 default so refunds/
       // recharges/commissions credited on other devices (or by admin)
       // survive a re-login here.
@@ -697,9 +717,8 @@ class AppStateProvider extends ChangeNotifier {
         customerPhone: _activeTrip!.customerPhone,
         captainName: _captainName,
         captainPhone: _captainPhone,
-        vehicleName:
-            '${DummyData.dummyCaptain.vehicle.brand} ${DummyData.dummyCaptain.vehicle.model} ${DummyData.dummyCaptain.vehicle.year}',
-        vehiclePlate: DummyData.dummyCaptain.vehicle.plate,
+        vehicleName: _captainVehicleName,
+        vehiclePlate: _captainVehiclePlate,
         pickupLocation: _activeTrip!.pickupLocation,
         destinationLocation: _activeTrip!.destinationLocation,
         pickupLat: _activeTrip!.pickupLat,
@@ -1005,9 +1024,8 @@ class AppStateProvider extends ChangeNotifier {
       customerPhone: request.customerPhone,
       captainName: _captainName,
       captainPhone: _captainPhone,
-      vehicleName:
-          '${DummyData.dummyCaptain.vehicle.brand} ${DummyData.dummyCaptain.vehicle.model} ${DummyData.dummyCaptain.vehicle.year}',
-      vehiclePlate: DummyData.dummyCaptain.vehicle.plate,
+      vehicleName: _captainVehicleName,
+      vehiclePlate: _captainVehiclePlate,
       pickupLocation: request.pickupLocation,
       destinationLocation: request.destinationLocation,
       pickupLat: request.pickupLat,
