@@ -11,6 +11,9 @@ import '../../core/widgets/route_row.dart';
 import '../trips/my_trips_screen.dart';
 import '../wallet/wallet_screen.dart';
 import '../profile/profile_screen.dart';
+import '../profile/captain_edit_info_screen.dart';
+import '../support/support_screen.dart';
+import '../support/settings_screen.dart';
 import 'captain_active_trip_screen.dart';
 import 'leaderboard_screen.dart';
 import '../onboarding/auth_choice_screen.dart';
@@ -594,117 +597,312 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
 
   Widget _buildDrawer(AppStateProvider provider) {
     return Drawer(
+      backgroundColor: AppColors.background,
       child: Column(
         children: [
-          UserAccountsDrawerHeader(
-            decoration: const BoxDecoration(color: AppColors.primary),
-            currentAccountPicture: FutureBuilder<String?>(
-              future: provider.userId == null
-                  ? null
-                  : AuthRepository().getProfilePhotoUrl(provider.userId!),
-              builder: (context, snapshot) {
-                final url = snapshot.data;
-                if (url == null) {
-                  return const CircleAvatar(
-                    backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.person_rounded,
-                      color: AppColors.primary,
-                      size: 32,
-                    ),
-                  );
-                }
-                return CircleAvatar(
-                  backgroundImage: NetworkImage(url),
-                  backgroundColor: Colors.white,
-                );
-              },
+          // Gradient header: avatar (with an edit badge that opens the same
+          // screen used to upload a profile photo), name, online/offline
+          // pill, and phone - all centered, matching the reference layout.
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.fromLTRB(
+              20,
+              MediaQuery.of(context).padding.top + 24,
+              20,
+              24,
             ),
-            otherAccountsPictures: const [
-              Padding(padding: EdgeInsets.all(6.0), child: AppLogo(width: 40)),
-            ],
-            accountName: Text(
-              provider.captainName,
-              style: const TextStyle(
-                fontFamily: 'Cairo',
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: AppColors.darkText,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppColors.primary, AppColors.primaryDark],
               ),
             ),
-            accountEmail: Text(
-              provider.captainPhone,
-              style: const TextStyle(fontSize: 13, color: AppColors.darkText),
+            child: Column(
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 92,
+                      height: 92,
+                      padding: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                      ),
+                      child: ClipOval(
+                        child: FutureBuilder<String?>(
+                          future: provider.userId == null
+                              ? null
+                              : AuthRepository().getProfilePhotoUrl(
+                                  provider.userId!,
+                                ),
+                          builder: (context, snapshot) {
+                            final url = snapshot.data;
+                            if (url == null) {
+                              return const ColoredBox(
+                                color: AppColors.background,
+                                child: Icon(
+                                  Icons.person_rounded,
+                                  color: AppColors.primary,
+                                  size: 44,
+                                ),
+                              );
+                            }
+                            return Image.network(url, fit: BoxFit.cover);
+                          },
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: -2,
+                      left: -2,
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const CaptainEditInfoScreen(),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.primary,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.edit_rounded,
+                            size: 14,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  provider.captainName,
+                  style: const TextStyle(
+                    fontFamily: 'Cairo',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: provider.isCaptainOnline
+                              ? AppColors.success
+                              : AppColors.error,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        provider.isCaptainOnline ? 'متصل' : 'غير متصل',
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: provider.isCaptainOnline
+                              ? AppColors.success
+                              : AppColors.error,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  provider.captainPhone,
+                  style: const TextStyle(
+                    fontFamily: 'Cairo',
+                    fontSize: 13,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
           ),
 
-          ListTile(
-            leading: const Icon(Icons.wallet_rounded, color: AppColors.primary),
-            title: const Text(
-              'الأرباح والمحفظة',
-              style: TextStyle(fontFamily: 'Cairo'),
-            ),
-            onTap: () {
-              Navigator.of(context).pop();
-              setState(() {
-                _currentIndex = 2; // Wallet tab
-              });
-            },
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.emoji_events_rounded,
-              color: AppColors.primary,
-            ),
-            title: const Text(
-              'المسابقات وترتيب الكباتنة',
-              style: TextStyle(fontFamily: 'Cairo'),
-            ),
-            onTap: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const LeaderboardScreen(),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _buildDrawerItem(
+                  icon: Icons.person_rounded,
+                  title: 'الملف الشخصي',
+                  subtitle: 'معلوماتك الشخصية',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const CaptainEditInfoScreen(),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.history_rounded,
-              color: AppColors.primary,
-            ),
-            title: const Text(
-              'سجل رحلات كابتن',
-              style: TextStyle(fontFamily: 'Cairo'),
-            ),
-            onTap: () {
-              Navigator.of(context).pop();
-              setState(() {
-                _currentIndex = 1; // Trips tab
-              });
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout_rounded, color: AppColors.error),
-            title: const Text(
-              'تسجيل الخروج',
-              style: TextStyle(fontFamily: 'Cairo', color: AppColors.error),
-            ),
-            onTap: () {
-              Navigator.of(context).pop();
-              provider.logout();
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(
-                  builder: (context) => const AuthChoiceScreen(),
+                _buildDrawerItem(
+                  icon: Icons.wallet_rounded,
+                  title: 'المحفظة',
+                  subtitle: 'رصيدك وشحن المحفظة',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    setState(() => _currentIndex = 2); // Wallet tab
+                  },
                 ),
-                (route) => false,
-              );
-            },
+                _buildDrawerItem(
+                  icon: Icons.bar_chart_rounded,
+                  title: 'الأرباح',
+                  subtitle: 'تفاصيل أرباحك وإحصائياتك',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    setState(() => _currentIndex = 2); // Wallet tab
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.history_rounded,
+                  title: 'الرحلات السابقة',
+                  subtitle: 'سجل رحلاتك السابقة',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    setState(() => _currentIndex = 1); // Trips tab
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.star_rounded,
+                  title: 'التقييمات والترتيب',
+                  subtitle: 'تقييماتك وترتيبك',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const LeaderboardScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.settings_rounded,
+                  title: 'الإعدادات',
+                  subtitle: 'إعدادات التطبيق',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const SettingsScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.headset_mic_rounded,
+                  title: 'الدعم والمساعدة',
+                  subtitle: 'تواصل معنا',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const SupportScreen(showAppBar: true),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(height: 24, indent: 20, endIndent: 20),
+                _buildDrawerItem(
+                  icon: Icons.logout_rounded,
+                  title: 'تسجيل الخروج',
+                  subtitle: 'خروج من حسابك',
+                  color: AppColors.error,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    provider.logout();
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (context) => const AuthChoiceScreen(),
+                      ),
+                      (route) => false,
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Text(
+              // No package_info_plus dependency wired in yet - keep this in
+              // sync with pubspec.yaml's version by hand if that changes.
+              'الإصدار 1.0.1',
+              style: TextStyle(
+                fontFamily: 'Cairo',
+                fontSize: 12,
+                color: AppColors.secondaryText.withOpacity(0.8),
+              ),
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDrawerItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    Color color = AppColors.primary,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: color, size: 24),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontFamily: 'Cairo',
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+          color: color == AppColors.error ? AppColors.error : AppColors.darkText,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(
+          fontFamily: 'Cairo',
+          fontSize: 12,
+          color: AppColors.secondaryText,
+        ),
+      ),
+      trailing: const Icon(
+        Icons.chevron_left_rounded,
+        color: AppColors.secondaryText,
+      ),
+      onTap: onTap,
     );
   }
 
