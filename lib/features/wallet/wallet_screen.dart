@@ -25,6 +25,17 @@ class _WalletScreenState extends State<WalletScreen> {
   void initState() {
     super.initState();
     _loadGiftBalance();
+    // Re-syncs with the server every time this tab opens, not just right
+    // after a recharge attempt - catches a Bpay payment that was still
+    // "pending" last time and has since settled server-side.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<AppStateProvider>(
+          context,
+          listen: false,
+        ).refreshWalletBalance();
+      }
+    });
   }
 
   Future<void> _loadGiftBalance() async {

@@ -40,6 +40,24 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
   // each time.
   String? _pushedActiveTripId;
 
+  @override
+  void initState() {
+    super.initState();
+    // Catches a wallet_balance change that happened server-side while this
+    // screen wasn't mounted - a Bpay recharge that was still "pending" the
+    // last time the app checked and settled afterward, or an admin
+    // correction - instead of only ever refreshing right after a recharge
+    // attempt.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<AppStateProvider>(
+          context,
+          listen: false,
+        ).refreshWalletBalance();
+      }
+    });
+  }
+
   Future<void> _loadDistanceFromCaptain(Trip trip) async {
     _distanceTripId = trip.id;
     try {
@@ -144,71 +162,6 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Full-bleed top strip while the wallet is empty - sits at the
-              // very top edge (covering the status-bar area, not just below
-              // the header row) since toggleCaptainOnline() refuses to go
-              // online in this state and this needs to be impossible to
-              // miss. The online/offline toggle badge below keeps its own
-              // red/green color regardless of this banner.
-              if (provider.captainWalletBalance <= 0)
-                Material(
-                  color: AppColors.warning,
-                  child: InkWell(
-                    onTap: () {
-                      setState(() => _currentIndex = 2); // Wallet tab
-                    },
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        top: MediaQuery.of(context).padding.top + 10,
-                        left: 16,
-                        right: 16,
-                        bottom: 12,
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.error_outline_rounded,
-                            color: AppColors.darkText,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 10),
-                          const Expanded(
-                            child: Text(
-                              'يجب شحن المحفظة قبل الاتصال',
-                              style: TextStyle(
-                                fontFamily: 'Cairo',
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.darkText,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.darkText,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Text(
-                              'شحن الآن',
-                              style: TextStyle(
-                                fontFamily: 'Cairo',
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
               Container(
                 padding: const EdgeInsets.only(
                   top: 50,
@@ -253,55 +206,84 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                   ),
                 ),
 
-                // Online/Offline status switch badge - refused silently
-                // when the wallet is empty (toggleCaptainOnline returns a
-                // reason string but the persistent yellow banner below
-                // already explains why, so no extra SnackBar here).
+                // Online/Offline status switch badge. Red/green background
+                // is untouched either way; while the wallet is empty a
+                // small yellow dot is merged onto the pill's corner (no
+                // separate banner, no extra text) and tapping it jumps
+                // straight to the wallet tab instead of trying to toggle.
                 GestureDetector(
-                  onTap: () => provider.toggleCaptainOnline(),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: provider.isCaptainOnline
-                          ? AppColors.success
-                          : AppColors.error,
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 6,
-                          offset: Offset(0, 2),
+                  onTap: () {
+                    if (provider.captainWalletBalance <= 0) {
+                      setState(() => _currentIndex = 2); // Wallet tab
+                      return;
+                    }
+                    provider.toggleCaptainOnline();
+                  },
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
                         ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
+                        decoration: BoxDecoration(
+                          color: provider.isCaptainOnline
+                              ? AppColors.success
+                              : AppColors.error,
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 6,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              provider.isCaptainOnline
+                                  ? 'متصل (متاح)'
+                                  : 'غير متصل (مغلق)',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Cairo',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (provider.captainWalletBalance <= 0)
+                        Positioned(
+                          top: -4,
+                          right: -4,
+                          child: Container(
+                            width: 16,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: AppColors.warning,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 1.5,
+                              ),
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          provider.isCaptainOnline
-                              ? 'متصل (متاح)'
-                              : 'غير متصل (مغلق)',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Cairo',
-                          ),
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
 

@@ -1465,6 +1465,30 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Re-fetches wallet_balance straight from the captains row, overriding
+  // whatever this session had tracked locally - the source of truth for
+  // money is the server, not the +amount bump creditWalletFromBpayRecharge
+  // does. Needed because a Bpay attempt can come back "pending" (still
+  // being confirmed by the bank) and later settle successfully server-side
+  // with nothing in this session ever telling the local balance to catch
+  // up - a captain who recharges, sees "قيد التحقق", then reopens the app
+  // expecting the credit would otherwise be stuck looking at a stale 0
+  // until their next full login. Safe to call after every recharge attempt
+  // (any status) and whenever the home/wallet screen becomes visible.
+  Future<void> refreshWalletBalance() async {
+    if (_userId == null) return;
+    try {
+      final captain = await AuthRepository().getCaptain(_userId!);
+      final serverBalance = captain['wallet_balance'];
+      if (serverBalance != null) {
+        _captainWalletBalance = (serverBalance as num).toDouble();
+        notifyListeners();
+      }
+    } catch (_) {
+      // Best-effort - the locally-tracked balance stays as-is if this fails.
+    }
+  }
+
   // Messaging / Chatting with the customer on the active trip
   void sendChatMessage(String content) {
     final newMessage = Message(

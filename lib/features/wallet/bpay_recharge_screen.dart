@@ -78,12 +78,16 @@ class _BpayRechargeScreenState extends State<BpayRechargeScreen> {
       );
       if (!mounted) return;
 
-      if (result.status == BpayRechargeStatus.success) {
-        Provider.of<AppStateProvider>(
-          context,
-          listen: false,
-        ).creditWalletFromBpayRecharge(amount);
-      }
+      // Re-fetch the real balance from the server rather than bumping the
+      // local value by `amount` - the edge function already credited it
+      // server-side for a "success" result by the time this returns, and
+      // for "pending" this keeps the displayed balance in sync with
+      // whatever it actually is right now (still not credited).
+      if (!mounted) return;
+      await Provider.of<AppStateProvider>(
+        context,
+        listen: false,
+      ).refreshWalletBalance();
 
       // Every outcome (success / failure / pending) now lands on the
       // result screen, so the captain sees the bank's own message and
