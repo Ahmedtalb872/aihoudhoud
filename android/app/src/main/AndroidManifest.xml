@@ -25,7 +25,7 @@
              not by keeping it secret - it's meant to ship inside the app. -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyCsp2LwsRAitjwA1nt3aTleQM5-cqG29_U" />
+            android:value="AIzaSyCCk_PuvRgaxz41DC94-UOu4zoppb13PZk" />
         <!-- google_maps_flutter's native map view is a PlatformView, which
              Flutter's newer Impeller renderer has known compositing bugs
              with on some Android devices/GPU drivers - it can render
