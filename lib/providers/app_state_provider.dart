@@ -1349,6 +1349,18 @@ class AppStateProvider extends ChangeNotifier {
       ),
     );
 
+    // Persists the deduction to profiles.wallet_balance server-side - the
+    // local subtraction above is what the captain sees instantly, but
+    // without this a later refreshWalletBalance() (on the next wallet-tab
+    // visit or app open) would overwrite it with the stale, never-debited
+    // server value and the commission would appear to vanish. Going
+    // negative here is intentional: a cash fare bigger than the remaining
+    // balance leaves the captain owing the company the difference.
+    AuthRepository().debitCaptainWallet(
+      amount: commission,
+      title: 'عمولة رحلة إلى $destinationLabel',
+    );
+
     notifyListeners();
   }
 

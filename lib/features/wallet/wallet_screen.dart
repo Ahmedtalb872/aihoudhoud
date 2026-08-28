@@ -158,7 +158,11 @@ class _WalletScreenState extends State<WalletScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              '${provider.captainWalletBalance} أوقية',
+              // toStringAsFixed already prefixes a negative balance with
+              // "-" (e.g. "-15") - a captain whose last trip's commission
+              // exceeded their remaining balance now owes the company the
+              // difference, shown here rather than silently capped at 0.
+              '${provider.captainWalletBalance.toStringAsFixed(0)} أوقية',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 32,

@@ -320,6 +320,26 @@ class AuthRepository {
     }
   }
 
+  /// Persists a completed trip's commission deduction to
+  /// profiles.wallet_balance via the debit_captain_wallet RPC (migration
+  /// 0026) - best-effort, matching setCaptainOnline below, since the local
+  /// balance already reflects the deduction immediately either way. Without
+  /// this, refreshWalletBalance() re-reading the server value later would
+  /// silently undo the deduction the app already showed the captain.
+  Future<void> debitCaptainWallet({
+    required double amount,
+    required String title,
+  }) async {
+    try {
+      await _client.rpc(
+        'debit_captain_wallet',
+        params: {'p_amount': amount, 'p_title': title},
+      );
+    } catch (_) {
+      // Best-effort - the local balance already reflects the deduction.
+    }
+  }
+
   Future<void> setCaptainOnline(String captainId, bool isOnline) async {
     try {
       await _client
