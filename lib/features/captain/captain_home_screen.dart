@@ -151,55 +151,61 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
               // miss. The online/offline toggle badge below keeps its own
               // red/green color regardless of this banner.
               if (provider.captainWalletBalance <= 0)
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.only(
-                    top: MediaQuery.of(context).padding.top + 8,
-                    left: 16,
-                    right: 16,
-                    bottom: 10,
-                  ),
+                Material(
                   color: AppColors.warning,
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.error_outline_rounded,
-                        color: AppColors.darkText,
-                        size: 20,
+                  child: InkWell(
+                    onTap: () {
+                      setState(() => _currentIndex = 2); // Wallet tab
+                    },
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        top: MediaQuery.of(context).padding.top + 10,
+                        left: 16,
+                        right: 16,
+                        bottom: 12,
                       ),
-                      const SizedBox(width: 10),
-                      const Expanded(
-                        child: Text(
-                          'يجب شحن محفظتك أولًا قبل الاتصال واستقبال الطلبات.',
-                          style: TextStyle(
-                            fontFamily: 'Cairo',
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.error_outline_rounded,
                             color: AppColors.darkText,
+                            size: 20,
                           ),
-                        ),
-                      ),
-                      TextButton(
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        onPressed: () {
-                          setState(() => _currentIndex = 2); // Wallet tab
-                        },
-                        child: const Text(
-                          'شحن المحفظة',
-                          style: TextStyle(
-                            fontFamily: 'Cairo',
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.darkText,
-                            decoration: TextDecoration.underline,
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Text(
+                              'يجب شحن المحفظة قبل الاتصال',
+                              style: TextStyle(
+                                fontFamily: 'Cairo',
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.darkText,
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.darkText,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text(
+                              'شحن الآن',
+                              style: TextStyle(
+                                fontFamily: 'Cairo',
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
 
