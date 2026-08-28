@@ -297,6 +297,15 @@ class AppStateProvider extends ChangeNotifier {
     if (fullName != null && fullName.isNotEmpty) _captainName = fullName;
     if (phone != null && phone.isNotEmpty) _captainPhone = phone;
     _captainEmail = email;
+    // wallet_balance lives on `profiles` (see 0001_init.sql), not on
+    // `captains` - credit_captain_wallet_from_bpay (0014_bpay_transactions.sql)
+    // updates profiles.wallet_balance. Reading it from the `captain` param
+    // below always returned null since that map is a `captains` row, which
+    // has no such column - so this never actually synced with the server.
+    final profileBalance = profile['wallet_balance'];
+    if (profileBalance != null) {
+      _captainWalletBalance = (profileBalance as num).toDouble();
+    }
     if (captain != null) {
       // Motorcycle isn't a separate column - it's just another value of
       // captains.vehicle_type (alongside economy/comfort/family for cars).
@@ -308,13 +317,6 @@ class AppStateProvider extends ChangeNotifier {
       _captainVehicleModel = (captain['vehicle_model'] as String?) ?? '';
       _captainVehicleYear = captain['vehicle_year'] as int?;
       _captainVehiclePlate = (captain['vehicle_plate'] as String?) ?? '';
-      // Server-side truth wins over the local 0 default so refunds/
-      // recharges/commissions credited on other devices (or by admin)
-      // survive a re-login here.
-      final serverBalance = captain['wallet_balance'];
-      if (serverBalance != null) {
-        _captainWalletBalance = (serverBalance as num).toDouble();
-      }
       // Restores online status across an app relaunch too - otherwise a
       // captain silently drops offline (and stops receiving requests)
       // every time Android kills the backgrounded app, with no visible
@@ -1465,21 +1467,23 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Re-fetches wallet_balance straight from the captains row, overriding
-  // whatever this session had tracked locally - the source of truth for
-  // money is the server, not the +amount bump creditWalletFromBpayRecharge
-  // does. Needed because a Bpay attempt can come back "pending" (still
-  // being confirmed by the bank) and later settle successfully server-side
-  // with nothing in this session ever telling the local balance to catch
-  // up - a captain who recharges, sees "قيد التحقق", then reopens the app
-  // expecting the credit would otherwise be stuck looking at a stale 0
-  // until their next full login. Safe to call after every recharge attempt
-  // (any status) and whenever the home/wallet screen becomes visible.
+  // Re-fetches wallet_balance straight from the profiles row (that's where
+  // credit_captain_wallet_from_bpay writes it, see 0014_bpay_transactions.sql
+  // - NOT the captains row), overriding whatever this session had tracked
+  // locally. The source of truth for money is the server, not the +amount
+  // bump creditWalletFromBpayRecharge used to do. Needed because a Bpay
+  // attempt can come back "pending" (still being confirmed by the bank)
+  // and later settle successfully server-side with nothing in this session
+  // ever telling the local balance to catch up - a captain who recharges,
+  // sees "قيد التحقق", then reopens the app expecting the credit would
+  // otherwise be stuck looking at a stale 0 until their next full login.
+  // Safe to call after every recharge attempt (any status) and whenever
+  // the home/wallet screen becomes visible.
   Future<void> refreshWalletBalance() async {
     if (_userId == null) return;
     try {
-      final captain = await AuthRepository().getCaptain(_userId!);
-      final serverBalance = captain['wallet_balance'];
+      final profile = await AuthRepository().getProfile(_userId!);
+      final serverBalance = profile['wallet_balance'];
       if (serverBalance != null) {
         _captainWalletBalance = (serverBalance as num).toDouble();
         notifyListeners();
