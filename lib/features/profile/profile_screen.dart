@@ -2,11 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
-import '../wallet/wallet_screen.dart';
-import '../trips/my_trips_screen.dart';
-import '../support/support_screen.dart';
-import '../support/settings_screen.dart';
-import 'captain_edit_info_screen.dart';
 import '../../dummy_data/dummy_data.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -42,8 +37,11 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // Menu Items List
-            _buildCaptainMenu(context, provider),
+            // Only the delivery-mode toggle lives here now - every other
+            // menu item (edit info, wallet, trip history, settings,
+            // support) moved into the drawer and would just be a
+            // duplicate shortcut to the exact same screen if kept here too.
+            _buildCaptainMenu(provider),
           ],
         ),
       ),
@@ -127,124 +125,34 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCaptainMenu(BuildContext context, AppStateProvider provider) {
-    return Column(
-      children: [
-        _buildMenuCard([
-          _buildMenuItem(
-            icon: Icons.edit_rounded,
-            title: 'تعديل المعلومات والمستندات',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const CaptainEditInfoScreen(),
-              ),
-            ),
-          ),
-        ]),
-        // Available to every captain: for a motorcycle captain this is the
-        // only kind of request they ever receive; for a car captain it's
-        // on top of their normal passenger rides.
-        const SizedBox(height: 16),
-        _buildMenuCard([
-          ListTile(
-            leading: Icon(
-              Icons.inventory_2_rounded,
-              color: provider.deliveryModeEnabled
-                  ? AppColors.primaryDark
-                  : AppColors.secondaryText,
-              size: 22,
-            ),
-            title: const Text(
-              'قبول طلبات توصيل',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppColors.darkText,
-                fontFamily: 'Cairo',
-              ),
-            ),
-            trailing: Switch(
-              value: provider.deliveryModeEnabled,
-              activeColor: AppColors.primaryDark,
-              onChanged: (_) => provider.toggleDeliveryMode(),
-            ),
-          ),
-        ]),
-        const SizedBox(height: 16),
-        _buildMenuCard([
-          _buildMenuItem(
-            icon: Icons.wallet_rounded,
-            title: 'المحفظة والأرباح اليومية',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const WalletScreen(showAppBar: true),
-              ),
-            ),
-          ),
-          _buildMenuItem(
-            icon: Icons.history_rounded,
-            title: 'سجل مشاوير الكابتن',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const MyTripsScreen(showAppBar: true),
-              ),
-            ),
-          ),
-          _buildMenuItem(
-            icon: Icons.settings_outlined,
-            title: 'إعدادات تطبيق الكابتن',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => const SettingsScreen()),
-            ),
-          ),
-        ]),
-        const SizedBox(height: 16),
-        _buildMenuCard([
-          _buildMenuItem(
-            icon: Icons.help_outline_rounded,
-            title: 'الدعم والمساعدة الفورية',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const SupportScreen(showAppBar: true),
-              ),
-            ),
-          ),
-        ]),
-      ],
-    );
-  }
-
-  Widget _buildMenuCard(List<Widget> children) {
+  // Available to every captain: for a motorcycle captain this is the only
+  // kind of request they ever receive; for a car captain it's on top of
+  // their normal passenger rides. Not in the drawer, so it stays here.
+  Widget _buildCaptainMenu(AppStateProvider provider) {
     return Card(
-      child: ListView.separated(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: children.length,
-        separatorBuilder: (_, __) =>
-            const Divider(height: 1, indent: 20, endIndent: 20),
-        itemBuilder: (context, index) => children[index],
-      ),
-    );
-  }
-
-  Widget _buildMenuItem({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: AppColors.primary, size: 22),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          color: AppColors.darkText,
-          fontFamily: 'Cairo',
+      child: ListTile(
+        leading: Icon(
+          Icons.inventory_2_rounded,
+          color: provider.deliveryModeEnabled
+              ? AppColors.primaryDark
+              : AppColors.secondaryText,
+          size: 22,
+        ),
+        title: const Text(
+          'قبول طلبات توصيل',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.darkText,
+            fontFamily: 'Cairo',
+          ),
+        ),
+        trailing: Switch(
+          value: provider.deliveryModeEnabled,
+          activeColor: AppColors.primaryDark,
+          onChanged: (_) => provider.toggleDeliveryMode(),
         ),
       ),
-      trailing: const Icon(Icons.chevron_left_rounded, size: 20),
-      onTap: onTap,
     );
   }
 }
