@@ -130,33 +130,39 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
             child: Container(color: Colors.black.withOpacity(0.35)),
           ),
 
-        // Custom Header Bar
+        // Custom Header Bar (+ the low-balance banner right beneath it, see
+        // below - kept in the same Positioned/Column so the banner sits
+        // directly under the wallet/online-toggle row instead of needing a
+        // hardcoded vertical offset).
         Positioned(
           top: 0,
           left: 0,
           right: 0,
-          child: Container(
-            padding: const EdgeInsets.only(
-              top: 50,
-              left: 16,
-              right: 16,
-              bottom: 16,
-            ),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(
-                    provider.isCaptainOnline ? 0.4 : 0.6,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.only(
+                  top: 50,
+                  left: 16,
+                  right: 16,
+                  bottom: 16,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(
+                        provider.isCaptainOnline ? 0.4 : 0.6,
+                      ),
+                      Colors.transparent,
+                    ],
                   ),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
                 // Hamburger drawer icon
                 Container(
                   decoration: const BoxDecoration(
@@ -179,29 +185,12 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                   ),
                 ),
 
-                // Online/Offline status switch badge
+                // Online/Offline status switch badge - refused silently
+                // when the wallet is empty (toggleCaptainOnline returns a
+                // reason string but the persistent yellow banner below
+                // already explains why, so no extra SnackBar here).
                 GestureDetector(
-                  onTap: () {
-                    final error = provider.toggleCaptainOnline();
-                    if (error != null && mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            error,
-                            style: const TextStyle(fontFamily: 'Cairo'),
-                          ),
-                          backgroundColor: AppColors.error,
-                          action: SnackBarAction(
-                            label: 'شحن المحفظة',
-                            textColor: Colors.white,
-                            onPressed: () {
-                              setState(() => _currentIndex = 2); // Wallet tab
-                            },
-                          ),
-                        ),
-                      );
-                    }
-                  },
+                  onTap: () => provider.toggleCaptainOnline(),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 250),
                     padding: const EdgeInsets.symmetric(
@@ -286,8 +275,76 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                     ],
                   ),
                 ),
-              ],
-            ),
+                  ],
+                ),
+              ),
+
+              // Persistent nudge while the wallet is empty - toggleCaptainOnline()
+              // refuses to go online in this state, so this stays visible right
+              // under the header (rather than a one-off SnackBar) until the
+              // captain recharges.
+              if (provider.captainWalletBalance <= 0)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 8,
+                        offset: Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        color: AppColors.darkText,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'يجب شحن محفظتك أولًا قبل الاتصال واستقبال الطلبات.',
+                          style: TextStyle(
+                            fontFamily: 'Cairo',
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.darkText,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () {
+                          setState(() => _currentIndex = 2); // Wallet tab
+                        },
+                        child: const Text(
+                          'شحن المحفظة',
+                          style: TextStyle(
+                            fontFamily: 'Cairo',
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.darkText,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ),
         ),
 
