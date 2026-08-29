@@ -1377,6 +1377,25 @@ class AppStateProvider extends ChangeNotifier {
       title: 'عمولة رحلة إلى $destinationLabel',
     );
 
+    // This trip's commission may have just pushed the balance to/below
+    // zero - toggleCaptainOnline() already refuses to let an *offline*
+    // captain reconnect in that state, but nothing was forcing an
+    // *already-online* captain off when a completed trip is what causes
+    // it. Mirrors that same offline transition (stop pending-ride
+    // subscriptions, sync presence tracking, tell the server) so they stop
+    // receiving new requests immediately instead of staying online while
+    // owing the company money.
+    if (_isCaptainOnline && _captainWalletBalance <= 0) {
+      _isCaptainOnline = false;
+      _incomingRequest = null;
+      _countdownTimer?.cancel();
+      _unsubscribeFromPendingRides();
+      if (_userId != null) {
+        AuthRepository().setCaptainOnline(_userId!, false);
+      }
+      _syncOnlinePresenceTracking();
+    }
+
     notifyListeners();
   }
 
