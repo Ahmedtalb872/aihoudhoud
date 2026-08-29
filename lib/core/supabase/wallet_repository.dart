@@ -82,6 +82,32 @@ class WalletRepository {
     }
   }
 
+  /// The captain's real wallet transaction history (Bpay recharges, trip
+  /// commissions) - see migration 0028_fix_wallet_ledger_insert.sql's
+  /// captain_wallet_ledger table. NOT public.wallet_transactions - that
+  /// table belongs to a different app (app-driver-customer) with an
+  /// unrelated shape (wallet_id/user_id/balance_before/balance_after, no
+  /// profile_id or title); credit_captain_wallet_from_bpay and
+  /// debit_captain_wallet used to insert into it by mistake, which threw
+  /// and rolled back every recharge/commission until 0028 gave this ledger
+  /// its own table. Returns [] on any failure instead of throwing, since a
+  /// stale/empty history is far less disruptive than blocking the wallet
+  /// screen.
+  Future<List<Map<String, dynamic>>> getMyWalletTransactions() async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return [];
+    try {
+      return await _client
+          .from('captain_wallet_ledger')
+          .select()
+          .eq('captain_id', userId)
+          .order('created_at', ascending: false)
+          .limit(100);
+    } catch (_) {
+      return [];
+    }
+  }
+
   /// Sum of the captain's still-valid, unredeemed gift credits (1 MRU
   /// granted per completed trip, each expiring 3 months after it was
   /// earned) - see migration 0011 for the crediting/expiry rules.

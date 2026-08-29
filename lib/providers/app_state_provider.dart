@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
 import '../core/supabase/auth_repository.dart';
 import '../core/supabase/auth_exception.dart';
+import '../core/supabase/wallet_repository.dart';
 import '../core/services/new_trip_alert.dart';
 import '../core/services/push_notifications.dart';
 
@@ -345,6 +346,10 @@ class AppStateProvider extends ChangeNotifier {
     // even if the app is backgrounded or killed) - fire-and-forget, a
     // failure here shouldn't block login.
     PushNotifications.syncToken();
+    // Fire-and-forget: loginFromProfile is synchronous, and the history list
+    // isn't needed until the captain actually opens the wallet tab - see
+    // refreshWalletTransactions().
+    refreshWalletTransactions();
     notifyListeners();
   }
 
@@ -1550,6 +1555,42 @@ class AppStateProvider extends ChangeNotifier {
     } catch (_) {
       // Best-effort - the locally-tracked balance stays as-is if this fails.
     }
+  }
+
+  // Re-fetches the captain's real transaction history from
+  // captain_wallet_ledger (see 0028_fix_wallet_ledger_insert.sql) so it
+  // survives an app restart - _captainTransactions used to be populated
+  // purely in-memory (only from creditWalletFromGiftRedemption/
+  // creditWalletFromBpayRecharge/the trip commission debit above), so a
+  // fresh app launch always showed an empty "لا توجد عمليات سابقة" list
+  // even though real rows existed server-side. Safe to call repeatedly
+  // (login, and every time the wallet tab opens).
+  Future<void> refreshWalletTransactions() async {
+    if (_userId == null) return;
+    final rows = await WalletRepository().getMyWalletTransactions();
+    if (rows.isEmpty) return;
+    _captainTransactions
+      ..clear()
+      ..addAll(rows.map((row) {
+        final createdAt =
+            DateTime.tryParse(row['created_at'] as String? ?? '') ??
+                DateTime.now();
+        // captain_wallet_ledger.type is 'bpay_recharge'/'commission' - not
+        // the same strings as the transaction_type enum, so map explicitly
+        // rather than TransactionType.values.byName.
+        final type = row['type'] == 'bpay_recharge'
+            ? TransactionType.charge
+            : TransactionType.commission;
+        return WalletTransaction(
+          id: row['id'] as String,
+          amount: (row['amount'] as num).toDouble(),
+          type: type,
+          title: row['title'] as String,
+          date: createdAt.toLocal().toString().substring(0, 16),
+          isCredit: row['is_credit'] as bool,
+        );
+      }));
+    notifyListeners();
   }
 
   // Messaging / Chatting with the customer on the active trip
