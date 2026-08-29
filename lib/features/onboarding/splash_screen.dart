@@ -20,7 +20,9 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(milliseconds: 2800), _resumeSessionOrLogin);
+    // Long enough to actually read the name/tagline before it moves on -
+    // was 2800ms, felt rushed with no entrance animation to fill that time.
+    Timer(const Duration(milliseconds: 4500), _resumeSessionOrLogin);
   }
 
   Future<void> _resumeSessionOrLogin() async {
