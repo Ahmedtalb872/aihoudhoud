@@ -121,6 +121,7 @@ flutter:
     - assets/images/logo_splash.png
     - assets/images/logo_icon.png
     - assets/images/bankily_logo_transparent.png
+    - assets/images/splash_hero.png
     - assets/sounds/new_trip_chime.wav
 
   # An image asset can refer to one or more resolution-specific "variants", see

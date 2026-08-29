@@ -104,130 +104,64 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.sizeOf(context);
-    // Scales the logo puck to the screen instead of a fixed 180px, so it
-    // stays proportionate on small phones and large tablets alike.
-    final logoSize = (screenSize.shortestSide * 0.40).clamp(120.0, 190.0);
-
     return Scaffold(
-      // Matches the backdrop gradient's top color, so there's no flash of a
-      // different color on the very first frame before it paints.
+      // Matches splash_hero.png's own background tone, so there's no flash
+      // of a different color on the first frame before the image decodes.
       backgroundColor: const Color(0xFFFCE8C8),
       body: Stack(
         children: [
-          // Calm, static gold-gradient backdrop with a faint street-grid
-          // texture - see splash_illustration.dart for why this replaced
-          // the previous live Google Map background.
-          const Positioned.fill(child: SplashBackdrop()),
-
-          // Main content - kept inside SafeArea so nothing sits under a
-          // notch/Dynamic Island (iOS) or a status/navigation bar (Android).
-          // Everything here renders at full opacity/size from the very
-          // first frame - no entrance animation - the loading spinner near
-          // the bottom is the only thing that moves on this screen.
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
-              child: Column(
-                children: [
-                  const Spacer(flex: 3),
-
-                  // Logo - unchanged design/colors/asset, just re-centered
-                  // in the new layout.
-                  Container(
-                    width: logoSize,
-                    height: logoSize,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 24,
-                          offset: Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: ClipOval(
-                      child: Image.asset('assets/images/logo_splash.png'),
-                    ),
-                  ),
-                  const SizedBox(height: 22),
-
-                  const Column(
-                    children: [
-                      Text(
-                        'الهدهد',
-                        style: TextStyle(
-                          fontSize: 38,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.darkText,
-                          fontFamily: 'Cairo',
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      SplashDivider(),
-                      SizedBox(height: 10),
-                      Text(
-                        'نقلك أسهل، أسرع، وأكثر أمانًا',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.darkText,
-                          fontFamily: 'Cairo',
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const Spacer(flex: 3),
-
-                  // The winding-road-with-a-car motif - a fixed illustration,
-                  // sitting just above the loading indicator.
-                  const SplashRoadCar(),
-                  const SizedBox(height: 18),
-
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const SizedBox(
-                        width: 30,
-                        height: 30,
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Color(0xFF0B3D3A),
-                          ),
-                          strokeWidth: 3,
-                          backgroundColor: Color(0x330B3D3A),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'جاري فتح تطبيق',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.darkText.withOpacity(0.85),
-                          fontFamily: 'Cairo',
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: MediaQuery.paddingOf(context).bottom + 40),
-                ],
-              ),
+          // The reference artwork itself (logo, name, tagline, road+car,
+          // map-grid backdrop) cropped to exclude its baked-in status bar
+          // and its baked-in loading spinner/caption - those two are
+          // replaced below with the real status bar and a genuinely
+          // animated indicator instead of a static picture of one.
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/splash_hero.png',
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
             ),
           ),
 
-          // Purely decorative footer band, drawn last so it sits above the
-          // backdrop but behind nothing else - the content column above
-          // already reserves enough bottom padding to clear it.
+          // Real dark-teal footer band + live loading indicator, sitting
+          // where the artwork's own (now-cropped-out) spinner used to be -
+          // the only thing that actually moves on this screen.
           const Positioned(
             left: 0,
             right: 0,
             bottom: 0,
-            child: SplashBottomWave(),
+            child: SplashBottomWave(height: 70),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: MediaQuery.paddingOf(context).bottom + 18,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(
+                  width: 30,
+                  height: 30,
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primary,
+                    ),
+                    strokeWidth: 3,
+                    backgroundColor: Color(0x330B3D3A),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'جاري فتح تطبيق',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    fontFamily: 'Cairo',
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
