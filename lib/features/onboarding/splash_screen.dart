@@ -115,10 +115,23 @@ class _SplashScreenState extends State<SplashScreen> {
           // and its baked-in loading spinner/caption - those two are
           // replaced below with the real status bar and a genuinely
           // animated indicator instead of a static picture of one.
-          Positioned.fill(
+          //
+          // BoxFit.cover here used to zoom the art to fill the full device
+          // height - since the crop already removed a chunk of the original
+          // canvas (status bar + footer), covering the *same* screen height
+          // with that shorter image needs more zoom than the reference
+          // photo ever had, making the logo/name look oversized compared to
+          // it. fitWidth scales by width only (matching the reference's own
+          // proportions) and just leaves the Scaffold's background - the
+          // same beige as the art's own background - showing below it,
+          // which the bottom wave then covers anyway.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
             child: Image.asset(
               'assets/images/splash_hero.png',
-              fit: BoxFit.cover,
+              fit: BoxFit.fitWidth,
               alignment: Alignment.topCenter,
             ),
           ),
