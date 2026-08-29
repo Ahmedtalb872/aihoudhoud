@@ -100,46 +100,22 @@ class SplashDivider extends StatelessWidget {
   }
 }
 
-/// A gentle winding road with a small car following it - the "نقل" (transit)
+/// A gentle winding road with a small car fixed on it - the "نقل" (transit)
 /// motif from the reference design, drawn rather than a live map so it
-/// renders instantly with no network/SDK dependency.
-class SplashRoadCar extends StatefulWidget {
+/// renders instantly with no network/SDK dependency. Intentionally static
+/// (no animation controller): the splash screen should have nothing moving
+/// on it besides the loading spinner.
+class SplashRoadCar extends StatelessWidget {
   const SplashRoadCar({super.key});
 
   @override
-  State<SplashRoadCar> createState() => _SplashRoadCarState();
-}
-
-class _SplashRoadCarState extends State<SplashRoadCar>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 5),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return const SizedBox(
       width: double.infinity,
       height: 96,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, _) => CustomPaint(
-          size: Size.infinite,
-          painter: _RoadPainter(progress: _controller.value),
-        ),
+      child: CustomPaint(
+        size: Size.infinite,
+        painter: _RoadPainter(progress: 0.55),
       ),
     );
   }
