@@ -162,6 +162,10 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Solid gold bar - same brand color/treatment as the AppBar on
+              // the login screen and every other screen in the app -
+              // instead of a dark gradient fading into the map. Sits above
+              // the map, with the online-toggle/wallet/menu row on top of it.
               Container(
                 padding: const EdgeInsets.only(
                   top: 50,
@@ -169,18 +173,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                   right: 16,
                   bottom: 16,
                 ),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withOpacity(
-                        provider.isCaptainOnline ? 0.4 : 0.6,
-                      ),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
+                color: AppColors.primary,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
