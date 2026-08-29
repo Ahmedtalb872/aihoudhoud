@@ -25,47 +25,69 @@ class _SplashScreenState extends State<SplashScreen> {
     Timer(const Duration(milliseconds: 4500), _resumeSessionOrLogin);
   }
 
+  // Retries a flaky startup network call instead of treating the very first
+  // failure as final - a captain who launches the app during a brief
+  // connectivity gap (switching towers, wifi handoff, a few seconds of no
+  // signal) used to be bounced straight to the login screen or the
+  // "جاري تأكد من حسابك" pending-review screen on the first timeout, even
+  // though they're actually a logged-in, approved captain and the network
+  // recovers a moment later. 4 attempts with a growing delay comfortably
+  // rides out a short gap without making an already-slow cold start feel
+  // endless if the network is genuinely down.
+  Future<T?> _withRetries<T>(Future<T> Function() call) async {
+    for (var attempt = 0; attempt < 4; attempt++) {
+      try {
+        return await call();
+      } catch (_) {
+        if (attempt == 3) return null;
+        await Future.delayed(Duration(milliseconds: 800 * (attempt + 1)));
+      }
+    }
+    return null;
+  }
+
   Future<void> _resumeSessionOrLogin() async {
     Widget destination = const AuthChoiceScreen();
 
     final currentUser = AuthRepository().currentUser;
     if (currentUser != null) {
-      try {
-        final profile = await AuthRepository().getProfile(currentUser.id);
-        if (profile['role'] == 'captain' && mounted) {
-          Map<String, dynamic>? captain;
-          bool approved = false;
-          try {
-            captain = await AuthRepository().getCaptain(currentUser.id);
-            approved = captain['status'] == 'approved';
-          } catch (_) {
-            // Fall back to "not approved".
+      final profile = await _withRetries(
+        () => AuthRepository().getProfile(currentUser.id),
+      );
+      if (profile != null && profile['role'] == 'captain' && mounted) {
+        final captain = await _withRetries(
+          () => AuthRepository().getCaptain(currentUser.id),
+        );
+        // A captain row that couldn't be fetched even after retries (still
+        // offline, or a genuine server hiccup) is treated as "unknown", not
+        // "not approved" - keeps them on the dashboard they were already
+        // approved for rather than wrongly demoting them to pending-review.
+        final approved = captain == null || captain['status'] == 'approved';
+        if (mounted) {
+          final appState = Provider.of<AppStateProvider>(
+            context,
+            listen: false,
+          );
+          appState.loginFromProfile(
+            profile,
+            currentUser.phone ?? '',
+            captain: captain,
+          );
+          // Restores an in-progress trip if the app process was killed
+          // mid-trip (e.g. the phone locked/closed) - otherwise the
+          // captain would land on the dashboard with no sign it still
+          // exists, even though nothing changed on the server.
+          if (approved) {
+            await appState.restoreActiveTripIfAny();
           }
-          if (mounted) {
-            final appState = Provider.of<AppStateProvider>(
-              context,
-              listen: false,
-            );
-            appState.loginFromProfile(
-              profile,
-              currentUser.phone ?? '',
-              captain: captain,
-            );
-            // Restores an in-progress trip if the app process was killed
-            // mid-trip (e.g. the phone locked/closed) - otherwise the
-            // captain would land on the dashboard with no sign it still
-            // exists, even though nothing changed on the server.
-            if (approved) {
-              await appState.restoreActiveTripIfAny();
-            }
-          }
-          destination = approved
-              ? const CaptainHomeScreen()
-              : const PendingReviewScreen();
         }
-      } catch (_) {
-        // No usable session/profile; fall back to the login screen.
+        destination = approved
+            ? const CaptainHomeScreen()
+            : const PendingReviewScreen();
       }
+      // profile == null after all retries means the network never
+      // recovered in time - falls through to the login screen below, the
+      // same safe default as before for a genuinely expired/invalid session.
     }
 
     if (!mounted) return;
