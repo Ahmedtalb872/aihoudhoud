@@ -54,6 +54,13 @@ class AppStateProvider extends ChangeNotifier {
   int _captainTripsCount = 0;
   final List<WalletTransaction> _captainTransactions = [];
 
+  // The most recent in-flight server write to wallet_balance (a commission
+  // debit or a Bpay credit), if any - refreshWalletBalance() awaits this
+  // before fetching, so a refresh triggered right after (e.g. the home
+  // screen remounting after a trip ends) can never race ahead of it and
+  // read the stale pre-write value. See _finalizeCompletedTrip.
+  Future<void>? _pendingWalletWrite;
+
   // Active Trip states
   Trip? _activeTrip;
   Timer? _countdownTimer;
@@ -1356,7 +1363,16 @@ class AppStateProvider extends ChangeNotifier {
     // server value and the commission would appear to vanish. Going
     // negative here is intentional: a cash fare bigger than the remaining
     // balance leaves the captain owing the company the difference.
-    AuthRepository().debitCaptainWallet(
+    //
+    // Tracked in _pendingWalletWrite (not just fired-and-forgotten) because
+    // captainCompleteActiveTrip() is itself a synchronous void method - the
+    // UI navigates on to the trip summary screen immediately, and if that
+    // happens to remount CaptainHomeScreen (which calls
+    // refreshWalletBalance() on mount) before this debit lands server-side,
+    // the refresh would win the race and clobber the correct negative
+    // balance with the stale pre-debit value. refreshWalletBalance() awaits
+    // this before reading from the server, so it never runs ahead of it.
+    _pendingWalletWrite = AuthRepository().debitCaptainWallet(
       amount: commission,
       title: 'عمولة رحلة إلى $destinationLabel',
     );
@@ -1493,6 +1509,18 @@ class AppStateProvider extends ChangeNotifier {
   // the home/wallet screen becomes visible.
   Future<void> refreshWalletBalance() async {
     if (_userId == null) return;
+    // Let a just-started debit/credit land first - otherwise this could
+    // fetch the server's pre-write value and overwrite the correct local
+    // balance with a stale one. See _pendingWalletWrite's declaration.
+    if (_pendingWalletWrite != null) {
+      try {
+        await _pendingWalletWrite;
+      } catch (_) {
+        // The write itself failing is handled where it was kicked off;
+        // still proceed to fetch whatever the server actually has.
+      }
+      _pendingWalletWrite = null;
+    }
     try {
       final profile = await AuthRepository().getProfile(_userId!);
       final serverBalance = profile['wallet_balance'];
