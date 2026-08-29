@@ -6,7 +6,6 @@ import 'core/constants/colors.dart';
 import 'core/theme/app_theme.dart';
 import 'core/supabase/supabase_config.dart';
 import 'core/services/new_trip_alert.dart';
-import 'core/services/motivation_notifications.dart';
 import 'core/services/push_notifications.dart';
 import 'providers/app_state_provider.dart';
 import 'features/onboarding/splash_screen.dart';
@@ -15,7 +14,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SupabaseConfig.initialize();
   await NewTripAlert.initialize();
-  await MotivationNotifications.initialize();
+  // Daily morning/evening motivational messages moved server-side (see
+  // supabase/functions/send-motivation-push) - the client-scheduled
+  // version (flutter_local_notifications zonedSchedule) silently stopped
+  // firing after a device reboot or an OEM battery manager force-stopping
+  // the app, with no way for the app to detect or recover from either.
   await PushNotifications.initialize();
   // Gold status bar matching the app's brand color, instead of the
   // platform default - AppBarTheme.systemOverlayStyle keeps this in sync
