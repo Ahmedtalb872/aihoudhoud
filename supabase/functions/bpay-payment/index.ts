@@ -185,21 +185,48 @@ Deno.serve(async (req: Request) => {
       transaction_id: transactionId,
     });
 
+    // credit_captain_wallet_from_bpay's error was never checked here before -
+    // it silently failed for every single recharge (profiles.wallet_balance
+    // didn't exist as a column until it was added directly in SQL) while
+    // this function kept reporting "success" to the captain because the
+    // *bank's* payment had gone through. The captain's money left their
+    // Bankily account for real with nothing ever crediting their الهدهد
+    // wallet. Now a credit failure downgrades the response instead of
+    // masking it - the bpay_transactions row above is already the durable
+    // record support can find by operationId to fix the balance manually.
+    let creditFailed = false;
     if (finalStatus === "success") {
-      await supabase.rpc("credit_captain_wallet_from_bpay", {
-        p_captain_id: captainId,
-        p_amount: amount,
-        p_title: "شحن رصيد عبر Bpay",
-      });
+      const { error: creditError } = await supabase.rpc(
+        "credit_captain_wallet_from_bpay",
+        {
+          p_captain_id: captainId,
+          p_amount: amount,
+          p_title: "شحن رصيد عبر Bpay",
+        },
+      );
+      if (creditError) {
+        console.error("credit_captain_wallet_from_bpay failed", creditError);
+        creditFailed = true;
+      }
     }
 
-    const message = finalStatus === "success"
+    const message = creditFailed
+      ? `تم خصم المبلغ من حسابك، لكن حدث خطأ أثناء إضافته لمحفظتك. تواصل مع الدعم فورًا مع رقم العملية: ${operationId}`
+      : finalStatus === "success"
       ? "تم الدفع بنجاح، تم إضافة الرصيد فورًا."
       : finalStatus === "pending"
       ? "طلبك قيد التحقق من البنك، سيُضاف الرصيد تلقائيًا فور التأكيد."
       : translateBankError(errorMessage);
 
-    return json({ status: finalStatus, message, transactionId });
+    // Reported as "pending" (not "success") when the credit failed, even
+    // though the bank payment itself went through - the app's success
+    // screen shouldn't tell the captain their balance was topped up when
+    // it wasn't.
+    return json({
+      status: creditFailed ? "pending" : finalStatus,
+      message,
+      transactionId,
+    });
   } catch (_e) {
     return json({ status: "failed", message: "تعذر الاتصال بخدمة الدفع، حاول مرة أخرى." }, 500);
   }
