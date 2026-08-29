@@ -7,7 +7,7 @@ import '../../providers/app_state_provider.dart';
 import '../captain/captain_home_screen.dart';
 import 'auth_choice_screen.dart';
 import 'pending_review_screen.dart';
-import 'widgets/splash_route_map.dart';
+import 'widgets/splash_illustration.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -111,24 +111,30 @@ class _SplashScreenState extends State<SplashScreen>
     final screenSize = MediaQuery.sizeOf(context);
     // Scales the logo puck to the screen instead of a fixed 180px, so it
     // stays proportionate on small phones and large tablets alike.
-    final logoSize = (screenSize.shortestSide * 0.42).clamp(120.0, 200.0);
+    final logoSize = (screenSize.shortestSide * 0.40).clamp(120.0, 190.0);
 
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      // Matches the backdrop gradient's top color, so there's no flash of a
+      // different color on the very first frame before it paints.
+      backgroundColor: const Color(0xFFFCE8C8),
       body: Stack(
         children: [
-          // Animated map of Nouakchott with the الهدهد car driving along a
-          // route, tinted with the brand gold so it reads as a backdrop
-          // rather than competing with the logo on top of it.
-          const Positioned.fill(child: SplashRouteMap()),
+          // Calm, static gold-gradient backdrop with a faint street-grid
+          // texture - see splash_illustration.dart for why this replaced
+          // the previous live Google Map background.
+          const Positioned.fill(child: SplashBackdrop()),
 
           // Main content - kept inside SafeArea so nothing sits under a
           // notch/Dynamic Island (iOS) or a status/navigation bar (Android).
           SafeArea(
-            child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  const Spacer(flex: 3),
+
+                  // Logo - unchanged design/colors/asset, just re-centered
+                  // in the new layout.
                   ScaleTransition(
                     scale: _scaleAnimation,
                     child: FadeTransition(
@@ -152,7 +158,8 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 22),
+
                   FadeTransition(
                     opacity: _fadeAnimation,
                     child: Column(
@@ -160,76 +167,83 @@ class _SplashScreenState extends State<SplashScreen>
                         const Text(
                           'الهدهد',
                           style: TextStyle(
-                            fontSize: 36,
+                            fontSize: 38,
                             fontWeight: FontWeight.w900,
                             color: AppColors.darkText,
                             fontFamily: 'Cairo',
                             letterSpacing: 1.5,
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.darkText.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: const Text(
-                            'نقل سريع، آمن وأسهل',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.darkText,
-                              fontFamily: 'Cairo',
-                            ),
+                        const SizedBox(height: 10),
+                        const SplashDivider(),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'نقلك أسهل، أسرع، وأكثر أمانًا',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.darkText,
+                            fontFamily: 'Cairo',
                           ),
                         ),
                       ],
                     ),
                   ),
+
+                  const Spacer(flex: 3),
+
+                  // The winding-road-with-a-car motif, sitting just above
+                  // the loading indicator.
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: const SplashRoadCar(),
+                  ),
+                  const SizedBox(height: 18),
+
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(
+                          width: 30,
+                          height: 30,
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xFF0B3D3A),
+                            ),
+                            strokeWidth: 3,
+                            backgroundColor: Color(0x330B3D3A),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'جاري فتح تطبيق',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.darkText.withOpacity(0.85),
+                            fontFamily: 'Cairo',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: MediaQuery.paddingOf(context).bottom + 40),
                 ],
               ),
             ),
           ),
 
-          // Bottom loading indicator + status text, inset by SafeArea so it
-          // never sits under a home indicator/gesture bar.
-          Positioned(
+          // Purely decorative footer band, drawn last so it sits above the
+          // backdrop but behind nothing else - the content column above
+          // already reserves enough bottom padding to clear it.
+          const Positioned(
             left: 0,
             right: 0,
-            bottom: MediaQuery.paddingOf(context).bottom + 40,
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 32,
-                    height: 32,
-                    child: CircularProgressIndicator(
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        AppColors.darkText,
-                      ),
-                      strokeWidth: 3,
-                      backgroundColor: AppColors.darkText.withOpacity(0.15),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'جاري التحميل...',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.darkText.withOpacity(0.85),
-                      fontFamily: 'Cairo',
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            bottom: 0,
+            child: SplashBottomWave(),
           ),
         ],
       ),
