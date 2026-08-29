@@ -2,7 +2,32 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/colors.dart';
 import '../../core/services/new_trip_alert.dart';
+import '../../core/services/oem_background_permission.dart';
 import '../../core/widgets/app_logo.dart';
+
+/// Arabic label shown for a known aggressive-OEM manufacturer string (see
+/// kAggressiveOemManufacturers) - null for anything else, in which case the
+/// extra guidance card isn't shown at all.
+String? _oemDisplayName(String manufacturer) {
+  switch (manufacturer) {
+    case 'xiaomi':
+      return 'شاومي (Xiaomi/Redmi/Poco)';
+    case 'oppo':
+    case 'realme':
+      return 'أوبو (Oppo/Realme)';
+    case 'vivo':
+      return 'فيفو (Vivo/iQOO)';
+    case 'huawei':
+    case 'honor':
+      return 'هواوي/هونر (Huawei/Honor)';
+    case 'infinix':
+    case 'tecno':
+    case 'itel':
+      return 'إنفينكس/تكنو (Infinix/Tecno/itel)';
+    default:
+      return null;
+  }
+}
 
 /// Shown once right after login/registration: asks the captain to enable
 /// location (needed to show/track trips) and notifications (needed to be
@@ -20,6 +45,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
     with WidgetsBindingObserver {
   PermissionStatus _locationStatus = PermissionStatus.denied;
   PermissionStatus _notificationStatus = PermissionStatus.denied;
+  String? _oemLabel;
 
   @override
   void initState() {
@@ -35,6 +61,18 @@ class _PermissionsScreenState extends State<PermissionsScreen>
     // appears. The native call is a no-op if already granted, so this
     // never interrupts a captain who's already set up.
     NewTripAlert.requestFullScreenIntentPermission();
+    _detectOem();
+  }
+
+  // Stock Android's notification/full-screen-intent permissions above
+  // aren't enough on these ROMs to reliably wake the app while it's
+  // backgrounded on a screen that's on and unlocked - see
+  // OemBackgroundPermission's header comment. Shown only for manufacturers
+  // actually known to need it; everyone else never sees this card.
+  Future<void> _detectOem() async {
+    final manufacturer = await OemBackgroundPermission.getManufacturer();
+    if (!mounted || manufacturer == null) return;
+    setState(() => _oemLabel = _oemDisplayName(manufacturer));
   }
 
   @override
@@ -167,12 +205,81 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                 granted: notificationGranted,
                 onPressed: _requestNotification,
               ),
+              if (_oemLabel != null) ...[
+                const SizedBox(height: 16),
+                _buildOemCard(_oemLabel!),
+              ],
               const Spacer(),
               ElevatedButton(onPressed: _continue, child: const Text('متابعة')),
               const SizedBox(height: 8),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // Extra card, only for phones from a manufacturer known to suppress
+  // background alerts unless its own autostart/pop-up toggle is on. Not a
+  // permission with a granted/denied state to track - just a one-time
+  // best-effort jump to that settings screen (see MainActivity.kt).
+  Widget _buildOemCard(String oemLabel) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.warning.withOpacity(0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.phonelink_lock_rounded,
+                  color: AppColors.warning,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  'هاتفك من نوع $oemLabel',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: AppColors.darkText,
+                    fontFamily: 'Cairo',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'هذا النوع من الهواتف يوقف تنبيه الطلبات الجديدة إن لم تُفعّل خيار "التشغيل التلقائي" أو "الظهور في الخلفية" للتطبيق. فعّله الآن حتى لا تفوّتك الطلبات.',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.secondaryText,
+              fontFamily: 'Cairo',
+              height: 1.6,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: OemBackgroundPermission.openBackgroundSettings,
+              child: const Text('فتح إعدادات الهاتف'),
+            ),
+          ),
+        ],
       ),
     );
   }

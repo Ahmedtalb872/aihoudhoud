@@ -15,6 +15,11 @@
          the lock screen/other apps (like an incoming call), instead of
          waiting for the captain to pull down the notification shade. -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Lets MainActivity prompt to exempt the app from Doze/battery-optimization
+         killing it in the background - part of the same "make sure the
+         new-trip alert can actually wake the app" effort as the full-screen
+         intent above, see MainActivity.openBackgroundSettings(). -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <application
         android:label="الهدهد Captain"
