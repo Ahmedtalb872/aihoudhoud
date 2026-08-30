@@ -69,14 +69,15 @@ class AppStateProvider extends ChangeNotifier {
   bool _isSearching = false;
 
   // Open ride live meter, two independent components:
-  // - Distance: the whole trip bills at 0.023 MRU/meter, continuously (not
-  //   rounded up to the next whole km), with a 100 MRU minimum fare for
-  //   the trip regardless of how short it is.
+  // - Distance: the whole trip bills at 0.027 MRU/meter, continuously (not
+  //   rounded up to the next whole km), with a 90 MRU minimum fare for
+  //   the trip regardless of how short it is - matches the regulator-set
+  //   tariff (90 MRU / 2.5 km minimum, 27 MRU per additional km).
   // - Waiting time: bills 5 MRU/minute, but only while the captain is
   //   actually stationary (no GPS movement) beyond a 3-minute grace period
   //   per stop, pausing the instant they're moving again.
-  static const double openRideMinimumFare = 100.0;
-  static const double openRidePerMeterRate = 0.023;
+  static const double openRideMinimumFare = 90.0;
+  static const double openRidePerMeterRate = 0.027;
   static const double openRidePerMinuteRate = 5.0;
   static const Duration openRideIdleThreshold = Duration(minutes: 3);
   DateTime? _openRideStartTime;
@@ -191,11 +192,11 @@ class AppStateProvider extends ChangeNotifier {
         .round(),
   );
 
-  // The 100 MRU minimum applies to the *combined* distance+waiting total,
+  // The 90 MRU minimum applies to the *combined* distance+waiting total,
   // not to the distance portion alone with waiting always stacked on top -
   // otherwise a short ride with a long wait could be overcharged (e.g. 30
-  // MRU of distance + 90 MRU of waiting is a fair 120, not 100+90=190).
-  // Once the natural total reaches 100, the fare keeps climbing past it.
+  // MRU of distance + 90 MRU of waiting is a fair 120, not 90+90=180).
+  // Once the natural total reaches 90, the fare keeps climbing past it.
   double get openRideFare {
     final distanceMeters = _openRideDistanceKm * 1000;
     final distanceFare = distanceMeters * openRidePerMeterRate;
