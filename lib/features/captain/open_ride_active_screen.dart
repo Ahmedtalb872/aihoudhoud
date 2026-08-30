@@ -13,7 +13,6 @@ import '../../core/services/call_signaling_service.dart';
 import '../../models/models.dart';
 import '../calls/call_screen.dart';
 import '../support/chat_screen.dart';
-import 'cancel_trip_dialog.dart';
 import 'collect_payment_dialog.dart';
 
 /// Shown once a captain is driving an open ride (no known destination): a
@@ -275,28 +274,6 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                  ),
-
-                  // Cancel trip button
-                  Positioned(
-                    right: 16,
-                    top: 16,
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(color: Colors.black26, blurRadius: 6),
-                        ],
-                      ),
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.close_rounded,
-                          color: AppColors.error,
-                        ),
-                        onPressed: () => showCancelTripDialog(context),
                       ),
                     ),
                   ),

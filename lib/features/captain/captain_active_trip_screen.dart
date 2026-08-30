@@ -166,15 +166,22 @@ class _CaptainActiveTripScreenState extends State<CaptainActiveTripScreen> {
       appBar: AppBar(
         title: Text(statusTitle),
         automaticallyImplyLeading: false,
-        actions: [
-          TextButton(
-            onPressed: () => showCancelTripDialog(context),
-            child: const Text(
-              'إلغاء المشوار',
-              style: TextStyle(color: AppColors.error, fontFamily: 'Cairo'),
-            ),
-          ),
-        ],
+        // Once the customer has boarded (trip in progress), cancelling no
+        // longer makes sense - the ride only ends by completing it now.
+        actions: trip.status == TripStatus.started
+            ? null
+            : [
+                TextButton(
+                  onPressed: () => showCancelTripDialog(context),
+                  child: const Text(
+                    'إلغاء المشوار',
+                    style: TextStyle(
+                      color: AppColors.error,
+                      fontFamily: 'Cairo',
+                    ),
+                  ),
+                ),
+              ],
       ),
       body: SafeArea(
         child: Column(
