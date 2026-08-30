@@ -49,8 +49,37 @@ class NewTripAlert {
         ),
       );
       _initialized = true;
+      await _createGeneralChannel();
     } catch (_) {
       // Not supported on this platform (e.g. web); notifications stay off.
+    }
+  }
+
+  // send-motivation-push (and any other plain FCM `notification`-payload
+  // push, unlike the data-only new-trip one above) targets this channel by
+  // id so Play Services displays it with this tone instead of the device's
+  // generic default notification sound - Android locks a channel's sound to
+  // whatever it had the moment the channel was first created, so this must
+  // run (once per install) before any such push can arrive, and a future
+  // sound change needs a new channel id, not an edit to this one. Called
+  // from initialize() above, which main.dart already runs on every launch.
+  static Future<void> _createGeneralChannel() async {
+    try {
+      final androidImpl = _notifications
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      await androidImpl?.createNotificationChannel(
+        const AndroidNotificationChannel(
+          'general_notifications',
+          'إشعارات عامة',
+          description: 'رسائل وتنبيهات عامة من التطبيق',
+          importance: Importance.high,
+          sound: RawResourceAndroidNotificationSound('general_notification'),
+        ),
+      );
+    } catch (_) {
+      // Not Android, or plugin unavailable - the push still shows, just
+      // with whatever default sound Android falls back to.
     }
   }
 
