@@ -250,8 +250,8 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
               // Wallet balance badge
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
+                  horizontal: 9,
+                  vertical: 5,
                 ),
                 decoration: const BoxDecoration(
                   color: Colors.white,
@@ -270,13 +270,13 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                     const Icon(
                       Icons.account_balance_wallet_rounded,
                       color: AppColors.primaryDark,
-                      size: 16,
+                      size: 12,
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 4),
                     Text(
                       '${provider.captainWalletBalance.toStringAsFixed(0)} أوقية',
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 10,
                         fontWeight: FontWeight.bold,
                         color: AppColors.darkText,
                         fontFamily: 'Cairo',
