@@ -199,124 +199,90 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                   ),
                 ),
 
-                // Online/Offline status switch badge. Red/green background
-                // is untouched either way; while the wallet is empty a
-                // small yellow dot is merged onto the pill's corner (no
-                // separate banner, no extra text) and tapping it jumps
-                // straight to the wallet tab instead of trying to toggle.
-                GestureDetector(
-                  onTap: () {
-                    if (provider.captainWalletBalance <= 0) {
-                      setState(() => _currentIndex = 2); // Wallet tab
-                      return;
-                    }
-                    provider.toggleCaptainOnline();
-                  },
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
+                // Compact online/offline switch + wallet badge, grouped
+                // together on the opposite side from the menu icon.
+                Row(
+                  children: [
+                    // While the wallet is empty a small yellow dot merges
+                    // onto the switch's corner (no separate banner, no
+                    // extra text) and tapping it jumps straight to the
+                    // wallet tab instead of trying to toggle online.
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Switch(
+                          value: provider.isCaptainOnline,
+                          activeColor: Colors.white,
+                          activeTrackColor: AppColors.success,
+                          inactiveThumbColor: Colors.white,
+                          inactiveTrackColor: AppColors.error,
+                          onChanged: (value) {
+                            if (value && provider.captainWalletBalance <= 0) {
+                              setState(() => _currentIndex = 2); // Wallet tab
+                              return;
+                            }
+                            provider.toggleCaptainOnline();
+                          },
                         ),
-                        decoration: BoxDecoration(
-                          color: provider.isCaptainOnline
-                              ? AppColors.success
-                              : AppColors.error,
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 6,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
+                        if (provider.captainWalletBalance <= 0)
+                          Positioned(
+                            top: 2,
+                            right: 2,
+                            child: Container(
+                              width: 14,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: AppColors.warning,
                                 shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              provider.isCaptainOnline
-                                  ? 'متصل (متاح)'
-                                  : 'غير متصل (مغلق)',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Cairo',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (provider.captainWalletBalance <= 0)
-                        Positioned(
-                          top: -4,
-                          right: -4,
-                          child: Container(
-                            width: 16,
-                            height: 16,
-                            decoration: BoxDecoration(
-                              color: AppColors.warning,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 1.5,
+                                border: Border.all(
+                                  color: AppColors.primary,
+                                  width: 1.5,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                    ],
-                  ),
-                ),
-
-                // Wallet balance badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.all(Radius.circular(30)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 8,
-                        offset: Offset(0, 3),
+                      ],
+                    ),
+                    const SizedBox(width: 6),
+                    // Wallet balance badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.account_balance_wallet_rounded,
-                        color: AppColors.primaryDark,
-                        size: 16,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.all(Radius.circular(30)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 8,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${provider.captainWalletBalance.toStringAsFixed(0)} أوقية',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.darkText,
-                          fontFamily: 'Cairo',
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.account_balance_wallet_rounded,
+                            color: AppColors.primaryDark,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${provider.captainWalletBalance.toStringAsFixed(0)} أوقية',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.darkText,
+                              fontFamily: 'Cairo',
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
                   ],
                 ),
