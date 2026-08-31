@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -26,6 +27,16 @@ import io.flutter.plugin.common.MethodChannel
 // crashing.
 private const val CHANNEL = "com.alhudhud.captain/oem_settings"
 
+// See TripOverlayService for why this exists: a full-screen-intent
+// notification alone can't pop over an unlocked, already-in-use phone, only
+// a SYSTEM_ALERT_WINDOW overlay can. This channel only covers the
+// app-alive-in-background case, where NewTripAlert.play()/stop() call
+// straight into this same running engine - it does NOT reach the separate
+// headless engine firebase_messaging spins up to run
+// firebaseMessagingBackgroundHandler for a fully-killed app, which still
+// only gets the ring + regular notification.
+private const val OVERLAY_CHANNEL = "com.alhudhud.captain/trip_overlay"
+
 class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -34,6 +45,48 @@ class MainActivity : FlutterActivity() {
                 "getManufacturer" -> result.success(Build.MANUFACTURER.lowercase())
                 "openBackgroundSettings" -> {
                     openBackgroundSettings()
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, OVERLAY_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "hasOverlayPermission" -> result.success(Settings.canDrawOverlays(this))
+                "requestOverlayPermission" -> {
+                    if (!Settings.canDrawOverlays(this)) {
+                        val intent = Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:$packageName"),
+                        )
+                        tryStartActivity(intent)
+                    }
+                    result.success(null)
+                }
+                "showTripOverlay" -> {
+                    if (Settings.canDrawOverlays(this)) {
+                        val serviceIntent = Intent(this, TripOverlayService::class.java).apply {
+                            putExtra(
+                                TripOverlayService.EXTRA_CUSTOMER_NAME,
+                                call.argument<String>("customerName"),
+                            )
+                            putExtra(TripOverlayService.EXTRA_PICKUP, call.argument<String>("pickup"))
+                        }
+                        // The Dart call that triggers this very often comes
+                        // from a backgrounded app (captain switched away) -
+                        // plain startService() is blocked from there on API
+                        // 26+, startForegroundService() is the sanctioned
+                        // way in (TripOverlayService promotes itself within
+                        // the required 5s via startForeground()).
+                        ContextCompat.startForegroundService(this, serviceIntent)
+                    }
+                    result.success(null)
+                }
+                "hideTripOverlay" -> {
+                    val serviceIntent = Intent(this, TripOverlayService::class.java).apply {
+                        action = TripOverlayService.ACTION_HIDE
+                    }
+                    ContextCompat.startForegroundService(this, serviceIntent)
                     result.success(null)
                 }
                 else -> result.notImplemented()

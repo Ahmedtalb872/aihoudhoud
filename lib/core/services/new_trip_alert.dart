@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:vibration/vibration.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'trip_overlay.dart';
 
 /// Rings, vibrates, and posts a full-screen-style system notification when a
 /// new trip request appears for the captain — mirrors the "new ride" alert
@@ -119,6 +120,12 @@ class NewTripAlert {
             : 'اضغط لعرض تفاصيل الطلب قبل انتهاء الوقت.',
       ),
     );
+    // Best-effort on top of the notification above - see TripOverlay's
+    // header comment for why the notification alone can't pop over an
+    // unlocked phone already showing another app, only reaches the
+    // app-alive-in-background case, and no-ops silently if the captain
+    // never granted "Display over other apps".
+    unawaited(TripOverlay.show(customerName: customerName, pickup: pickup));
   }
 
   // Stops the ringtone/vibration and clears the ongoing notification -
@@ -136,6 +143,7 @@ class NewTripAlert {
         await _notifications.cancel(0);
       } catch (_) {}
     }
+    unawaited(TripOverlay.hide());
   }
 
   // Nudges the captain (chime + vibration + notification) to complete the
