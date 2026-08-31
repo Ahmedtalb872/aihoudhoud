@@ -351,6 +351,9 @@ class AppStateProvider extends ChangeNotifier {
     // isn't needed until the captain actually opens the wallet tab - see
     // refreshWalletTransactions().
     refreshWalletTransactions();
+    // Same reasoning for the trips screen's "المكتملة"/"الملغاة" tabs - see
+    // refreshTripHistory().
+    refreshTripHistory();
     notifyListeners();
   }
 
@@ -488,6 +491,121 @@ class AppStateProvider extends ChangeNotifier {
       _persistOpenRideProgress();
       notifyListeners();
     });
+  }
+
+  // Re-fetches the captain's completed/cancelled trips from the trips
+  // table so "الرحلات" survives an app restart - _captainTripHistory used
+  // to be populated purely in-memory (only by _finalizeCompletedTrip/
+  // captainCancelActiveTrip below, during the current session), so a fresh
+  // app launch always showed "لا توجد رحلات حالياً" for the "المكتملة"/
+  // "الملغاة" tabs even though real rows existed server-side. Safe to call
+  // repeatedly - overwrites the list with the server's copy, which already
+  // includes anything this session just added.
+  Future<void> refreshTripHistory() async {
+    if (_userId == null) return;
+    final rows = await AuthRepository().getCaptainTripHistory(_userId!);
+    if (rows.isEmpty) return;
+
+    // Batch the customer name/phone lookup instead of one query per trip -
+    // a delivery's recipient info already lives on the trip row itself.
+    final customerIds = rows
+        .where(
+          (r) => r['service_type'] != 'delivery' && r['customer_id'] != null,
+        )
+        .map((r) => r['customer_id'] as String)
+        .toSet()
+        .toList();
+    final profilesById = <String, Map<String, dynamic>>{};
+    if (customerIds.isNotEmpty) {
+      try {
+        final profiles = await Supabase.instance.client
+            .from('profiles')
+            .select('id, full_name, phone')
+            .inFilter('id', customerIds);
+        for (final p in (profiles as List)) {
+          profilesById[p['id'] as String] = p as Map<String, dynamic>;
+        }
+      } catch (_) {
+        // Falls back to the generic "الزبون" label per trip below.
+      }
+    }
+
+    _captainTripHistory
+      ..clear()
+      ..addAll(rows.map((row) => _historicalTripFromRow(row, profilesById)));
+    notifyListeners();
+  }
+
+  Trip _historicalTripFromRow(
+    Map<String, dynamic> row,
+    Map<String, Map<String, dynamic>> profilesById,
+  ) {
+    final serviceType = row['service_type'] as String? ?? 'ride';
+    final isDelivery = serviceType == 'delivery';
+    String customerName = 'الزبون';
+    String customerPhone = '';
+    if (isDelivery) {
+      final recipientName = row['recipient_name'] as String?;
+      final recipientPhone = row['recipient_phone'] as String?;
+      if (recipientName != null && recipientName.isNotEmpty) {
+        customerName = recipientName;
+      }
+      if (recipientPhone != null && recipientPhone.isNotEmpty) {
+        customerPhone = recipientPhone;
+      }
+    } else {
+      final profile = profilesById[row['customer_id']];
+      final name = profile?['full_name'] as String?;
+      final phone = profile?['phone'] as String?;
+      if (name != null && name.isNotEmpty) customerName = name;
+      if (phone != null && phone.isNotEmpty) customerPhone = phone;
+    }
+
+    final isOpenRide = row['trip_type'] == 'open';
+    final vehicleType = switch (row['vehicle_type']) {
+      'comfort' => VehicleType.comfort,
+      'family' => VehicleType.family,
+      _ => VehicleType.economy,
+    };
+    // A completed trip's real collected fare (see captainCompleteActiveTrip)
+    // beats the pre-trip estimate once it exists.
+    final price = (row['final_price'] as num?)?.toDouble() ??
+        (row['estimated_price'] as num?)?.toDouble() ??
+        0.0;
+    final createdAt = DateTime.tryParse(row['created_at'] as String? ?? '');
+
+    return Trip(
+      id: row['id'] as String,
+      customerName: customerName,
+      customerPhone: customerPhone,
+      pickupLocation: row['pickup_address'] as String? ?? 'موقع الانطلاق',
+      destinationLocation: row['destination_address'] as String?,
+      pickupLat: (row['pickup_lat'] as num?)?.toDouble() ?? 0.0,
+      pickupLng: (row['pickup_lng'] as num?)?.toDouble() ?? 0.0,
+      destLat: (row['destination_lat'] as num?)?.toDouble(),
+      destLng: (row['destination_lng'] as num?)?.toDouble(),
+      distance: (row['distance_km'] as num?)?.toDouble() ?? 0.0,
+      duration: (row['estimated_duration_minutes'] as num?)?.toInt() ?? 0,
+      price: price,
+      paymentMethod: row['payment_method'] == 'wallet'
+          ? 'محفظة الهدهد'
+          : 'نقداً',
+      status: row['status'] == 'cancelled'
+          ? TripStatus.cancelled
+          : TripStatus.completed,
+      carType: vehicleType,
+      isOpenRide: isOpenRide,
+      openRideTimeout: 45,
+      date: createdAt != null
+          ? createdAt.toLocal().toString().substring(0, 16)
+          : '',
+      cancellationReason: row['cancellation_reason'] as String?,
+      isRemote: true,
+      serviceType: serviceType,
+      packageDescription: isDelivery
+          ? row['package_description'] as String?
+          : null,
+    );
   }
 
   TripStatus _mapDbTripStatus(String? dbStatus) {
