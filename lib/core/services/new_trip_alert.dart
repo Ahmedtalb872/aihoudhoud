@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:vibration/vibration.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'trip_overlay.dart';
 
@@ -120,12 +121,17 @@ class NewTripAlert {
             : 'اضغط لعرض تفاصيل الطلب قبل انتهاء الوقت.',
       ),
     );
-    // Best-effort on top of the notification above - see TripOverlay's
-    // header comment for why the notification alone can't pop over an
-    // unlocked phone already showing another app, only reaches the
+    // Only while backgrounded - resumed means the captain is looking at
+    // this app right now, where AppStateProvider's own incoming-request
+    // bottom sheet already shows the exact same request; stacking the
+    // floating card on top of that too just duplicates it. See
+    // TripOverlay's header comment for why the notification alone can't
+    // pop over an unlocked phone showing another app, only reaches the
     // app-alive-in-background case, and no-ops silently if the captain
     // never granted "Display over other apps".
-    unawaited(TripOverlay.show(customerName: customerName, pickup: pickup));
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+      unawaited(TripOverlay.show(customerName: customerName, pickup: pickup));
+    }
   }
 
   // Stops the ringtone/vibration and clears the ongoing notification -
