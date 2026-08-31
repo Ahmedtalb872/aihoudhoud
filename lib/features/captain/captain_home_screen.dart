@@ -151,139 +151,137 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
             child: Container(color: Colors.black.withOpacity(0.35)),
           ),
 
-        // Custom Header Bar (+ the low-balance banner right beneath it, see
-        // below - kept in the same Positioned/Column so the banner sits
-        // directly under the wallet/online-toggle row instead of needing a
-        // hardcoded vertical offset).
+        // Slim title bar - just the app name and the drawer icon, matching
+        // the compact single-row bar of reference driver apps (no
+        // switch/wallet crammed in here anymore, see the floating group
+        // below instead).
         Positioned(
           top: 0,
           left: 0,
           right: 0,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Solid gold bar - same brand color/treatment as the AppBar on
-              // the login screen and every other screen in the app -
-              // instead of a dark gradient fading into the map. Sits above
-              // the map, with the online-toggle/wallet/menu row on top of it.
-              Container(
-                padding: const EdgeInsets.only(
-                  top: 50,
-                  left: 16,
-                  right: 16,
-                  bottom: 16,
-                ),
-                color: AppColors.primary,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                // Hamburger drawer icon
-                Container(
-                  decoration: const BoxDecoration(
+          child: Container(
+            padding: EdgeInsets.only(
+              top: MediaQuery.paddingOf(context).top,
+            ),
+            color: AppColors.primary,
+            height: MediaQuery.paddingOf(context).top + kToolbarHeight,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                const Text(
+                  'Al-Hudhud Driver',
+                  style: TextStyle(
                     color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 8,
-                        offset: Offset(0, 3),
-                      ),
-                    ],
+                    fontSize: 19,
+                    fontWeight: FontWeight.bold,
                   ),
+                ),
+                Positioned(
+                  right: 4,
                   child: IconButton(
-                    icon: const Icon(
-                      Icons.menu_rounded,
-                      color: AppColors.darkText,
-                    ),
+                    icon: const Icon(Icons.menu_rounded, color: Colors.white),
                     onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                   ),
                 ),
+              ],
+            ),
+          ),
+        ),
 
-                // Compact online/offline switch + wallet badge, grouped
-                // together on the opposite side from the menu icon.
-                Row(
-                  children: [
-                    // While the wallet is empty a small yellow dot merges
-                    // onto the switch's corner (no separate banner, no
-                    // extra text) and tapping it jumps straight to the
-                    // wallet tab instead of trying to toggle online.
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Switch(
-                          value: provider.isCaptainOnline,
-                          activeColor: Colors.white,
-                          activeTrackColor: AppColors.success,
-                          inactiveThumbColor: Colors.white,
-                          inactiveTrackColor: AppColors.error,
-                          onChanged: (value) {
-                            if (value && provider.captainWalletBalance <= 0) {
-                              setState(() => _currentIndex = 2); // Wallet tab
-                              return;
-                            }
-                            provider.toggleCaptainOnline();
-                          },
+        // Online/offline switch + wallet badge, floating over the map just
+        // below the title bar instead of sharing it - matches how reference
+        // driver apps keep their top bar to just the title/menu and put the
+        // status toggle on the map itself.
+        Positioned(
+          top: MediaQuery.paddingOf(context).top + kToolbarHeight + 12,
+          left: 16,
+          child: Row(
+            children: [
+              // While the wallet is empty a small yellow dot merges onto the
+              // switch's corner (no separate banner, no extra text) and
+              // tapping it jumps straight to the wallet tab instead of
+              // trying to toggle online.
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 8,
+                          offset: Offset(0, 3),
                         ),
-                        if (provider.captainWalletBalance <= 0)
-                          Positioned(
-                            top: 2,
-                            right: 2,
-                            child: Container(
-                              width: 14,
-                              height: 14,
-                              decoration: BoxDecoration(
-                                color: AppColors.warning,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppColors.primary,
-                                  width: 1.5,
-                                ),
-                              ),
-                            ),
-                          ),
                       ],
                     ),
-                    const SizedBox(width: 6),
-                    // Wallet balance badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
+                    child: Switch(
+                      value: provider.isCaptainOnline,
+                      activeColor: Colors.white,
+                      activeTrackColor: AppColors.success,
+                      inactiveThumbColor: Colors.white,
+                      inactiveTrackColor: AppColors.error,
+                      onChanged: (value) {
+                        if (value && provider.captainWalletBalance <= 0) {
+                          setState(() => _currentIndex = 2); // Wallet tab
+                          return;
+                        }
+                        provider.toggleCaptainOnline();
+                      },
+                    ),
+                  ),
+                  if (provider.captainWalletBalance <= 0)
+                    Positioned(
+                      top: 2,
+                      right: 2,
+                      child: Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: AppColors.warning,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
                       ),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.all(Radius.circular(30)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 8,
-                            offset: Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.account_balance_wallet_rounded,
-                            color: AppColors.primaryDark,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${provider.captainWalletBalance.toStringAsFixed(0)} أوقية',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.darkText,
-                              fontFamily: 'Cairo',
-                            ),
-                          ),
-                        ],
-                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 6),
+              // Wallet balance badge
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.all(Radius.circular(30)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 8,
+                      offset: Offset(0, 3),
                     ),
                   ],
                 ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.account_balance_wallet_rounded,
+                      color: AppColors.primaryDark,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${provider.captainWalletBalance.toStringAsFixed(0)} أوقية',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.darkText,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
                   ],
                 ),
               ),
