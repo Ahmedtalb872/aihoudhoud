@@ -1,4 +1,3 @@
-
 enum UserType { customer, captain }
 
 enum VehicleType { economy, comfort, family }
@@ -11,7 +10,7 @@ enum TripStatus {
   arrived,
   started,
   completed,
-  cancelled
+  cancelled,
 }
 
 enum TransactionType {
@@ -21,7 +20,7 @@ enum TransactionType {
   reward,
   withdraw,
   commission,
-  transfer
+  transfer,
 }
 
 class AppUser {
@@ -112,11 +111,12 @@ class Trip {
   final String? vehiclePlate;
   final String? vehicleName;
   final String pickupLocation;
-  final String destinationLocation;
+  // Null for open rides: no destination is known until the captain ends the trip.
+  final String? destinationLocation;
   final double pickupLat;
   final double pickupLng;
-  final double destLat;
-  final double destLng;
+  final double? destLat;
+  final double? destLng;
   final double distance; // in km
   final int duration; // in minutes
   final double price;
@@ -128,6 +128,16 @@ class Trip {
   final String date;
   final double? netEarnings;
   final double? commission;
+  final String? cancellationReason;
+  // True when this trip was claimed from a real customer request in the
+  // `rides` Supabase table (as opposed to the local demo/browse flows), so
+  // status changes should be written back to that row.
+  final bool isRemote;
+  // 'ride' (passenger) or 'delivery' (package, motorcycle captains only).
+  // For a delivery trip, customerName/customerPhone hold the recipient's
+  // details - the same contact fields the call/chat UI already uses.
+  final String serviceType;
+  final String? packageDescription;
 
   Trip({
     required this.id,
@@ -139,11 +149,11 @@ class Trip {
     this.vehiclePlate,
     this.vehicleName,
     required this.pickupLocation,
-    required this.destinationLocation,
+    this.destinationLocation,
     required this.pickupLat,
     required this.pickupLng,
-    required this.destLat,
-    required this.destLng,
+    this.destLat,
+    this.destLng,
     required this.distance,
     required this.duration,
     required this.price,
@@ -155,7 +165,13 @@ class Trip {
     required this.date,
     this.netEarnings,
     this.commission,
+    this.cancellationReason,
+    this.isRemote = false,
+    this.serviceType = 'ride',
+    this.packageDescription,
   });
+
+  bool get isDelivery => serviceType == 'delivery';
 
   String get carTypeNameArabic {
     switch (carType) {
@@ -188,22 +204,6 @@ class Trip {
         return 'ملغاة';
     }
   }
-}
-
-class NotificationModel {
-  final String id;
-  final String title;
-  final String body;
-  final String time;
-  final bool isRead;
-
-  NotificationModel({
-    required this.id,
-    required this.title,
-    required this.body,
-    required this.time,
-    this.isRead = false,
-  });
 }
 
 class Message {

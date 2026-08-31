@@ -1,10 +1,53 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- In-app voice calling between captain and customer (call_service.dart). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Lets the open-ride live-tracking screen run as a foreground service
+         with a persistent notification, so Android doesn't kill the app
+         (losing the fare meter) while a trip is actively being driven. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <!-- Lets the new-trip-request alert pop the app to the foreground over
+         the lock screen/other apps (like an incoming call), instead of
+         waiting for the captain to pull down the notification shade. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Lets MainActivity prompt to exempt the app from Doze/battery-optimization
+         killing it in the background - part of the same "make sure the
+         new-trip alert can actually wake the app" effort as the full-screen
+         intent above, see MainActivity.openBackgroundSettings(). -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- Lets TripOverlayService draw the new-trip alert card on top of
+         whatever app the captain is currently using - a plain
+         full-screen-intent notification only auto-launches over a LOCKED
+         screen (Android platform restriction, not something any permission
+         changes); a real "floating over other apps" alert like this one is
+         the only way to interrupt an unlocked, already-in-use phone the
+         same way incoming-call-style apps do. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <application
-        android:label="alhudhud"
+        android:label="الهدهد Captain"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Google Maps SDK for Android. Restrict this key in Google Cloud
+             Console to this app's package name + release SHA-1 fingerprint,
+             not by keeping it secret - it's meant to ship inside the app. -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyCCk_PuvRgaxz41DC94-UOu4zoppb13PZk" />
+        <!-- google_maps_flutter's native map view is a PlatformView, which
+             Flutter's newer Impeller renderer has known compositing bugs
+             with on some Android devices/GPU drivers - it can render
+             completely blank even though the SDK, key, and billing are all
+             fine. Falling back to the older Skia renderer is the standard
+             fix. -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableImpeller"
+            android:value="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -13,7 +56,9 @@
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
+            android:windowSoftInputMode="adjustResize"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true">
             <!-- Specifies an Android theme to apply to this Activity as soon as
                  the Android process has started. This theme is visible to the user
                  while the Flutter UI initializes. After that, this theme continues
@@ -27,6 +72,15 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Draws the new-trip alert card over other apps - see
+             TripOverlayService.kt and the SYSTEM_ALERT_WINDOW permission
+             above. shortService (Android 14+) fits a brief show-then-dismiss
+             service like this one without the extra Play Store scrutiny
+             "specialUse" carries, and needs no extra runtime permission. -->
+        <service
+            android:name=".TripOverlayService"
+            android:exported="false"
+            android:foregroundServiceType="shortService" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
@@ -42,6 +96,16 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Required so url_launcher can open the WhatsApp support link. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <!-- Required so url_launcher can open the phone dialer. -->
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+            <data android:scheme="tel" />
         </intent>
     </queries>
 </manifest>
