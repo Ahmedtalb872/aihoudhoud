@@ -45,11 +45,15 @@ class _CaptainRegisterStepperScreenState
   // Step 2 Controllers
   String _vehicleCategory = 'car'; // car, motorcycle
   String _carType = 'economy'; // economy, comfort, family
-  final _carBrandController = TextEditingController(text: 'تويوتا');
-  final _carModelController = TextEditingController(text: 'كورولا');
-  final _carYearController = TextEditingController(text: '2018');
-  final _carColorController = TextEditingController(text: 'فضي');
-  final _carPlateController = TextEditingController(text: '1234 AA 00');
+  // Empty, not pre-filled - these are optional (the hint text on each field
+  // already shows a "مثال: ..." example), so a captain who skips them
+  // shouldn't end up with a fake vehicle on file that they never actually
+  // entered themselves.
+  final _carBrandController = TextEditingController();
+  final _carModelController = TextEditingController();
+  final _carYearController = TextEditingController();
+  final _carColorController = TextEditingController();
+  final _carPlateController = TextEditingController();
   int _carSeats = 4;
 
   // Which service the company should pay this captain through - collected
@@ -94,6 +98,7 @@ class _CaptainRegisterStepperScreenState
       await _sendOtpAndVerify();
       return;
     }
+    if (_currentStep == 2 && !_validateStep2()) return;
     if (_currentStep == 3 && !_validateStep3()) return;
     if (_currentStep < 4) {
       setState(() {
@@ -286,6 +291,25 @@ class _CaptainRegisterStepperScreenState
     return false;
   }
 
+  // Unlike the vehicle brand/model/year/color fields on this same step
+  // (optional - just examples), the payout phone is how the company
+  // actually pays the captain, so it must be filled in before moving on.
+  bool _validateStep2() {
+    if (_payoutPhoneController.text.trim().length < 8) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'الرجاء إدخال رقم الهاتف المستخدم لاستلام المدفوعات',
+            style: TextStyle(fontFamily: 'Cairo'),
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return false;
+    }
+    return true;
+  }
+
   bool _validateStep1() {
     String? error;
     if (_nameController.text.trim().isEmpty) {
@@ -426,6 +450,10 @@ class _CaptainRegisterStepperScreenState
       return;
     }
 
+    if (!_validateStep2()) {
+      setState(() => _currentStep = 2);
+      return;
+    }
     if (!_validateStep3()) {
       setState(() => _currentStep = 3);
       return;
@@ -477,13 +505,13 @@ class _CaptainRegisterStepperScreenState
         if (_isMotorcycle) {
           await _authRepository.setAcceptsDelivery(captainId, true);
         }
-        if (_payoutPhoneController.text.trim().isNotEmpty) {
-          await _authRepository.updateCaptainPayoutInfo(
-            captainId: captainId,
-            payoutMethod: _payoutMethod,
-            payoutPhone: _payoutPhoneController.text.trim(),
-          );
-        }
+        // Always non-empty here - _validateStep2() already required it
+        // before the captain could leave this step.
+        await _authRepository.updateCaptainPayoutInfo(
+          captainId: captainId,
+          payoutMethod: _payoutMethod,
+          payoutPhone: _payoutPhoneController.text.trim(),
+        );
       } on AppAuthException catch (_) {
         // Non-fatal: the captain row still exists (bare) from sign-up: the
         // vehicle/payout details can be corrected later from the profile
@@ -890,14 +918,6 @@ class _CaptainRegisterStepperScreenState
                 'economy',
                 'إقتصادية',
                 Icons.directions_car_filled_outlined,
-              ),
-              const SizedBox(width: 8),
-              _buildCarTypeCard('comfort', 'مريحة', Icons.local_taxi_rounded),
-              const SizedBox(width: 8),
-              _buildCarTypeCard(
-                'family',
-                'عائلية',
-                Icons.airport_shuttle_rounded,
               ),
             ],
           ),
