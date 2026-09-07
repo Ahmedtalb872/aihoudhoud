@@ -49,7 +49,15 @@ class _CaptainRegisterStepperScreenState
   final _carModelController = TextEditingController(text: 'كورولا');
   final _carYearController = TextEditingController(text: '2018');
   final _carColorController = TextEditingController(text: 'فضي');
-  final _carPlateController = TextEditingController(text: '1234 AA 00');
+  // Deliberately empty, unlike the other vehicle fields around it that
+  // start pre-filled with a plausible example - a plate is the one field
+  // here that must be this captain's own real, unique value. Pre-filling
+  // it with the same literal example text as its "hint" (below) meant
+  // every captain who didn't notice it wasn't just placeholder text and
+  // clear it first got "1234 AA 00" saved as their actual plate - several
+  // real captain accounts ended up with that exact value once a uniqueness
+  // constraint on vehicle_plate made the collision visible.
+  final _carPlateController = TextEditingController();
   int _carSeats = 4;
 
   // Which service the company should pay this captain through - collected
@@ -94,6 +102,7 @@ class _CaptainRegisterStepperScreenState
       await _sendOtpAndVerify();
       return;
     }
+    if (_currentStep == 2 && !_validateStep2()) return;
     if (_currentStep == 3 && !_validateStep3()) return;
     if (_currentStep < 4) {
       setState(() {
@@ -267,6 +276,29 @@ class _CaptainRegisterStepperScreenState
       },
     );
     return result ?? false;
+  }
+
+  // Only the plate is checked here - unlike brand/model/color (cosmetic,
+  // never compared against anyone else's), it's the one step-2 field that
+  // must be this captain's own real, unique value (see
+  // captains_vehicle_plate_unique, app-driver-customer migration
+  // 20260907000093) - previously nothing forced it to be filled in at all,
+  // masked by _carPlateController starting pre-filled with example text
+  // that looked like a real value.
+  bool _validateStep2() {
+    if (_carPlateController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'الرجاء إدخال رقم لوحة السيارة',
+            style: TextStyle(fontFamily: 'Cairo'),
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return false;
+    }
+    return true;
   }
 
   bool _validateStep3() {
