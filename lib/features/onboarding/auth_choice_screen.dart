@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/colors.dart';
 import '../../core/widgets/app_logo.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../authentication/captain_login_screen.dart';
 import '../authentication/captain_register_stepper_screen.dart';
 
@@ -11,6 +12,7 @@ class AuthChoiceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -21,9 +23,9 @@ class AuthChoiceScreen extends StatelessWidget {
             children: [
               const AppLogo(width: 120),
               const SizedBox(height: 24),
-              const Text(
-                'أهلاً بك في الهدهد',
-                style: TextStyle(
+              Text(
+                l10n.authWelcomeTitle,
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: AppColors.darkText,
@@ -31,10 +33,10 @@ class AuthChoiceScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'سجل دخولك إن كان لديك حساب كابتن، أو أنشئ حسابًا جديدًا للانضمام.',
+              Text(
+                l10n.authWelcomeSubtitle,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   color: AppColors.secondaryText,
                   fontFamily: 'Cairo',
@@ -52,7 +54,7 @@ class AuthChoiceScreen extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 52),
                 ),
-                child: const Text('تسجيل الدخول'),
+                child: Text(l10n.loginButton),
               ),
               const SizedBox(height: 14),
               OutlinedButton(
@@ -66,7 +68,7 @@ class AuthChoiceScreen extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 52),
                 ),
-                child: const Text('إنشاء حساب كابتن جديد'),
+                child: Text(l10n.createAccountButton),
               ),
             ],
           ),

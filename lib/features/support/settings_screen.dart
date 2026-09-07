@@ -5,6 +5,7 @@ import '../../core/constants/app_links.dart';
 import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_exception.dart';
 import '../../core/supabase/auth_repository.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../providers/app_state_provider.dart';
 import '../onboarding/auth_choice_screen.dart';
 
@@ -19,7 +20,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _notificationsEnabled = true;
   bool _darkModeEnabled = false;
   bool _shareLocationEnabled = true;
-  String _selectedLanguage = 'العربية';
   bool _isDeletingAccount = false;
 
   void _showDeleteAccountDialog() {
@@ -97,9 +97,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = Provider.of<AppStateProvider>(context);
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('الإعدادات العامة')),
+      appBar: AppBar(title: Text(l10n.settingsAppBarTitle)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -109,18 +111,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Card(
               child: Column(
                 children: [
-                  // Language Selection
+                  // Language Selection - actually switches the whole app's
+                  // language now (see AppStateProvider.setLocale), not just
+                  // a cosmetic label like it used to.
                   ListTile(
-                    title: const Text(
-                      'لغة التطبيق',
-                      style: TextStyle(
+                    title: Text(
+                      l10n.settingsAppLanguage,
+                      style: const TextStyle(
                         fontFamily: 'Cairo',
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
                     ),
                     trailing: DropdownButton<String>(
-                      value: _selectedLanguage,
+                      value: provider.locale.languageCode,
                       underline: Container(),
                       style: const TextStyle(
                         fontFamily: 'Cairo',
@@ -130,19 +134,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       onChanged: (String? newValue) {
                         if (newValue != null) {
-                          setState(() {
-                            _selectedLanguage = newValue;
-                          });
+                          provider.setLocale(Locale(newValue));
                         }
                       },
-                      items: <String>['العربية', 'Français', 'English']
-                          .map<DropdownMenuItem<String>>((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          })
-                          .toList(),
+                      items: [
+                        DropdownMenuItem(
+                          value: 'ar',
+                          child: Text(l10n.languageArabic),
+                        ),
+                        DropdownMenuItem(
+                          value: 'fr',
+                          child: Text(l10n.languageFrench),
+                        ),
+                      ],
                     ),
                   ),
                   const Divider(height: 1, indent: 16, endIndent: 16),

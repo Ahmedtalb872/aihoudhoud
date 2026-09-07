@@ -8,6 +8,7 @@ import '../../models/models.dart';
 import '../../core/widgets/real_map_widget.dart';
 import '../../core/widgets/app_logo.dart';
 import '../../core/widgets/route_row.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../trips/my_trips_screen.dart';
 import '../wallet/wallet_screen.dart';
 import '../profile/profile_screen.dart';
@@ -541,6 +542,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
   }
 
   Widget _buildDrawer(AppStateProvider provider) {
+    final l10n = AppLocalizations.of(context)!;
     return Drawer(
       backgroundColor: AppColors.background,
       child: Column(
@@ -700,8 +702,8 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
               children: [
                 _buildDrawerItem(
                   icon: Icons.person_rounded,
-                  title: 'الملف الشخصي',
-                  subtitle: 'معلوماتك الشخصية',
+                  title: l10n.drawerProfile,
+                  subtitle: l10n.drawerProfileSubtitle,
                   onTap: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).push(
@@ -713,8 +715,8 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                 ),
                 _buildDrawerItem(
                   icon: Icons.wallet_rounded,
-                  title: 'المحفظة',
-                  subtitle: 'رصيدك وشحن المحفظة',
+                  title: l10n.drawerWallet,
+                  subtitle: l10n.drawerWalletSubtitle,
                   onTap: () {
                     Navigator.of(context).pop();
                     setState(() => _currentIndex = 2); // Wallet tab
@@ -722,8 +724,8 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                 ),
                 _buildDrawerItem(
                   icon: Icons.bar_chart_rounded,
-                  title: 'الأرباح',
-                  subtitle: 'تفاصيل أرباحك وإحصائياتك',
+                  title: l10n.drawerEarnings,
+                  subtitle: l10n.drawerEarningsSubtitle,
                   onTap: () {
                     Navigator.of(context).pop();
                     setState(() => _currentIndex = 2); // Wallet tab
@@ -731,8 +733,8 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                 ),
                 _buildDrawerItem(
                   icon: Icons.history_rounded,
-                  title: 'الرحلات السابقة',
-                  subtitle: 'سجل رحلاتك السابقة',
+                  title: l10n.drawerPastTrips,
+                  subtitle: l10n.drawerPastTripsSubtitle,
                   onTap: () {
                     Navigator.of(context).pop();
                     setState(() => _currentIndex = 1); // Trips tab
@@ -740,8 +742,8 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                 ),
                 _buildDrawerItem(
                   icon: Icons.star_rounded,
-                  title: 'التقييمات والترتيب',
-                  subtitle: 'تقييماتك وترتيبك',
+                  title: l10n.drawerRatingsRank,
+                  subtitle: l10n.drawerRatingsRankSubtitle,
                   onTap: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).push(
@@ -753,8 +755,8 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                 ),
                 _buildDrawerItem(
                   icon: Icons.settings_rounded,
-                  title: 'الإعدادات',
-                  subtitle: 'إعدادات التطبيق',
+                  title: l10n.drawerSettings,
+                  subtitle: l10n.drawerSettingsSubtitle,
                   onTap: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).push(
@@ -766,8 +768,8 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                 ),
                 _buildDrawerItem(
                   icon: Icons.headset_mic_rounded,
-                  title: 'الدعم والمساعدة',
-                  subtitle: 'تواصل معنا',
+                  title: l10n.drawerSupport,
+                  subtitle: l10n.drawerSupportSubtitle,
                   onTap: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).push(
@@ -781,8 +783,8 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                 const Divider(height: 24, indent: 20, endIndent: 20),
                 _buildDrawerItem(
                   icon: Icons.logout_rounded,
-                  title: 'تسجيل الخروج',
-                  subtitle: 'خروج من حسابك',
+                  title: l10n.drawerLogout,
+                  subtitle: l10n.drawerLogoutSubtitle,
                   color: AppColors.error,
                   onTap: () {
                     Navigator.of(context).pop();
@@ -804,7 +806,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
             child: Text(
               // No package_info_plus dependency wired in yet - keep this in
               // sync with pubspec.yaml's version by hand if that changes.
-              'الإصدار 1.0.1',
+              '${l10n.versionLabel} 1.0.1',
               style: TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 12,
@@ -852,6 +854,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
   }
 
   Widget _buildBottomNavigationBar() {
+    final l10n = AppLocalizations.of(context)!;
     return BottomNavigationBar(
       currentIndex: _currentIndex,
       type: BottomNavigationBarType.fixed,
@@ -872,22 +875,22 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
           _currentIndex = index;
         });
       },
-      items: const [
+      items: [
         BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard_rounded),
-          label: 'الرئيسية',
+          icon: const Icon(Icons.dashboard_rounded),
+          label: l10n.navHome,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.history_rounded),
-          label: 'الرحلات',
+          icon: const Icon(Icons.history_rounded),
+          label: l10n.navTrips,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.wallet_rounded),
-          label: 'المحفظة',
+          icon: const Icon(Icons.wallet_rounded),
+          label: l10n.drawerWallet,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.person_rounded),
-          label: 'الحساب',
+          icon: const Icon(Icons.person_rounded),
+          label: l10n.navAccount,
         ),
       ],
     );

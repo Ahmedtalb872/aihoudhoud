@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_repository.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../providers/app_state_provider.dart';
 import '../captain/captain_home_screen.dart';
 import 'auth_choice_screen.dart';
@@ -164,9 +165,9 @@ class _SplashScreenState extends State<SplashScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'جاري فتح تطبيق',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context)!.loadingApp,
+                  style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: Colors.white,

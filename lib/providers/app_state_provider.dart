@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geolocator_android/geolocator_android.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
 import '../core/supabase/auth_repository.dart';
@@ -16,6 +17,39 @@ class AppStateProvider extends ChangeNotifier {
   bool _isLoggedIn = false;
   String? _userId;
   String _captainEmail = '';
+
+  // App language - Arabic by default, matching the app's original
+  // Arabic-only design; persisted so a captain who picks French doesn't
+  // have to reselect it on every launch. Loaded from disk in main.dart
+  // before the first frame (see loadSavedLocale()) so the app never
+  // flashes the wrong language.
+  static const _localePrefsKey = 'app_locale';
+  Locale _locale = const Locale('ar');
+  Locale get locale => _locale;
+
+  Future<void> loadSavedLocale() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(_localePrefsKey);
+      if (saved != null) {
+        _locale = Locale(saved);
+      }
+    } catch (_) {
+      // Falls back to Arabic - not worth blocking startup over.
+    }
+  }
+
+  Future<void> setLocale(Locale locale) async {
+    if (_locale == locale) return;
+    _locale = locale;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_localePrefsKey, locale.languageCode);
+    } catch (_) {
+      // Best-effort - the in-memory switch already happened either way.
+    }
+  }
 
   // Captain state
   bool _isCaptainOnline = false;

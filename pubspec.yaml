@@ -64,6 +64,9 @@ dependencies:
   # lib/core/services/push_notifications.dart).
   firebase_core: ^4.13.0
   firebase_messaging: ^16.5.0
+  # Persists the captain's chosen app language (Arabic/French) across
+  # restarts - see lib/providers/app_state_provider.dart's locale handling.
+  shared_preferences: ^2.3.3
 
 
 dev_dependencies:
@@ -114,6 +117,13 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Generates lib/l10n/generated/app_localizations*.dart from the ARB
+  # files under lib/l10n/ (see l10n.yaml) - AppLocalizations.of(context)
+  # is what the app's own French/Arabic strings go through, separate
+  # from the GlobalMaterialLocalizations delegates in main.dart, which
+  # only translate Flutter's own built-in widget labels.
+  generate: true
 
   assets:
     - assets/images/logo.jpg

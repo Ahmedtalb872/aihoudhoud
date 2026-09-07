@@ -1,0 +1,50 @@
+{
+  "@@locale": "fr",
+
+  "loadingApp": "Ouverture de l'application",
+
+  "authWelcomeTitle": "Bienvenue sur Al-Hudhud",
+  "authWelcomeSubtitle": "Connectez-vous si vous avez un compte capitaine, ou créez-en un nouveau pour nous rejoindre.",
+  "loginButton": "Se connecter",
+  "createAccountButton": "Créer un compte capitaine",
+
+  "loginAppBarTitle": "Connexion capitaine",
+  "loginWelcome": "Bienvenue, capitaine !",
+  "loginSubtitle": "Connectez-vous avec votre numéro de téléphone et votre mot de passe pour commencer à recevoir des courses.",
+  "phoneLabel": "Numéro de téléphone",
+  "passwordLabel": "Mot de passe",
+  "forgotPassword": "Mot de passe oublié ?",
+  "loginAsCaptainButton": "Se connecter en tant que capitaine",
+  "wantToJoin": "Vous voulez devenir capitaine ?",
+  "registerNow": "Inscrivez-vous maintenant",
+  "phoneRequiredError": "Veuillez entrer un numéro de téléphone valide",
+  "passwordRequiredError": "Veuillez entrer votre mot de passe",
+  "notCaptainError": "Ce compte n'est pas enregistré en tant que capitaine. Veuillez utiliser l'application clients pour vous connecter.",
+
+  "drawerProfile": "Profil",
+  "drawerProfileSubtitle": "Vos informations personnelles",
+  "drawerWallet": "Portefeuille",
+  "drawerWalletSubtitle": "Votre solde et rechargement",
+  "drawerEarnings": "Revenus",
+  "drawerEarningsSubtitle": "Détails de vos revenus et statistiques",
+  "drawerPastTrips": "Courses précédentes",
+  "drawerPastTripsSubtitle": "Historique de vos courses",
+  "drawerRatingsRank": "Évaluations et classement",
+  "drawerRatingsRankSubtitle": "Vos évaluations et votre classement",
+  "drawerSettings": "Paramètres",
+  "drawerSettingsSubtitle": "Paramètres de l'application",
+  "drawerSupport": "Aide et assistance",
+  "drawerSupportSubtitle": "Contactez-nous",
+  "drawerLogout": "Déconnexion",
+  "drawerLogoutSubtitle": "Se déconnecter de votre compte",
+  "versionLabel": "Version",
+
+  "navHome": "Accueil",
+  "navTrips": "Courses",
+  "navAccount": "Compte",
+
+  "settingsAppBarTitle": "Paramètres généraux",
+  "settingsAppLanguage": "Langue de l'application",
+  "languageArabic": "العربية",
+  "languageFrench": "Français"
+}
