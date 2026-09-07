@@ -16,6 +16,7 @@ import '../profile/captain_edit_info_screen.dart';
 import '../support/support_screen.dart';
 import '../support/settings_screen.dart';
 import 'captain_active_trip_screen.dart';
+import 'game_2048_screen.dart';
 import 'leaderboard_screen.dart';
 import '../onboarding/auth_choice_screen.dart';
 
@@ -749,6 +750,21 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => const LeaderboardScreen(),
+                      ),
+                    );
+                  },
+                ),
+                // Just a light time-killer for idle waits between requests -
+                // fully offline, no server/wallet/trip involvement at all.
+                _buildDrawerItem(
+                  icon: Icons.videogame_asset_rounded,
+                  title: 'لعبة 2048',
+                  subtitle: 'تسلَّ وقت الفراغ بين الطلبات',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const Game2048Screen(),
                       ),
                     );
                   },
