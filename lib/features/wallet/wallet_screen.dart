@@ -30,10 +30,12 @@ class _WalletScreenState extends State<WalletScreen> {
     // "pending" last time and has since settled server-side.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        Provider.of<AppStateProvider>(
+        final provider = Provider.of<AppStateProvider>(
           context,
           listen: false,
-        ).refreshWalletBalance();
+        );
+        provider.refreshWalletBalance();
+        provider.refreshWalletTransactions();
       }
     });
   }

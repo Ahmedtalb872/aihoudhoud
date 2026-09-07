@@ -243,6 +243,28 @@ class AuthRepository {
     }
   }
 
+  /// The captain's completed/cancelled trips - "الرحلات" only ever showed
+  /// what AppStateProvider had appended in-memory *this session*, so a
+  /// fresh app launch always looked empty even though the trips table has
+  /// the real history. Best-effort: returns [] on failure instead of
+  /// throwing, since a stale/empty list is far less disruptive than
+  /// blocking the trips screen.
+  Future<List<Map<String, dynamic>>> getCaptainTripHistory(
+    String captainId,
+  ) async {
+    try {
+      return await _client
+          .from('trips')
+          .select()
+          .eq('captain_id', captainId)
+          .inFilter('status', ['completed', 'cancelled'])
+          .order('created_at', ascending: false)
+          .limit(100);
+    } catch (_) {
+      return [];
+    }
+  }
+
   /// Fills in the vehicle/city/address/birth-date details collected during
   /// registration on the bare `captains` row the sign-up trigger created.
   /// [vehicleType] is 'economy'/'comfort'/'family' for a car, or literally

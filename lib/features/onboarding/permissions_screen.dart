@@ -3,6 +3,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/colors.dart';
 import '../../core/services/new_trip_alert.dart';
 import '../../core/services/oem_background_permission.dart';
+import '../../core/services/trip_overlay.dart';
 import '../../core/widgets/app_logo.dart';
 
 /// Arabic label shown for a known aggressive-OEM manufacturer string (see
@@ -46,6 +47,9 @@ class _PermissionsScreenState extends State<PermissionsScreen>
   PermissionStatus _locationStatus = PermissionStatus.denied;
   PermissionStatus _notificationStatus = PermissionStatus.denied;
   String? _oemLabel;
+  // null until checked (or on a platform without this permission, e.g.
+  // iOS) - the card only ever shows once this is a real true/false.
+  bool? _overlayGranted;
 
   @override
   void initState() {
@@ -93,10 +97,12 @@ class _PermissionsScreenState extends State<PermissionsScreen>
   Future<void> _refreshStatuses() async {
     final location = await _safeStatus(Permission.locationWhenInUse);
     final notification = await _safeStatus(Permission.notification);
+    final overlayGranted = await TripOverlay.hasPermission();
     if (!mounted) return;
     setState(() {
       _locationStatus = location;
       _notificationStatus = notification;
+      _overlayGranted = overlayGranted;
     });
   }
 
@@ -205,6 +211,17 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                 granted: notificationGranted,
                 onPressed: _requestNotification,
               ),
+              if (_overlayGranted != null) ...[
+                const SizedBox(height: 16),
+                _buildPermissionCard(
+                  icon: Icons.picture_in_picture_alt_rounded,
+                  title: 'الظهور فوق التطبيقات الأخرى',
+                  description:
+                      'ليصلك تنبيه المشوار حتى لو كان هاتفك مفتوحًا على تطبيق آخر.',
+                  granted: _overlayGranted!,
+                  onPressed: TripOverlay.requestPermission,
+                ),
+              ],
               if (_oemLabel != null) ...[
                 const SizedBox(height: 16),
                 _buildOemCard(_oemLabel!),

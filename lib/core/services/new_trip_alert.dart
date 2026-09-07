@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:vibration/vibration.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'trip_overlay.dart';
 
 /// Rings, vibrates, and posts a full-screen-style system notification when a
 /// new trip request appears for the captain — mirrors the "new ride" alert
@@ -49,8 +51,37 @@ class NewTripAlert {
         ),
       );
       _initialized = true;
+      await _createGeneralChannel();
     } catch (_) {
       // Not supported on this platform (e.g. web); notifications stay off.
+    }
+  }
+
+  // send-motivation-push (and any other plain FCM `notification`-payload
+  // push, unlike the data-only new-trip one above) targets this channel by
+  // id so Play Services displays it with this tone instead of the device's
+  // generic default notification sound - Android locks a channel's sound to
+  // whatever it had the moment the channel was first created, so this must
+  // run (once per install) before any such push can arrive, and a future
+  // sound change needs a new channel id, not an edit to this one. Called
+  // from initialize() above, which main.dart already runs on every launch.
+  static Future<void> _createGeneralChannel() async {
+    try {
+      final androidImpl = _notifications
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      await androidImpl?.createNotificationChannel(
+        const AndroidNotificationChannel(
+          'general_notifications',
+          'إشعارات عامة',
+          description: 'رسائل وتنبيهات عامة من التطبيق',
+          importance: Importance.high,
+          sound: RawResourceAndroidNotificationSound('general_notification'),
+        ),
+      );
+    } catch (_) {
+      // Not Android, or plugin unavailable - the push still shows, just
+      // with whatever default sound Android falls back to.
     }
   }
 
@@ -90,6 +121,17 @@ class NewTripAlert {
             : 'اضغط لعرض تفاصيل الطلب قبل انتهاء الوقت.',
       ),
     );
+    // Only while backgrounded - resumed means the captain is looking at
+    // this app right now, where AppStateProvider's own incoming-request
+    // bottom sheet already shows the exact same request; stacking the
+    // floating card on top of that too just duplicates it. See
+    // TripOverlay's header comment for why the notification alone can't
+    // pop over an unlocked phone showing another app, only reaches the
+    // app-alive-in-background case, and no-ops silently if the captain
+    // never granted "Display over other apps".
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+      unawaited(TripOverlay.show(customerName: customerName, pickup: pickup));
+    }
   }
 
   // Stops the ringtone/vibration and clears the ongoing notification -
@@ -107,6 +149,7 @@ class NewTripAlert {
         await _notifications.cancel(0);
       } catch (_) {}
     }
+    unawaited(TripOverlay.hide());
   }
 
   // Nudges the captain (chime + vibration + notification) to complete the

@@ -3,10 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geolocator_android/geolocator_android.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
 import '../core/supabase/auth_repository.dart';
 import '../core/supabase/auth_exception.dart';
+import '../core/supabase/wallet_repository.dart';
 import '../core/services/new_trip_alert.dart';
 import '../core/services/push_notifications.dart';
 
@@ -15,6 +17,39 @@ class AppStateProvider extends ChangeNotifier {
   bool _isLoggedIn = false;
   String? _userId;
   String _captainEmail = '';
+
+  // App language - Arabic by default, matching the app's original
+  // Arabic-only design; persisted so a captain who picks French doesn't
+  // have to reselect it on every launch. Loaded from disk in main.dart
+  // before the first frame (see loadSavedLocale()) so the app never
+  // flashes the wrong language.
+  static const _localePrefsKey = 'app_locale';
+  Locale _locale = const Locale('ar');
+  Locale get locale => _locale;
+
+  Future<void> loadSavedLocale() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(_localePrefsKey);
+      if (saved != null) {
+        _locale = Locale(saved);
+      }
+    } catch (_) {
+      // Falls back to Arabic - not worth blocking startup over.
+    }
+  }
+
+  Future<void> setLocale(Locale locale) async {
+    if (_locale == locale) return;
+    _locale = locale;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_localePrefsKey, locale.languageCode);
+    } catch (_) {
+      // Best-effort - the in-memory switch already happened either way.
+    }
+  }
 
   // Captain state
   bool _isCaptainOnline = false;
@@ -68,14 +103,15 @@ class AppStateProvider extends ChangeNotifier {
   bool _isSearching = false;
 
   // Open ride live meter, two independent components:
-  // - Distance: the whole trip bills at 0.023 MRU/meter, continuously (not
-  //   rounded up to the next whole km), with a 100 MRU minimum fare for
-  //   the trip regardless of how short it is.
+  // - Distance: the whole trip bills at 0.027 MRU/meter, continuously (not
+  //   rounded up to the next whole km), with a 90 MRU minimum fare for
+  //   the trip regardless of how short it is - matches the regulator-set
+  //   tariff (90 MRU / 2.5 km minimum, 27 MRU per additional km).
   // - Waiting time: bills 5 MRU/minute, but only while the captain is
   //   actually stationary (no GPS movement) beyond a 3-minute grace period
   //   per stop, pausing the instant they're moving again.
-  static const double openRideMinimumFare = 100.0;
-  static const double openRidePerMeterRate = 0.023;
+  static const double openRideMinimumFare = 90.0;
+  static const double openRidePerMeterRate = 0.027;
   static const double openRidePerMinuteRate = 5.0;
   static const Duration openRideIdleThreshold = Duration(minutes: 3);
   DateTime? _openRideStartTime;
@@ -190,11 +226,11 @@ class AppStateProvider extends ChangeNotifier {
         .round(),
   );
 
-  // The 100 MRU minimum applies to the *combined* distance+waiting total,
+  // The 90 MRU minimum applies to the *combined* distance+waiting total,
   // not to the distance portion alone with waiting always stacked on top -
   // otherwise a short ride with a long wait could be overcharged (e.g. 30
-  // MRU of distance + 90 MRU of waiting is a fair 120, not 100+90=190).
-  // Once the natural total reaches 100, the fare keeps climbing past it.
+  // MRU of distance + 90 MRU of waiting is a fair 120, not 90+90=180).
+  // Once the natural total reaches 90, the fare keeps climbing past it.
   double get openRideFare {
     final distanceMeters = _openRideDistanceKm * 1000;
     final distanceFare = distanceMeters * openRidePerMeterRate;
@@ -345,6 +381,13 @@ class AppStateProvider extends ChangeNotifier {
     // even if the app is backgrounded or killed) - fire-and-forget, a
     // failure here shouldn't block login.
     PushNotifications.syncToken();
+    // Fire-and-forget: loginFromProfile is synchronous, and the history list
+    // isn't needed until the captain actually opens the wallet tab - see
+    // refreshWalletTransactions().
+    refreshWalletTransactions();
+    // Same reasoning for the trips screen's "المكتملة"/"الملغاة" tabs - see
+    // refreshTripHistory().
+    refreshTripHistory();
     notifyListeners();
   }
 
@@ -482,6 +525,121 @@ class AppStateProvider extends ChangeNotifier {
       _persistOpenRideProgress();
       notifyListeners();
     });
+  }
+
+  // Re-fetches the captain's completed/cancelled trips from the trips
+  // table so "الرحلات" survives an app restart - _captainTripHistory used
+  // to be populated purely in-memory (only by _finalizeCompletedTrip/
+  // captainCancelActiveTrip below, during the current session), so a fresh
+  // app launch always showed "لا توجد رحلات حالياً" for the "المكتملة"/
+  // "الملغاة" tabs even though real rows existed server-side. Safe to call
+  // repeatedly - overwrites the list with the server's copy, which already
+  // includes anything this session just added.
+  Future<void> refreshTripHistory() async {
+    if (_userId == null) return;
+    final rows = await AuthRepository().getCaptainTripHistory(_userId!);
+    if (rows.isEmpty) return;
+
+    // Batch the customer name/phone lookup instead of one query per trip -
+    // a delivery's recipient info already lives on the trip row itself.
+    final customerIds = rows
+        .where(
+          (r) => r['service_type'] != 'delivery' && r['customer_id'] != null,
+        )
+        .map((r) => r['customer_id'] as String)
+        .toSet()
+        .toList();
+    final profilesById = <String, Map<String, dynamic>>{};
+    if (customerIds.isNotEmpty) {
+      try {
+        final profiles = await Supabase.instance.client
+            .from('profiles')
+            .select('id, full_name, phone')
+            .inFilter('id', customerIds);
+        for (final p in (profiles as List)) {
+          profilesById[p['id'] as String] = p as Map<String, dynamic>;
+        }
+      } catch (_) {
+        // Falls back to the generic "الزبون" label per trip below.
+      }
+    }
+
+    _captainTripHistory
+      ..clear()
+      ..addAll(rows.map((row) => _historicalTripFromRow(row, profilesById)));
+    notifyListeners();
+  }
+
+  Trip _historicalTripFromRow(
+    Map<String, dynamic> row,
+    Map<String, Map<String, dynamic>> profilesById,
+  ) {
+    final serviceType = row['service_type'] as String? ?? 'ride';
+    final isDelivery = serviceType == 'delivery';
+    String customerName = 'الزبون';
+    String customerPhone = '';
+    if (isDelivery) {
+      final recipientName = row['recipient_name'] as String?;
+      final recipientPhone = row['recipient_phone'] as String?;
+      if (recipientName != null && recipientName.isNotEmpty) {
+        customerName = recipientName;
+      }
+      if (recipientPhone != null && recipientPhone.isNotEmpty) {
+        customerPhone = recipientPhone;
+      }
+    } else {
+      final profile = profilesById[row['customer_id']];
+      final name = profile?['full_name'] as String?;
+      final phone = profile?['phone'] as String?;
+      if (name != null && name.isNotEmpty) customerName = name;
+      if (phone != null && phone.isNotEmpty) customerPhone = phone;
+    }
+
+    final isOpenRide = row['trip_type'] == 'open';
+    final vehicleType = switch (row['vehicle_type']) {
+      'comfort' => VehicleType.comfort,
+      'family' => VehicleType.family,
+      _ => VehicleType.economy,
+    };
+    // A completed trip's real collected fare (see captainCompleteActiveTrip)
+    // beats the pre-trip estimate once it exists.
+    final price = (row['final_price'] as num?)?.toDouble() ??
+        (row['estimated_price'] as num?)?.toDouble() ??
+        0.0;
+    final createdAt = DateTime.tryParse(row['created_at'] as String? ?? '');
+
+    return Trip(
+      id: row['id'] as String,
+      customerName: customerName,
+      customerPhone: customerPhone,
+      pickupLocation: row['pickup_address'] as String? ?? 'موقع الانطلاق',
+      destinationLocation: row['destination_address'] as String?,
+      pickupLat: (row['pickup_lat'] as num?)?.toDouble() ?? 0.0,
+      pickupLng: (row['pickup_lng'] as num?)?.toDouble() ?? 0.0,
+      destLat: (row['destination_lat'] as num?)?.toDouble(),
+      destLng: (row['destination_lng'] as num?)?.toDouble(),
+      distance: (row['distance_km'] as num?)?.toDouble() ?? 0.0,
+      duration: (row['estimated_duration_minutes'] as num?)?.toInt() ?? 0,
+      price: price,
+      paymentMethod: row['payment_method'] == 'wallet'
+          ? 'محفظة الهدهد'
+          : 'نقداً',
+      status: row['status'] == 'cancelled'
+          ? TripStatus.cancelled
+          : TripStatus.completed,
+      carType: vehicleType,
+      isOpenRide: isOpenRide,
+      openRideTimeout: 45,
+      date: createdAt != null
+          ? createdAt.toLocal().toString().substring(0, 16)
+          : '',
+      cancellationReason: row['cancellation_reason'] as String?,
+      isRemote: true,
+      serviceType: serviceType,
+      packageDescription: isDelivery
+          ? row['package_description'] as String?
+          : null,
+    );
   }
 
   TripStatus _mapDbTripStatus(String? dbStatus) {
@@ -1590,6 +1748,42 @@ class AppStateProvider extends ChangeNotifier {
     } catch (_) {
       // Best-effort - the locally-tracked balance stays as-is if this fails.
     }
+  }
+
+  // Re-fetches the captain's real transaction history from
+  // captain_wallet_ledger (see 0028_fix_wallet_ledger_insert.sql) so it
+  // survives an app restart - _captainTransactions used to be populated
+  // purely in-memory (only from creditWalletFromGiftRedemption/
+  // creditWalletFromBpayRecharge/the trip commission debit above), so a
+  // fresh app launch always showed an empty "لا توجد عمليات سابقة" list
+  // even though real rows existed server-side. Safe to call repeatedly
+  // (login, and every time the wallet tab opens).
+  Future<void> refreshWalletTransactions() async {
+    if (_userId == null) return;
+    final rows = await WalletRepository().getMyWalletTransactions();
+    if (rows.isEmpty) return;
+    _captainTransactions
+      ..clear()
+      ..addAll(rows.map((row) {
+        final createdAt =
+            DateTime.tryParse(row['created_at'] as String? ?? '') ??
+                DateTime.now();
+        // captain_wallet_ledger.type is 'bpay_recharge'/'commission' - not
+        // the same strings as the transaction_type enum, so map explicitly
+        // rather than TransactionType.values.byName.
+        final type = row['type'] == 'bpay_recharge'
+            ? TransactionType.charge
+            : TransactionType.commission;
+        return WalletTransaction(
+          id: row['id'] as String,
+          amount: (row['amount'] as num).toDouble(),
+          type: type,
+          title: row['title'] as String,
+          date: createdAt.toLocal().toString().substring(0, 16),
+          isCredit: row['is_credit'] as bool,
+        );
+      }));
+    notifyListeners();
   }
 
   // Messaging / Chatting with the customer on the active trip

@@ -118,7 +118,18 @@ async function sendPush(deviceToken: string, projectId: string, title: string, b
         message: {
           token: deviceToken,
           notification: { title, body },
-          android: { priority: "normal" },
+          // Targets the app's own "general_notifications" Android channel
+          // (created client-side in NewTripAlert._createGeneralChannel) so
+          // this plays that channel's own tone instead of the device's
+          // generic default notification sound - without a channel_id here,
+          // Play Services displays it on Android's bare default channel.
+          android: {
+            priority: "normal",
+            notification: {
+              channel_id: "general_notifications",
+              sound: "general_notification",
+            },
+          },
         },
       }),
     },

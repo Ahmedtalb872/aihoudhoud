@@ -8,6 +8,7 @@ import '../../models/models.dart';
 import '../../core/widgets/real_map_widget.dart';
 import '../../core/widgets/app_logo.dart';
 import '../../core/widgets/route_row.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../trips/my_trips_screen.dart';
 import '../wallet/wallet_screen.dart';
 import '../profile/profile_screen.dart';
@@ -15,6 +16,7 @@ import '../profile/captain_edit_info_screen.dart';
 import '../support/support_screen.dart';
 import '../support/settings_screen.dart';
 import 'captain_active_trip_screen.dart';
+import 'islamic_quiz_screen.dart';
 import 'leaderboard_screen.dart';
 import '../onboarding/auth_choice_screen.dart';
 
@@ -151,173 +153,137 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
             child: Container(color: Colors.black.withOpacity(0.35)),
           ),
 
-        // Custom Header Bar (+ the low-balance banner right beneath it, see
-        // below - kept in the same Positioned/Column so the banner sits
-        // directly under the wallet/online-toggle row instead of needing a
-        // hardcoded vertical offset).
+        // Slim title bar - just the app name and the drawer icon, matching
+        // the compact single-row bar of reference driver apps (no
+        // switch/wallet crammed in here anymore, see the floating group
+        // below instead).
         Positioned(
           top: 0,
           left: 0,
           right: 0,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Solid gold bar - same brand color/treatment as the AppBar on
-              // the login screen and every other screen in the app -
-              // instead of a dark gradient fading into the map. Sits above
-              // the map, with the online-toggle/wallet/menu row on top of it.
-              Container(
-                padding: const EdgeInsets.only(
-                  top: 50,
-                  left: 16,
-                  right: 16,
-                  bottom: 16,
-                ),
-                color: AppColors.primary,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                // Hamburger drawer icon
-                Container(
-                  decoration: const BoxDecoration(
+          child: Container(
+            padding: EdgeInsets.only(
+              top: MediaQuery.paddingOf(context).top,
+            ),
+            color: AppColors.primary,
+            height: MediaQuery.paddingOf(context).top + kToolbarHeight,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                const Text(
+                  'Al-Hudhud Driver',
+                  style: TextStyle(
                     color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 8,
-                        offset: Offset(0, 3),
-                      ),
-                    ],
+                    fontSize: 19,
+                    fontWeight: FontWeight.bold,
                   ),
+                ),
+                Positioned(
+                  right: 4,
                   child: IconButton(
-                    icon: const Icon(
-                      Icons.menu_rounded,
-                      color: AppColors.darkText,
-                    ),
+                    icon: const Icon(Icons.menu_rounded, color: Colors.white),
                     onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                   ),
                 ),
+              ],
+            ),
+          ),
+        ),
 
-                // Online/Offline status switch badge. Red/green background
-                // is untouched either way; while the wallet is empty a
-                // small yellow dot is merged onto the pill's corner (no
-                // separate banner, no extra text) and tapping it jumps
-                // straight to the wallet tab instead of trying to toggle.
-                GestureDetector(
-                  onTap: () {
-                    if (provider.captainWalletBalance <= 0) {
-                      setState(() => _currentIndex = 2); // Wallet tab
-                      return;
-                    }
-                    provider.toggleCaptainOnline();
-                  },
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
+        // Online/offline switch + wallet badge, floating over the map just
+        // below the title bar instead of sharing it - matches how reference
+        // driver apps keep their top bar to just the title/menu and put the
+        // status toggle on the map itself.
+        Positioned(
+          top: MediaQuery.paddingOf(context).top + kToolbarHeight + 12,
+          left: 16,
+          child: Row(
+            children: [
+              // While the wallet is empty a small yellow dot merges onto the
+              // switch's corner (no separate banner, no extra text) and
+              // tapping it jumps straight to the wallet tab instead of
+              // trying to toggle online.
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 8,
+                          offset: Offset(0, 3),
                         ),
+                      ],
+                    ),
+                    child: Switch(
+                      value: provider.isCaptainOnline,
+                      activeColor: Colors.white,
+                      activeTrackColor: AppColors.success,
+                      inactiveThumbColor: Colors.white,
+                      inactiveTrackColor: AppColors.error,
+                      onChanged: (value) {
+                        if (value && provider.captainWalletBalance <= 0) {
+                          setState(() => _currentIndex = 2); // Wallet tab
+                          return;
+                        }
+                        provider.toggleCaptainOnline();
+                      },
+                    ),
+                  ),
+                  if (provider.captainWalletBalance <= 0)
+                    Positioned(
+                      top: 2,
+                      right: 2,
+                      child: Container(
+                        width: 14,
+                        height: 14,
                         decoration: BoxDecoration(
-                          color: provider.isCaptainOnline
-                              ? AppColors.success
-                              : AppColors.error,
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 6,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              provider.isCaptainOnline
-                                  ? 'متصل (متاح)'
-                                  : 'غير متصل (مغلق)',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Cairo',
-                              ),
-                            ),
-                          ],
+                          color: AppColors.warning,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
                         ),
                       ),
-                      if (provider.captainWalletBalance <= 0)
-                        Positioned(
-                          top: -4,
-                          right: -4,
-                          child: Container(
-                            width: 16,
-                            height: 16,
-                            decoration: BoxDecoration(
-                              color: AppColors.warning,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 1.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 6),
+              // Wallet balance badge
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 9,
+                  vertical: 5,
                 ),
-
-                // Wallet balance badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.all(Radius.circular(30)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 8,
-                        offset: Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.account_balance_wallet_rounded,
-                        color: AppColors.primaryDark,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${provider.captainWalletBalance.toStringAsFixed(0)} أوقية',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.darkText,
-                          fontFamily: 'Cairo',
-                        ),
-                      ),
-                    ],
-                  ),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.all(Radius.circular(30)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 8,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
                 ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.account_balance_wallet_rounded,
+                      color: AppColors.primaryDark,
+                      size: 12,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${provider.captainWalletBalance.toStringAsFixed(0)} أوقية',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.darkText,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -577,6 +543,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
   }
 
   Widget _buildDrawer(AppStateProvider provider) {
+    final l10n = AppLocalizations.of(context)!;
     return Drawer(
       backgroundColor: AppColors.background,
       child: Column(
@@ -736,8 +703,8 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
               children: [
                 _buildDrawerItem(
                   icon: Icons.person_rounded,
-                  title: 'الملف الشخصي',
-                  subtitle: 'معلوماتك الشخصية',
+                  title: l10n.drawerProfile,
+                  subtitle: l10n.drawerProfileSubtitle,
                   onTap: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).push(
@@ -749,8 +716,8 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                 ),
                 _buildDrawerItem(
                   icon: Icons.wallet_rounded,
-                  title: 'المحفظة',
-                  subtitle: 'رصيدك وشحن المحفظة',
+                  title: l10n.drawerWallet,
+                  subtitle: l10n.drawerWalletSubtitle,
                   onTap: () {
                     Navigator.of(context).pop();
                     setState(() => _currentIndex = 2); // Wallet tab
@@ -758,8 +725,8 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                 ),
                 _buildDrawerItem(
                   icon: Icons.bar_chart_rounded,
-                  title: 'الأرباح',
-                  subtitle: 'تفاصيل أرباحك وإحصائياتك',
+                  title: l10n.drawerEarnings,
+                  subtitle: l10n.drawerEarningsSubtitle,
                   onTap: () {
                     Navigator.of(context).pop();
                     setState(() => _currentIndex = 2); // Wallet tab
@@ -767,8 +734,8 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                 ),
                 _buildDrawerItem(
                   icon: Icons.history_rounded,
-                  title: 'الرحلات السابقة',
-                  subtitle: 'سجل رحلاتك السابقة',
+                  title: l10n.drawerPastTrips,
+                  subtitle: l10n.drawerPastTripsSubtitle,
                   onTap: () {
                     Navigator.of(context).pop();
                     setState(() => _currentIndex = 1); // Trips tab
@@ -776,8 +743,8 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                 ),
                 _buildDrawerItem(
                   icon: Icons.star_rounded,
-                  title: 'التقييمات والترتيب',
-                  subtitle: 'تقييماتك وترتيبك',
+                  title: l10n.drawerRatingsRank,
+                  subtitle: l10n.drawerRatingsRankSubtitle,
                   onTap: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).push(
@@ -787,10 +754,25 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                     );
                   },
                 ),
+                // Just a light time-killer for idle waits between requests -
+                // fully offline, no server/wallet/trip involvement at all.
+                _buildDrawerItem(
+                  icon: Icons.menu_book_rounded,
+                  title: 'أسئلة دينية',
+                  subtitle: 'تسلَّ وقت الفراغ بين الطلبات',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const IslamicQuizScreen(),
+                      ),
+                    );
+                  },
+                ),
                 _buildDrawerItem(
                   icon: Icons.settings_rounded,
-                  title: 'الإعدادات',
-                  subtitle: 'إعدادات التطبيق',
+                  title: l10n.drawerSettings,
+                  subtitle: l10n.drawerSettingsSubtitle,
                   onTap: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).push(
@@ -802,8 +784,8 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                 ),
                 _buildDrawerItem(
                   icon: Icons.headset_mic_rounded,
-                  title: 'الدعم والمساعدة',
-                  subtitle: 'تواصل معنا',
+                  title: l10n.drawerSupport,
+                  subtitle: l10n.drawerSupportSubtitle,
                   onTap: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).push(
@@ -817,8 +799,8 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                 const Divider(height: 24, indent: 20, endIndent: 20),
                 _buildDrawerItem(
                   icon: Icons.logout_rounded,
-                  title: 'تسجيل الخروج',
-                  subtitle: 'خروج من حسابك',
+                  title: l10n.drawerLogout,
+                  subtitle: l10n.drawerLogoutSubtitle,
                   color: AppColors.error,
                   onTap: () {
                     Navigator.of(context).pop();
@@ -840,7 +822,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
             child: Text(
               // No package_info_plus dependency wired in yet - keep this in
               // sync with pubspec.yaml's version by hand if that changes.
-              'الإصدار 1.0.1',
+              '${l10n.versionLabel} 1.0.1',
               style: TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 12,
@@ -888,6 +870,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
   }
 
   Widget _buildBottomNavigationBar() {
+    final l10n = AppLocalizations.of(context)!;
     return BottomNavigationBar(
       currentIndex: _currentIndex,
       type: BottomNavigationBarType.fixed,
@@ -908,22 +891,22 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
           _currentIndex = index;
         });
       },
-      items: const [
+      items: [
         BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard_rounded),
-          label: 'الرئيسية',
+          icon: const Icon(Icons.dashboard_rounded),
+          label: l10n.navHome,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.history_rounded),
-          label: 'الرحلات',
+          icon: const Icon(Icons.history_rounded),
+          label: l10n.navTrips,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.wallet_rounded),
-          label: 'المحفظة',
+          icon: const Icon(Icons.wallet_rounded),
+          label: l10n.drawerWallet,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.person_rounded),
-          label: 'الحساب',
+          icon: const Icon(Icons.person_rounded),
+          label: l10n.navAccount,
         ),
       ],
     );

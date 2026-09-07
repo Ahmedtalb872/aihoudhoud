@@ -4,6 +4,7 @@ import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_exception.dart';
 import '../../core/supabase/auth_repository.dart';
 import '../../core/widgets/app_logo.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../providers/app_state_provider.dart';
 import 'captain_forgot_password_screen.dart';
 import 'captain_register_stepper_screen.dart';
@@ -39,13 +40,14 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
   }
 
   Future<void> _login() async {
+    final l10n = AppLocalizations.of(context)!;
     final phone = _phoneController.text.trim();
     if (phone.length < 8) {
-      setState(() => _errorText = 'الرجاء إدخال رقم هاتف صحيح');
+      setState(() => _errorText = l10n.phoneRequiredError);
       return;
     }
     if (_passwordController.text.isEmpty) {
-      setState(() => _errorText = 'الرجاء إدخال كلمة المرور');
+      setState(() => _errorText = l10n.passwordRequiredError);
       return;
     }
 
@@ -61,9 +63,7 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
 
       if (profile['role'] != 'captain') {
         await _authRepository.signOut();
-        throw AppAuthException(
-          'هذا الحساب غير مسجل ككابتن. الرجاء استخدام تطبيق الزبائن لتسجيل الدخول.',
-        );
+        throw AppAuthException(l10n.notCaptainError);
       }
 
       if (!mounted) return;
@@ -96,9 +96,10 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('تسجيل دخول الكابتن')),
+      appBar: AppBar(title: Text(l10n.loginAppBarTitle)),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -108,9 +109,9 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
               const SizedBox(height: 12),
               const Center(child: AppLogo(width: 96)),
               const SizedBox(height: 20),
-              const Text(
-                'أهلاً بك يا كابتن!',
-                style: TextStyle(
+              Text(
+                l10n.loginWelcome,
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: AppColors.darkText,
@@ -118,9 +119,9 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'سجل دخولك برقم هاتفك وكلمة المرور لبدء استقبال طلبات الركاب.',
-                style: TextStyle(
+              Text(
+                l10n.loginSubtitle,
+                style: const TextStyle(
                   fontSize: 14,
                   color: AppColors.secondaryText,
                   fontFamily: 'Cairo',
@@ -128,9 +129,9 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
               ),
               const SizedBox(height: 32),
 
-              const Text(
-                'رقم الهاتف',
-                style: TextStyle(
+              Text(
+                l10n.phoneLabel,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: AppColors.darkText,
@@ -160,9 +161,9 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
               ),
               const SizedBox(height: 16),
 
-              const Text(
-                'كلمة المرور',
-                style: TextStyle(
+              Text(
+                l10n.passwordLabel,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: AppColors.darkText,
@@ -197,7 +198,7 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
                       ),
                     );
                   },
-                  child: const Text('نسيت كلمة المرور؟'),
+                  child: Text(l10n.forgotPassword),
                 ),
               ),
 
@@ -225,16 +226,16 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
                           strokeWidth: 2.5,
                         ),
                       )
-                    : const Text('تسجيل الدخول ككابتن'),
+                    : Text(l10n.loginAsCaptainButton),
               ),
               const SizedBox(height: 24),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
-                    'تريد الانضمام ككابتن؟',
-                    style: TextStyle(
+                  Text(
+                    l10n.wantToJoin,
+                    style: const TextStyle(
                       color: AppColors.secondaryText,
                       fontFamily: 'Cairo',
                     ),
@@ -248,7 +249,7 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
                         ),
                       );
                     },
-                    child: const Text('سجل الآن ككابتن جديد'),
+                    child: Text(l10n.registerNow),
                   ),
                 ],
               ),

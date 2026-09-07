@@ -1,0 +1,51 @@
+{
+  "@@locale": "ar",
+
+  "loadingApp": "جاري فتح تطبيق",
+  "@loadingApp": {"description": "Splash screen loading caption"},
+
+  "authWelcomeTitle": "أهلاً بك في الهدهد",
+  "authWelcomeSubtitle": "سجل دخولك إن كان لديك حساب كابتن، أو أنشئ حسابًا جديدًا للانضمام.",
+  "loginButton": "تسجيل الدخول",
+  "createAccountButton": "إنشاء حساب كابتن جديد",
+
+  "loginAppBarTitle": "تسجيل دخول الكابتن",
+  "loginWelcome": "أهلاً بك يا كابتن!",
+  "loginSubtitle": "سجل دخولك برقم هاتفك وكلمة المرور لبدء استقبال طلبات الركاب.",
+  "phoneLabel": "رقم الهاتف",
+  "passwordLabel": "كلمة المرور",
+  "forgotPassword": "نسيت كلمة المرور؟",
+  "loginAsCaptainButton": "تسجيل الدخول ككابتن",
+  "wantToJoin": "تريد الانضمام ككابتن؟",
+  "registerNow": "سجل الآن ككابتن جديد",
+  "phoneRequiredError": "الرجاء إدخال رقم هاتف صحيح",
+  "passwordRequiredError": "الرجاء إدخال كلمة المرور",
+  "notCaptainError": "هذا الحساب غير مسجل ككابتن. الرجاء استخدام تطبيق الزبائن لتسجيل الدخول.",
+
+  "drawerProfile": "الملف الشخصي",
+  "drawerProfileSubtitle": "معلوماتك الشخصية",
+  "drawerWallet": "المحفظة",
+  "drawerWalletSubtitle": "رصيدك وشحن المحفظة",
+  "drawerEarnings": "الأرباح",
+  "drawerEarningsSubtitle": "تفاصيل أرباحك وإحصائياتك",
+  "drawerPastTrips": "الرحلات السابقة",
+  "drawerPastTripsSubtitle": "سجل رحلاتك السابقة",
+  "drawerRatingsRank": "التقييمات والترتيب",
+  "drawerRatingsRankSubtitle": "تقييماتك وترتيبك",
+  "drawerSettings": "الإعدادات",
+  "drawerSettingsSubtitle": "إعدادات التطبيق",
+  "drawerSupport": "الدعم والمساعدة",
+  "drawerSupportSubtitle": "تواصل معنا",
+  "drawerLogout": "تسجيل الخروج",
+  "drawerLogoutSubtitle": "خروج من حسابك",
+  "versionLabel": "الإصدار",
+
+  "navHome": "الرئيسية",
+  "navTrips": "الرحلات",
+  "navAccount": "الحساب",
+
+  "settingsAppBarTitle": "الإعدادات العامة",
+  "settingsAppLanguage": "لغة التطبيق",
+  "languageArabic": "العربية",
+  "languageFrench": "Français"
+}
