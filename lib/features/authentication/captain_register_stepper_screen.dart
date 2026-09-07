@@ -456,6 +456,7 @@ class _CaptainRegisterStepperScreenState
       }
 
       final captainId = profile['id'] as String;
+      String? vehicleInfoWarning;
       try {
         await _authRepository.updateCaptainVehicleInfo(
           captainId: captainId,
@@ -484,10 +485,14 @@ class _CaptainRegisterStepperScreenState
             payoutPhone: _payoutPhoneController.text.trim(),
           );
         }
-      } on AppAuthException catch (_) {
-        // Non-fatal: the captain row still exists (bare) from sign-up: the
-        // vehicle/payout details can be corrected later from the profile
-        // screen.
+      } on AppAuthException catch (e) {
+        // Non-fatal: the captain row still exists (bare) from sign-up, so
+        // registration still completes - but unlike a transient failure,
+        // a rejected duplicate plate needs to be shown, not silently
+        // swallowed, since the captain has to go fix it (see
+        // PendingReviewScreen's warning param below) rather than just
+        // waiting on a review that can never approve a car with no plate.
+        vehicleInfoWarning = e.message;
       }
 
       // A brand-new captain is never pre-approved, so this always lands on
@@ -505,11 +510,17 @@ class _CaptainRegisterStepperScreenState
       final provider = Provider.of<AppStateProvider>(context, listen: false);
       provider.loginFromProfile(profile, _fullPhone, captain: captain);
       if (!mounted) return;
+      final combinedWarning = [
+        vehicleInfoWarning,
+        documentsWarning,
+      ].whereType<String>().join('\n');
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => approved
               ? const PermissionsScreen(destination: CaptainHomeScreen())
-              : PendingReviewScreen(uploadWarning: documentsWarning),
+              : PendingReviewScreen(
+                  warning: combinedWarning.isEmpty ? null : combinedWarning,
+                ),
         ),
         (route) => false,
       );

@@ -18,8 +18,8 @@ import 'splash_screen.dart';
 /// admin panel, which flips `captains.status` and (on rejection) fills
 /// `captains.rejection_reason` with the reason shown here.
 class PendingReviewScreen extends StatefulWidget {
-  final String? uploadWarning;
-  const PendingReviewScreen({super.key, this.uploadWarning});
+  final String? warning;
+  const PendingReviewScreen({super.key, this.warning});
 
   @override
   State<PendingReviewScreen> createState() => _PendingReviewScreenState();
@@ -35,13 +35,13 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
   void initState() {
     super.initState();
     _checkStatus(silent: true);
-    if (widget.uploadWarning != null) {
+    if (widget.warning != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              widget.uploadWarning!,
+              widget.warning!,
               style: const TextStyle(fontFamily: 'Cairo'),
             ),
             backgroundColor: AppColors.error,
