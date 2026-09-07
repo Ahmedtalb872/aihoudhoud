@@ -13,6 +13,7 @@ import '../trips/my_trips_screen.dart';
 import '../wallet/wallet_screen.dart';
 import '../profile/profile_screen.dart';
 import '../profile/captain_edit_info_screen.dart';
+import '../subscription/captain_subscriptions_screen.dart';
 import '../support/support_screen.dart';
 import '../support/settings_screen.dart';
 import 'captain_active_trip_screen.dart';
@@ -765,6 +766,19 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => const IslamicQuizScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.handshake_rounded,
+                  title: 'عروض الاشتراك الشهري',
+                  subtitle: 'تفاوض مع الزبائن واقبل أو ارفض العروض',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const CaptainSubscriptionsScreen(),
                       ),
                     );
                   },
