@@ -731,12 +731,38 @@ class AppStateProvider extends ChangeNotifier {
     return null;
   }
 
-  // Starts/stops the online-presence foreground tracking to match the
-  // current state: should run only while online with no active trip. Safe
-  // to call from anywhere online status or activeTrip might have changed -
-  // it's a no-op if already in the right state.
+  // True while online (idle, awaiting requests) OR while a trip is active -
+  // a captain mid-trip needs their position kept fresh in captain_locations
+  // just as much as (arguably more than) an idle one, since that's what
+  // lets the customer's and the admin dashboard's live trip-tracking maps
+  // show real captain movement instead of a static pin. Previously
+  // _syncOnlinePresenceTracking stopped tracking the moment a trip started
+  // (`_isCaptainOnline && _activeTrip == null`), which meant
+  // captain_locations simply went stale for the entire duration of every
+  // trip.
+  //
+  // Exception: once an open ride's meter is actually running,
+  // OpenRideActiveScreen already runs its own Geolocator position stream
+  // (for the live distance/fare meter) and writes to captain_locations
+  // itself (see its _positionSub listener) - running a second, independent
+  // Geolocator stream here at the same time would mean two concurrent
+  // Android foreground location services fighting over the same
+  // notification. So this only takes over from "idle online" up through
+  // "trip accepted/en route to pickup/arrived" - the open ride's own
+  // in-progress phase is excluded here and covered there instead.
+  bool get _shouldTrackPresence {
+    final openRideMeterActive =
+        _activeTrip?.isOpenRide == true &&
+        _activeTrip?.status == TripStatus.started;
+    return _isCaptainOnline || (_activeTrip != null && !openRideMeterActive);
+  }
+
+  // Starts/stops the location-tracking foreground service to match
+  // [_shouldTrackPresence]. Safe to call from anywhere online status or
+  // activeTrip might have changed - it's a no-op if already in the right
+  // state.
   void _syncOnlinePresenceTracking() {
-    final shouldTrack = _isCaptainOnline && _activeTrip == null;
+    final shouldTrack = _shouldTrackPresence;
     if (shouldTrack && _onlinePresenceSub == null) {
       _startOnlinePresenceTracking();
     } else if (!shouldTrack && _onlinePresenceSub != null) {
@@ -757,19 +783,27 @@ class AppStateProvider extends ChangeNotifier {
           permission == LocationPermission.deniedForever) {
         return;
       }
-      // A caller may have gone offline (or accepted a trip) while
-      // permissions were being requested above.
-      if (!_isCaptainOnline || _activeTrip != null) return;
+      // A caller may have changed state (gone offline, ended the trip,
+      // started an open ride's own meter) while permissions were being
+      // requested above.
+      if (!_shouldTrackPresence) return;
 
       final isAndroid =
           !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+      // Deliberately worded to stay accurate whether this subscription
+      // started while idle-online or is still running once a trip gets
+      // accepted (this stream itself doesn't restart on that transition,
+      // so the text can't just say "بانتظار الطلبات" - that would be wrong
+      // for most of a trip's duration, since captains almost always go
+      // online before ever accepting a request).
+      const notificationText = 'الهدهد نشط - جارٍ تتبع موقعك';
       final LocationSettings locationSettings = isAndroid
           ? AndroidSettings(
               accuracy: LocationAccuracy.high,
               distanceFilter: 50,
               foregroundNotificationConfig: const ForegroundNotificationConfig(
                 notificationTitle: 'الهدهد',
-                notificationText: 'متصل الآن - بانتظار الطلبات',
+                notificationText: notificationText,
                 enableWakeLock: true,
               ),
             )
@@ -1283,6 +1317,12 @@ class AppStateProvider extends ChangeNotifier {
           notifyListeners();
         });
       }
+      // An open ride's meter starting is exactly the moment
+      // _shouldTrackPresence flips to false (OpenRideActiveScreen takes
+      // over writing captain_locations via its own position stream from
+      // here) - this call is what actually stops the presence stream then,
+      // since the status mutation above doesn't do it on its own.
+      _syncOnlinePresenceTracking();
       _startStepReminder();
       notifyListeners();
     }

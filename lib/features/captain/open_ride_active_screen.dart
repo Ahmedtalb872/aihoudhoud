@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geolocator_android/geolocator_android.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
 import '../../core/widgets/real_map_widget.dart';
@@ -175,13 +176,37 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
               _gpsFixCount++;
             });
             if (mounted) {
-              Provider.of<AppStateProvider>(context, listen: false)
-                  .updateOpenRideDistance(
-                    _distanceKm,
-                    lat: position.latitude,
-                    lng: position.longitude,
-                    distanceMeters: meters,
-                  );
+              final provider = Provider.of<AppStateProvider>(
+                context,
+                listen: false,
+              );
+              provider.updateOpenRideDistance(
+                _distanceKm,
+                lat: position.latitude,
+                lng: position.longitude,
+                distanceMeters: meters,
+              );
+              // AppStateProvider's own online-presence stream deliberately
+              // stops writing to captain_locations once an open ride's
+              // meter is running (see its _shouldTrackPresence) so it isn't
+              // racing this stream over the same Android foreground
+              // location service - this is the sole writer during that
+              // window, so the customer's and admin dashboard's live
+              // tracking maps keep seeing real movement instead of a pin
+              // frozen at wherever the ride started.
+              final uid = provider.userId;
+              if (uid != null) {
+                Supabase.instance.client
+                    .from('captain_locations')
+                    .upsert({
+                      'captain_id': uid,
+                      'lat': position.latitude,
+                      'lng': position.longitude,
+                      'heading': position.heading,
+                      'updated_at': DateTime.now().toIso8601String(),
+                    })
+                    .catchError((_) {});
+              }
             }
           }, onError: (_) {
             // The stream itself can fail mid-trip (GPS turned off, permission

@@ -53,6 +53,14 @@ class _CaptainRegisterStepperScreenState
   final _carModelController = TextEditingController();
   final _carYearController = TextEditingController();
   final _carColorController = TextEditingController();
+  // Also empty, but unlike brand/model/year/color above, the plate is
+  // required (see the merged _validateStep2 below) - it's the one step-2
+  // field that must be this captain's own real, unique value. Pre-filling
+  // it with the same literal example text as its "hint" (below) used to
+  // mean every captain who didn't notice it wasn't just placeholder text
+  // and clear it first got "1234 AA 00" saved as their actual plate -
+  // several real captain accounts ended up with that exact value once a
+  // uniqueness constraint on vehicle_plate made the collision visible.
   final _carPlateController = TextEditingController();
   int _carSeats = 4;
 
@@ -274,6 +282,43 @@ class _CaptainRegisterStepperScreenState
     return result ?? false;
   }
 
+  // Unlike the vehicle brand/model/year/color fields on this same step
+  // (optional - just examples), the plate and the payout phone both must
+  // be filled in before moving on: the plate because it's this captain's
+  // own real, unique value (see captains_vehicle_plate_unique,
+  // app-driver-customer migration 20260907000093 - previously nothing
+  // forced it to be filled in at all, masked by _carPlateController
+  // starting pre-filled with example text that looked like a real value),
+  // the payout phone because it's how the company actually pays the
+  // captain.
+  bool _validateStep2() {
+    if (_carPlateController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'الرجاء إدخال رقم لوحة السيارة',
+            style: TextStyle(fontFamily: 'Cairo'),
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return false;
+    }
+    if (_payoutPhoneController.text.trim().length < 8) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'الرجاء إدخال رقم الهاتف المستخدم لاستلام المدفوعات',
+            style: TextStyle(fontFamily: 'Cairo'),
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return false;
+    }
+    return true;
+  }
+
   bool _validateStep3() {
     final requiredUploaded = _uploadStates.entries
         .where((e) => e.key != kOptionalDocType)
@@ -289,25 +334,6 @@ class _CaptainRegisterStepperScreenState
       ),
     );
     return false;
-  }
-
-  // Unlike the vehicle brand/model/year/color fields on this same step
-  // (optional - just examples), the payout phone is how the company
-  // actually pays the captain, so it must be filled in before moving on.
-  bool _validateStep2() {
-    if (_payoutPhoneController.text.trim().length < 8) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'الرجاء إدخال رقم الهاتف المستخدم لاستلام المدفوعات',
-            style: TextStyle(fontFamily: 'Cairo'),
-          ),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return false;
-    }
-    return true;
   }
 
   bool _validateStep1() {
@@ -484,6 +510,7 @@ class _CaptainRegisterStepperScreenState
       }
 
       final captainId = profile['id'] as String;
+      String? vehicleInfoWarning;
       try {
         await _authRepository.updateCaptainVehicleInfo(
           captainId: captainId,
@@ -505,17 +532,21 @@ class _CaptainRegisterStepperScreenState
         if (_isMotorcycle) {
           await _authRepository.setAcceptsDelivery(captainId, true);
         }
-        // Always non-empty here - _validateStep2() already required it
-        // before the captain could leave this step.
+        // Always non-empty here - _validateStep2() already required both
+        // the plate and this before the captain could leave that step.
         await _authRepository.updateCaptainPayoutInfo(
           captainId: captainId,
           payoutMethod: _payoutMethod,
           payoutPhone: _payoutPhoneController.text.trim(),
         );
-      } on AppAuthException catch (_) {
-        // Non-fatal: the captain row still exists (bare) from sign-up: the
-        // vehicle/payout details can be corrected later from the profile
-        // screen.
+      } on AppAuthException catch (e) {
+        // Non-fatal: the captain row still exists (bare) from sign-up, so
+        // registration still completes - but unlike a transient failure,
+        // a rejected duplicate plate needs to be shown, not silently
+        // swallowed, since the captain has to go fix it (see
+        // PendingReviewScreen's warning param below) rather than just
+        // waiting on a review that can never approve a car with no plate.
+        vehicleInfoWarning = e.message;
       }
 
       // A brand-new captain is never pre-approved, so this always lands on
@@ -533,11 +564,17 @@ class _CaptainRegisterStepperScreenState
       final provider = Provider.of<AppStateProvider>(context, listen: false);
       provider.loginFromProfile(profile, _fullPhone, captain: captain);
       if (!mounted) return;
+      final combinedWarning = [
+        vehicleInfoWarning,
+        documentsWarning,
+      ].whereType<String>().join('\n');
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => approved
               ? const PermissionsScreen(destination: CaptainHomeScreen())
-              : PendingReviewScreen(uploadWarning: documentsWarning),
+              : PendingReviewScreen(
+                  warning: combinedWarning.isEmpty ? null : combinedWarning,
+                ),
         ),
         (route) => false,
       );

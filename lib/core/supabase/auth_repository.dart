@@ -299,7 +299,13 @@ class AuthRepository {
             'vehicle_seats': vehicleSeats,
           })
           .eq('id', captainId);
-    } on PostgrestException {
+    } on PostgrestException catch (e) {
+      // 23505 = unique_violation - captains_vehicle_plate_unique
+      // (app-driver-customer migration 20260907000093) rejects a plate
+      // already registered on another captain account.
+      if (e.code == '23505') {
+        throw AppAuthException('رقم لوحة السيارة هذا مسجل بالفعل لكابتن آخر.');
+      }
       throw AppAuthException('تعذر حفظ بيانات السيارة.');
     }
   }
