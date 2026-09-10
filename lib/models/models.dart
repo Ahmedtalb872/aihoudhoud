@@ -1,4 +1,3 @@
-
 enum UserType { customer, captain }
 
 enum VehicleType { economy, comfort, family }
@@ -11,7 +10,7 @@ enum TripStatus {
   arrived,
   started,
   completed,
-  cancelled
+  cancelled,
 }
 
 enum TransactionType {
@@ -21,7 +20,7 @@ enum TransactionType {
   reward,
   withdraw,
   commission,
-  transfer
+  transfer,
 }
 
 class AppUser {
@@ -112,11 +111,12 @@ class Trip {
   final String? vehiclePlate;
   final String? vehicleName;
   final String pickupLocation;
-  final String destinationLocation;
+  // Null for open rides: no destination is known until the captain ends the trip.
+  final String? destinationLocation;
   final double pickupLat;
   final double pickupLng;
-  final double destLat;
-  final double destLng;
+  final double? destLat;
+  final double? destLng;
   final double distance; // in km
   final int duration; // in minutes
   final double price;
@@ -128,6 +128,16 @@ class Trip {
   final String date;
   final double? netEarnings;
   final double? commission;
+  final String? cancellationReason;
+  // True when this trip was claimed from a real customer request in the
+  // `rides` Supabase table (as opposed to the local demo/browse flows), so
+  // status changes should be written back to that row.
+  final bool isRemote;
+  // 'ride' (passenger) or 'delivery' (package, motorcycle captains only).
+  // For a delivery trip, customerName/customerPhone hold the recipient's
+  // details - the same contact fields the call/chat UI already uses.
+  final String serviceType;
+  final String? packageDescription;
 
   Trip({
     required this.id,
@@ -139,11 +149,11 @@ class Trip {
     this.vehiclePlate,
     this.vehicleName,
     required this.pickupLocation,
-    required this.destinationLocation,
+    this.destinationLocation,
     required this.pickupLat,
     required this.pickupLng,
-    required this.destLat,
-    required this.destLng,
+    this.destLat,
+    this.destLng,
     required this.distance,
     required this.duration,
     required this.price,
@@ -155,7 +165,13 @@ class Trip {
     required this.date,
     this.netEarnings,
     this.commission,
+    this.cancellationReason,
+    this.isRemote = false,
+    this.serviceType = 'ride',
+    this.packageDescription,
   });
+
+  bool get isDelivery => serviceType == 'delivery';
 
   String get carTypeNameArabic {
     switch (carType) {
@@ -188,22 +204,6 @@ class Trip {
         return 'ملغاة';
     }
   }
-}
-
-class NotificationModel {
-  final String id;
-  final String title;
-  final String body;
-  final String time;
-  final bool isRead;
-
-  NotificationModel({
-    required this.id,
-    required this.title,
-    required this.body,
-    required this.time,
-    this.isRead = false,
-  });
 }
 
 class Message {
@@ -264,5 +264,192 @@ class WalletTransaction {
       case TransactionType.transfer:
         return 'تحويل رصيد';
     }
+  }
+}
+
+// ---------------------------------------------------------------------
+// Monthly captain subscription ("اشتراك شهري" - see the customer app's
+// captain_subscriptions/captain_subscription_messages tables,
+// 20260812000056/57). The customer side (browsing captains, negotiating,
+// paying) already exists in app-driver-customer; these are the
+// captain-facing counterparts, previously missing entirely from this app
+// - a captain had no screen at all showing incoming subscription offers.
+// ---------------------------------------------------------------------
+
+enum SubscriptionStatus { negotiating, active, rejected, cancelled }
+
+/// escrow: the app holds the customer's payment and releases the
+/// captain's share in two halves (day 15/30). trusted: from the second
+/// month onward, the customer can pay the captain directly and both sides
+/// just confirm it happened in-app.
+enum SubscriptionRenewalMode { escrow, trusted }
+
+/// A monthly ride-with-this-customer arrangement, from the captain's side
+/// (mirrors app-driver-customer's CaptainSubscription, with the customer's
+/// identity instead of the captain's - a captain already knows their own
+/// vehicle). One row per subscription thread; a captain can have several
+/// at once, unlike a customer who's capped at one negotiation per captain
+/// and one active subscription overall.
+class CaptainSubscription {
+  const CaptainSubscription({
+    required this.id,
+    required this.customerId,
+    required this.customerName,
+    this.customerPhone,
+    required this.status,
+    this.proposedPrice,
+    this.proposedBy,
+    this.agreedPrice,
+    this.startedAt,
+    this.expiresAt,
+    this.payoutStatus,
+    this.renewalMode = SubscriptionRenewalMode.escrow,
+    this.cycleCount = 1,
+    this.renewalWindowOpenedAt,
+    this.customerConfirmedRenewalAt,
+    this.captainConfirmedRenewalAt,
+    this.paymentDispute = false,
+    this.disputeReason,
+  });
+
+  final String id;
+  final String customerId;
+  final String customerName;
+  final String? customerPhone;
+  final SubscriptionStatus status;
+  final double? proposedPrice;
+  final String? proposedBy;
+  final double? agreedPrice;
+  final DateTime? startedAt;
+  final DateTime? expiresAt;
+  final String? payoutStatus;
+  final SubscriptionRenewalMode renewalMode;
+  final int cycleCount;
+  final DateTime? renewalWindowOpenedAt;
+  final DateTime? customerConfirmedRenewalAt;
+  final DateTime? captainConfirmedRenewalAt;
+  final bool paymentDispute;
+  final String? disputeReason;
+
+  bool get isActive {
+    final expiry = expiresAt;
+    return status == SubscriptionStatus.active &&
+        expiry != null &&
+        expiry.isAfter(DateTime.now());
+  }
+
+  bool get isNegotiating => status == SubscriptionStatus.negotiating;
+
+  /// True once the customer has sent an offer this captain hasn't
+  /// responded to yet with either an accept or a newer counter-offer of
+  /// their own - what the incoming-offers list badges as needing a
+  /// response.
+  bool get hasPendingCustomerOffer =>
+      isNegotiating && proposedPrice != null && proposedBy == 'customer';
+
+  int? get daysRemaining {
+    final expiry = expiresAt;
+    if (expiry == null || !isActive) return null;
+    return expiry.difference(DateTime.now()).inDays;
+  }
+
+  /// True once this cycle has expired in trusted mode and the app is
+  /// waiting on this captain to confirm they were paid directly.
+  bool get awaitingCaptainConfirmation =>
+      status == SubscriptionStatus.active &&
+      renewalMode == SubscriptionRenewalMode.trusted &&
+      renewalWindowOpenedAt != null &&
+      captainConfirmedRenewalAt == null;
+
+  factory CaptainSubscription.fromJson(Map<String, dynamic> json) {
+    final name = json['customer_name'] as String?;
+    return CaptainSubscription(
+      id: json['id'] as String,
+      customerId: json['customer_id'] as String,
+      customerName: name == null || name.trim().isEmpty ? 'زبون' : name,
+      customerPhone: json['customer_phone'] as String?,
+      status: _statusFromString(json['status'] as String?),
+      proposedPrice: (json['proposed_price'] as num?)?.toDouble(),
+      proposedBy: json['proposed_by'] as String?,
+      agreedPrice: (json['agreed_price'] as num?)?.toDouble(),
+      startedAt: json['started_at'] == null
+          ? null
+          : DateTime.parse(json['started_at'] as String).toLocal(),
+      expiresAt: json['expires_at'] == null
+          ? null
+          : DateTime.parse(json['expires_at'] as String).toLocal(),
+      payoutStatus: json['payout_status'] as String?,
+      renewalMode: (json['renewal_mode'] as String?) == 'trusted'
+          ? SubscriptionRenewalMode.trusted
+          : SubscriptionRenewalMode.escrow,
+      cycleCount: (json['cycle_count'] as num?)?.toInt() ?? 1,
+      renewalWindowOpenedAt: json['renewal_window_opened_at'] == null
+          ? null
+          : DateTime.parse(
+              json['renewal_window_opened_at'] as String,
+            ).toLocal(),
+      customerConfirmedRenewalAt: json['customer_confirmed_renewal_at'] == null
+          ? null
+          : DateTime.parse(
+              json['customer_confirmed_renewal_at'] as String,
+            ).toLocal(),
+      captainConfirmedRenewalAt: json['captain_confirmed_renewal_at'] == null
+          ? null
+          : DateTime.parse(
+              json['captain_confirmed_renewal_at'] as String,
+            ).toLocal(),
+      paymentDispute: json['payment_dispute'] as bool? ?? false,
+      disputeReason: json['dispute_reason'] as String?,
+    );
+  }
+
+  static SubscriptionStatus _statusFromString(String? value) {
+    switch (value) {
+      case 'active':
+        return SubscriptionStatus.active;
+      case 'rejected':
+        return SubscriptionStatus.rejected;
+      case 'cancelled':
+        return SubscriptionStatus.cancelled;
+      case 'negotiating':
+      default:
+        return SubscriptionStatus.negotiating;
+    }
+  }
+}
+
+/// One chat bubble in a subscription negotiation thread (see
+/// captain_subscription_messages, 20260812000056_captain_subscriptions.sql).
+class SubscriptionMessage {
+  const SubscriptionMessage({
+    required this.id,
+    required this.subscriptionId,
+    required this.senderId,
+    required this.senderRole,
+    required this.body,
+    this.offerAmount,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String subscriptionId;
+  final String senderId;
+  final String senderRole;
+  final String body;
+  final double? offerAmount;
+  final DateTime createdAt;
+
+  bool get isOffer => offerAmount != null;
+
+  factory SubscriptionMessage.fromJson(Map<String, dynamic> json) {
+    return SubscriptionMessage(
+      id: json['id'] as String,
+      subscriptionId: json['subscription_id'] as String,
+      senderId: json['sender_id'] as String,
+      senderRole: json['sender_role'] as String,
+      body: json['body'] as String,
+      offerAmount: (json['offer_amount'] as num?)?.toDouble(),
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+    );
   }
 }

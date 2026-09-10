@@ -18,7 +18,8 @@ class MockMapWidget extends StatefulWidget {
   State<MockMapWidget> createState() => _MockMapWidgetState();
 }
 
-class _MockMapWidgetState extends State<MockMapWidget> with SingleTickerProviderStateMixin {
+class _MockMapWidgetState extends State<MockMapWidget>
+    with SingleTickerProviderStateMixin {
   late AnimationController _carController;
   late Animation<double> _carAnimation;
 
@@ -30,9 +31,10 @@ class _MockMapWidgetState extends State<MockMapWidget> with SingleTickerProvider
       duration: const Duration(seconds: 15),
     );
 
-    _carAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _carController, curve: Curves.easeInOut),
-    );
+    _carAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _carController, curve: Curves.easeInOut));
 
     if (widget.animateCar) {
       _carController.repeat();
@@ -71,21 +73,41 @@ class _MockMapWidgetState extends State<MockMapWidget> with SingleTickerProvider
           _buildMapGridBlock(330, 60, 120, 100),
           _buildMapGridBlock(430, 200, 100, 80),
           _buildMapGridBlock(490, 30, 120, 100),
-          
+
           // Streets / Roads (Lines)
-          _buildRoadLine(0, 150, double.infinity, 24, true), // Main horizontal road
-          _buildRoadLine(160, 0, 24, double.infinity, false), // Main vertical road
-          _buildRoadLine(0, 320, double.infinity, 16, true), // Secondary horizontal road
-          _buildRoadLine(300, 0, 16, double.infinity, false), // Secondary vertical road
-          
+          _buildRoadLine(
+            0,
+            150,
+            double.infinity,
+            24,
+            true,
+          ), // Main horizontal road
+          _buildRoadLine(
+            160,
+            0,
+            24,
+            double.infinity,
+            false,
+          ), // Main vertical road
+          _buildRoadLine(
+            0,
+            320,
+            double.infinity,
+            16,
+            true,
+          ), // Secondary horizontal road
+          _buildRoadLine(
+            300,
+            0,
+            16,
+            double.infinity,
+            false,
+          ), // Secondary vertical road
           // Show simulated trip route if requested
           if (widget.showRoute) ...[
             // Draw path line from Pickup (100, 220) to Destination (250, 80)
-            CustomPaint(
-              size: Size.infinite,
-              painter: RoutePainter(),
-            ),
-            
+            CustomPaint(size: Size.infinite, painter: RoutePainter()),
+
             // Pickup Marker
             const Positioned(
               left: 100 - 15,
@@ -99,7 +121,7 @@ class _MockMapWidgetState extends State<MockMapWidget> with SingleTickerProvider
                 ),
               ),
             ),
-            
+
             // Destination Marker
             const Positioned(
               left: 250 - 15,
@@ -113,19 +135,20 @@ class _MockMapWidgetState extends State<MockMapWidget> with SingleTickerProvider
                 ),
               ),
             ),
-            
+
             // Animated taxi icon representing driver location
             AnimatedBuilder(
               animation: _carAnimation,
               builder: (context, child) {
                 // Calculate position along route path
                 double t = _carAnimation.value;
-                
+
                 // Route changes shape based on status
                 double x = 100.0;
                 double y = 220.0;
-                
-                if (widget.status == TripStatus.accepted || widget.status == TripStatus.enRoute) {
+
+                if (widget.status == TripStatus.accepted ||
+                    widget.status == TripStatus.enRoute) {
                   // Captain en-route to pickup (Start far away and move to pickup (100, 220))
                   x = 350.0 - (250.0 * t);
                   y = 150.0 + (70.0 * t);
@@ -142,7 +165,7 @@ class _MockMapWidgetState extends State<MockMapWidget> with SingleTickerProvider
                   x = 105;
                   y = 210;
                 }
-                
+
                 return Positioned(
                   left: x - 14,
                   top: y - 14,
@@ -156,7 +179,7 @@ class _MockMapWidgetState extends State<MockMapWidget> with SingleTickerProvider
                           color: Colors.black26,
                           blurRadius: 6,
                           offset: Offset(0, 2),
-                        )
+                        ),
                       ],
                     ),
                     child: const Icon(
@@ -169,7 +192,7 @@ class _MockMapWidgetState extends State<MockMapWidget> with SingleTickerProvider
               },
             ),
           ],
-          
+
           // Standard map UI elements (Compass, zoom buttons)
           Positioned(
             left: 20,
@@ -204,7 +227,13 @@ class _MockMapWidgetState extends State<MockMapWidget> with SingleTickerProvider
     );
   }
 
-  Widget _buildRoadLine(double left, double top, double w, double h, bool isHorizontal) {
+  Widget _buildRoadLine(
+    double left,
+    double top,
+    double w,
+    double h,
+    bool isHorizontal,
+  ) {
     return Positioned(
       left: left,
       top: top,
@@ -225,11 +254,7 @@ class _MockMapWidgetState extends State<MockMapWidget> with SingleTickerProvider
         color: Colors.white,
         shape: BoxShape.circle,
         boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          )
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
         ],
       ),
       child: IconButton(
@@ -251,12 +276,12 @@ class DashLinePainter extends CustomPainter {
       ..color = const Color(0xFF94A3B8)
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
-    
+
     double maxExtent = isHorizontal ? size.width : size.height;
     double dashWidth = 8;
     double dashSpace = 8;
     double start = 0;
-    
+
     while (start < maxExtent) {
       if (isHorizontal) {
         canvas.drawLine(
@@ -289,20 +314,20 @@ class RoutePainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final path = Path()
-      ..moveTo(100, 220)  // Pickup
-      ..lineTo(160, 220)  // To vertical street junction
-      ..lineTo(160, 80)   // Drive north along vertical street
-      ..lineTo(250, 80);  // To Destination
+      ..moveTo(100, 220) // Pickup
+      ..lineTo(160, 220) // To vertical street junction
+      ..lineTo(160, 80) // Drive north along vertical street
+      ..lineTo(250, 80); // To Destination
 
     canvas.drawPath(path, paint);
-    
+
     // Overlay thin bright path line
     final innerPaint = Paint()
       ..color = AppColors.secondary
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
-      
+
     canvas.drawPath(path, innerPaint);
   }
 

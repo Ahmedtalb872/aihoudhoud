@@ -1,36 +1,78 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/app_state_provider.dart';
 import '../../models/models.dart';
 import '../../core/widgets/real_map_widget.dart';
+import '../../core/widgets/trip_progress_rail.dart';
+import '../../core/widgets/call_options_sheet.dart';
+import '../../core/widgets/route_row.dart';
+import '../../core/services/call_signaling_service.dart';
+import '../calls/call_screen.dart';
 import '../support/chat_screen.dart';
 import 'captain_trip_summary_screen.dart';
+import 'open_ride_active_screen.dart';
+import 'cancel_trip_dialog.dart';
+import 'collect_payment_dialog.dart';
 
-class CaptainActiveTripScreen extends StatelessWidget {
+class CaptainActiveTripScreen extends StatefulWidget {
   const CaptainActiveTripScreen({super.key});
 
-  void _simulateCall(BuildContext context, String name) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-          title: const Text('اتصال هاتفي', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-          content: Text('جاري الاتصال بـ $name...\n(+222 44444444)', style: const TextStyle(fontFamily: 'Cairo', fontSize: 14), textAlign: TextAlign.center),
-          actions: [
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: () => Navigator.of(context).pop(),
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-                icon: const Icon(Icons.call_end_rounded),
-                label: const Text('إنهاء المكالمة'),
-              ),
+  @override
+  State<CaptainActiveTripScreen> createState() => _CaptainActiveTripScreenState();
+}
+
+class _CaptainActiveTripScreenState extends State<CaptainActiveTripScreen> {
+  CallSignalingService? _callSignaling;
+  String? _callSignalingTripId;
+  StreamSubscription<CallSignal>? _incomingCallSub;
+  bool _callScreenOpen = false;
+
+  @override
+  void dispose() {
+    _incomingCallSub?.cancel();
+    _callSignaling?.dispose();
+    super.dispose();
+  }
+
+  /// Trip id is only known once the provider has an active trip to read in
+  /// build() (there's no constructor param like the customer app's
+  /// TripTrackingScreen(tripId: ...) to key off in initState), so the
+  /// signaling channel is lazily started here instead - guarded so it only
+  /// (re)starts when the trip id actually changes, not on every rebuild.
+  void _ensureCallSignaling(String tripId) {
+    if (_callSignalingTripId == tripId) return;
+    _incomingCallSub?.cancel();
+    _callSignaling?.dispose();
+    final signaling = CallSignalingService(tripId: tripId, selfRole: 'captain')..start();
+    _callSignaling = signaling;
+    _callSignalingTripId = tripId;
+    _incomingCallSub = signaling.onOffer.listen(_onIncomingCallOffer);
+  }
+
+  void _onIncomingCallOffer(CallSignal signal) {
+    if (!mounted || _callScreenOpen || signal.sdp == null) return;
+    final trip = Provider.of<AppStateProvider>(context, listen: false).activeTrip;
+    if (trip == null) return;
+    _openCallScreen(trip, incomingOfferSdp: signal.sdp);
+  }
+
+  void _openCallScreen(Trip trip, {String? incomingOfferSdp}) {
+    final signaling = _callSignaling;
+    if (signaling == null) return;
+    _callScreenOpen = true;
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (context) => CallScreen(
+              signaling: signaling,
+              peerName: trip.customerName,
+              incomingOfferSdp: incomingOfferSdp,
             ),
-          ],
-        );
-      },
-    );
+          ),
+        )
+        .then((_) => _callScreenOpen = false);
   }
 
   @override
@@ -44,9 +86,19 @@ class CaptainActiveTripScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.check_circle_rounded, size: 48, color: AppColors.success),
+              const Icon(
+                Icons.check_circle_rounded,
+                size: 48,
+                color: AppColors.success,
+              ),
               const SizedBox(height: 16),
-              const Text('تم إكمال المشوار بنجاح!', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+              const Text(
+                'تم إكمال المشوار بنجاح!',
+                style: TextStyle(
+                  fontFamily: 'Cairo',
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
@@ -58,39 +110,55 @@ class CaptainActiveTripScreen extends StatelessWidget {
       );
     }
 
+    _ensureCallSignaling(trip.id);
+
     // Auto transition to Trip Summary screen once completed
     if (trip.status == TripStatus.completed) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const CaptainTripSummaryScreen()),
+          MaterialPageRoute(
+            builder: (context) => const CaptainTripSummaryScreen(),
+          ),
         );
       });
     }
 
+    // Open rides have no known destination: once the customer boards, hand
+    // off to the live-meter screen instead of "en route to a destination".
+    if (trip.status == TripStatus.started && trip.isOpenRide) {
+      return const OpenRideActiveScreen();
+    }
+
+    final isDelivery = trip.isDelivery;
+
     // Determine state visual details
     String statusTitle = 'توجه إلى نقطة الانطلاق';
-    String addressLabel = 'موقع العميل (الالتقاء)';
-    String addressValue = trip.pickupLocation;
     String actionLabel = 'وصلت للزبون';
-    Color actionColor = AppColors.primary;
     IconData actionIcon = Icons.sports_motorsports_rounded;
     VoidCallback onAction = () => provider.captainArriveAtPickup();
+    int progressStep = 2;
 
     if (trip.status == TripStatus.arrived) {
-      statusTitle = 'وصلت لموقع العميل';
-      addressLabel = 'موقع العميل (الانتظار)';
-      actionLabel = 'بدء الرحلة الجارية';
-      actionColor = AppColors.success;
-      actionIcon = Icons.play_arrow_rounded;
+      statusTitle = isDelivery ? 'وصلت إلى نقطة الاستلام' : 'وصلت لموقع العميل';
+      actionLabel = isDelivery ? 'تم استلام الطرد' : 'بدء الرحلة الجارية';
+      actionIcon = isDelivery
+          ? Icons.inventory_2_rounded
+          : Icons.play_arrow_rounded;
       onAction = () => provider.captainStartActiveTrip();
+      progressStep = 3;
     } else if (trip.status == TripStatus.started) {
-      statusTitle = 'مشوار جاري الآن نحو الوجهة';
-      addressLabel = 'الوجهة المحددة للرحلة';
-      addressValue = trip.destinationLocation;
-      actionLabel = 'إنهاء الرحلة بنجاح';
-      actionColor = AppColors.error;
+      statusTitle = isDelivery
+          ? 'التوصيل جارٍ الآن نحو عنوان التسليم'
+          : 'مشوار جاري الآن نحو الوجهة';
+      actionLabel = isDelivery ? 'تم التسليم' : 'إنهاء الرحلة بنجاح';
       actionIcon = Icons.flag_rounded;
-      onAction = () => provider.captainCompleteActiveTrip();
+      onAction = () => showCollectPaymentDialog(
+        context,
+        suggestedAmount: trip.price,
+        onConfirm: (amountPaid) =>
+            provider.captainCompleteActiveTrip(amountPaid: amountPaid),
+      );
+      progressStep = 4;
     }
 
     return Scaffold(
@@ -98,6 +166,22 @@ class CaptainActiveTripScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(statusTitle),
         automaticallyImplyLeading: false,
+        // Once the customer has boarded (trip in progress), cancelling no
+        // longer makes sense - the ride only ends by completing it now.
+        actions: trip.status == TripStatus.started
+            ? null
+            : [
+                TextButton(
+                  onPressed: () => showCancelTripDialog(context),
+                  child: const Text(
+                    'إلغاء المشوار',
+                    style: TextStyle(
+                      color: AppColors.error,
+                      fontFamily: 'Cairo',
+                    ),
+                  ),
+                ),
+              ],
       ),
       body: SafeArea(
         child: Column(
@@ -115,27 +199,40 @@ class CaptainActiveTripScreen extends StatelessWidget {
                     destLng: trip.destLng,
                     animateCar: true,
                   ),
-                  
+
                   // Float ETA indicator
                   Positioned(
                     top: 16,
                     right: 16,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black12, blurRadius: 4),
+                        ],
                       ),
                       child: Column(
                         children: [
                           Text(
-                            '${trip.distance} كم',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
+                            '${trip.distance.toStringAsFixed(1)} كم',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: AppColors.primary,
+                            ),
                           ),
                           const Text(
                             'المسافة الكلية',
-                            style: TextStyle(fontSize: 10, color: AppColors.secondaryText, fontFamily: 'Cairo'),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: AppColors.secondaryText,
+                              fontFamily: 'Cairo',
+                            ),
                           ),
                         ],
                       ),
@@ -144,7 +241,7 @@ class CaptainActiveTripScreen extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Bottom Sheet control board
             Container(
               padding: const EdgeInsets.all(24),
@@ -156,43 +253,47 @@ class CaptainActiveTripScreen extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Address text box
-                  Row(
-                    children: [
-                      Icon(
-                        trip.status == TripStatus.started ? Icons.flag_rounded : Icons.radio_button_checked_rounded,
-                        color: trip.status == TripStatus.started ? AppColors.error : AppColors.success,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              addressLabel,
-                              style: const TextStyle(fontSize: 10, color: AppColors.secondaryText, fontFamily: 'Cairo'),
-                            ),
-                            Text(
-                              addressValue,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.darkText, fontFamily: 'Cairo'),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                  TripProgressRail(step: progressStep),
+                  const SizedBox(height: 20),
+
+                  // Pickup & destination, each on its own line.
+                  RouteRow(
+                    dotColor: AppColors.success,
+                    label: 'من',
+                    text: trip.pickupLocation,
                   ),
+                  const SizedBox(height: 6),
+                  RouteRow(
+                    dotColor: AppColors.error,
+                    label: 'إلى',
+                    text: trip.destinationLocation ?? 'غير محددة',
+                  ),
+                  if (isDelivery &&
+                      (trip.packageDescription?.isNotEmpty ?? false)) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'الطرد: ${trip.packageDescription}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryDark,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
+                  ],
                   const Divider(height: 24),
-                  
-                  // Customer details and actions row
+
+                  // Customer/recipient details and actions row
                   Row(
                     children: [
-                      const CircleAvatar(
+                      CircleAvatar(
                         radius: 20,
                         backgroundColor: AppColors.primary,
-                        child: Icon(Icons.person, color: Colors.white, size: 22),
+                        child: Icon(
+                          isDelivery ? Icons.inventory_2_rounded : Icons.person,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -201,35 +302,56 @@ class CaptainActiveTripScreen extends StatelessWidget {
                           children: [
                             Text(
                               trip.customerName,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'Cairo'),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                fontFamily: 'Cairo',
+                              ),
                             ),
                             Text(
                               trip.customerPhone,
-                              style: const TextStyle(fontSize: 11, color: AppColors.secondaryText),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.secondaryText,
+                              ),
                             ),
                           ],
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.chat_bubble_outline_rounded, color: AppColors.primary, size: 20),
+                        icon: const Icon(
+                          Icons.chat_bubble_outline_rounded,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
                         onPressed: () {
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => const ChatScreen(showAppBar: true)),
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const ChatScreen(showAppBar: true),
+                            ),
                           );
                         },
                       ),
                       IconButton(
-                        icon: const Icon(Icons.call_outlined, color: AppColors.primary, size: 20),
-                        onPressed: () => _simulateCall(context, trip.customerName),
+                        icon: const Icon(
+                          Icons.call_outlined,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                        onPressed: () => showCallOptionsSheet(
+                          context,
+                          phone: trip.customerPhone,
+                          onInAppCall: () => _openCallScreen(trip),
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // Status change confirm action button
                   ElevatedButton(
                     onPressed: onAction,
-                    style: ElevatedButton.styleFrom(backgroundColor: actionColor),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
