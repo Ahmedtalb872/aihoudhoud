@@ -453,3 +453,36 @@ class SubscriptionMessage {
     );
   }
 }
+
+/// One message in a support/complaints thread with the admin team - see
+/// public.support_ticket_messages, added by the sibling customer app's
+/// 20260924000098_support_tickets.sql (shared database: this app's
+/// captains use the exact same tables, keyed by their own profiles.id).
+class SupportTicketMessage {
+  const SupportTicketMessage({
+    required this.id,
+    required this.ticketId,
+    required this.senderId,
+    required this.isAdminReply,
+    required this.body,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String ticketId;
+  final String senderId;
+  final bool isAdminReply;
+  final String body;
+  final DateTime createdAt;
+
+  factory SupportTicketMessage.fromJson(Map<String, dynamic> json) {
+    return SupportTicketMessage(
+      id: json['id'] as String,
+      ticketId: json['ticket_id'] as String,
+      senderId: json['sender_id'] as String,
+      isAdminReply: json['is_admin_reply'] as bool? ?? false,
+      body: json['body'] as String,
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+    );
+  }
+}
