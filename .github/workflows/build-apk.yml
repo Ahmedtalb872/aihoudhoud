@@ -1,0 +1,99 @@
+name: Build Android APK + App Bundle
+
+on:
+  push:
+    branches:
+      - claude/project-details-o5qgzr
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # GitHub Actions rejects the whole workflow file at validation time
+      # (zero jobs ever run, no useful error surfaced anywhere obvious) if
+      # an `if:` conditional references `secrets.*` directly - it has to go
+      # through `env` first, so this is set here and the signing step below
+      # checks env.HAS_ANDROID_KEYSTORE instead of secrets.* directly.
+      HAS_ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.6'
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Give this build a unique version code
+        # pubspec.yaml's build number (the part after "+") was hardcoded at
+        # 1 forever, so every APK this workflow ever produced had the exact
+        # same Android versionCode. Android's installer treats "same
+        # versionCode" as "not a new version" and can silently refuse to
+        # overwrite the already-installed copy - a captain testing a fix
+        # would download the new APK, install it, and keep running the old
+        # code with no error shown. github.run_number strictly increases
+        # on every run of this workflow, so it's a safe, always-fresh
+        # versionCode.
+        run: |
+          sed -i -E "s/^(version: [0-9]+\.[0-9]+\.[0-9]+)\+[0-9]+/\1+${{ github.run_number }}/" pubspec.yaml
+
+      - name: Write Supabase config
+        run: |
+          cat > env.json <<'EOF'
+          {
+            "SUPABASE_URL": "https://hdjxtnzwxqkrihhvssej.supabase.co",
+            "SUPABASE_ANON_KEY": "sb_publishable_K63bm3UI9aVz6U7z03agDQ_j8_LkL8v"
+          }
+          EOF
+
+      - name: Write Android release signing config
+        # Reconstructs the release keystore from repository secrets instead
+        # of committing it - see android/.gitignore. Skipped entirely if the
+        # secret isn't set yet (e.g. right after this was wired up, before
+        # it's been added in repo Settings), in which case build.gradle.kts
+        # falls back to debug signing so the build still succeeds.
+        if: ${{ env.HAS_ANDROID_KEYSTORE == 'true' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/upload-keystore.jks
+          cat > android/key.properties <<EOF
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=upload-keystore.jks
+          EOF
+
+      - name: Build release APK
+        run: flutter build apk --release --dart-define-from-file=env.json
+
+      - name: Build release App Bundle (for Play Store upload)
+        run: flutter build appbundle --release --dart-define-from-file=env.json
+
+      - name: Publish APK + App Bundle to the "latest-apk" release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-apk
+          name: أحدث نسخة
+          body: |
+            يتم تحديث هذا الإصدار تلقائيًا مع كل تعديل على فرع claude/project-details-o5qgzr.
+
+            - app-release.apk: للتثبيت المباشر على هاتف أندرويد (نزّله وثبّته مباشرة).
+            - app-release.aab: App Bundle لرفعه على Google Play Console - لا يُثبَّت مباشرة على هاتف.
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab

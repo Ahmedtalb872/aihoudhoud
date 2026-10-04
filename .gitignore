@@ -4,6 +4,12 @@
 *.pyc
 *.swp
 .DS_Store
+
+# Source-hand-off bundles for the iOS developer - regenerated on demand,
+# and SECRETS_HANDOFF.md embeds env values that must never leave a private
+# channel.
+alhudhud_captain_source.zip
+SECRETS_HANDOFF.md
 .atom/
 .build/
 .buildlog/
@@ -43,3 +49,12 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Supabase local secrets (copy env.json.example -> env.json and fill in your own project)
+env.json
+
+# Release signing key - never commit this. CI reconstructs it at build time
+# from repository secrets (see .github/workflows/build-apk.yml); for a local
+# release build, generate your own and fill these in, they're gitignored.
+android/key.properties
+android/app/*.jks
