@@ -8,6 +8,7 @@ import '../../models/models.dart';
 import '../../core/widgets/real_map_widget.dart';
 import '../../core/widgets/app_logo.dart';
 import '../../core/widgets/route_row.dart';
+import '../../core/widgets/destination_route_row.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../trips/my_trips_screen.dart';
 import '../wallet/wallet_screen.dart';
@@ -399,11 +400,10 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                         : 'يبعد عنك ${_distanceFromCaptainKm!.toStringAsFixed(1)} كم',
                   ),
                   const SizedBox(height: 4),
-                  RouteRow(
-                    dotColor: AppColors.error,
-                    label: 'إلى',
-                    text: trip.destinationLocation ??
-                        'مشوار مفتوح (بدون وجهة محددة)',
+                  DestinationRouteRow(
+                    destinationLocation: trip.destinationLocation,
+                    destLat: trip.destLat,
+                    destLng: trip.destLng,
                   ),
                   const SizedBox(height: 10),
                   // The route itself is drawn on the main map behind this

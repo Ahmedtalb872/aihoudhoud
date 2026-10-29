@@ -8,6 +8,7 @@ import '../../core/widgets/real_map_widget.dart';
 import '../../core/widgets/trip_progress_rail.dart';
 import '../../core/widgets/call_options_sheet.dart';
 import '../../core/widgets/route_row.dart';
+import '../../core/widgets/destination_route_row.dart';
 import '../../core/services/call_signaling_service.dart';
 import '../calls/call_screen.dart';
 import '../support/chat_screen.dart';
@@ -263,10 +264,10 @@ class _CaptainActiveTripScreenState extends State<CaptainActiveTripScreen> {
                     text: trip.pickupLocation,
                   ),
                   const SizedBox(height: 6),
-                  RouteRow(
-                    dotColor: AppColors.error,
-                    label: 'إلى',
-                    text: trip.destinationLocation ?? 'غير محددة',
+                  DestinationRouteRow(
+                    destinationLocation: trip.destinationLocation,
+                    destLat: trip.destLat,
+                    destLng: trip.destLng,
                   ),
                   if (isDelivery &&
                       (trip.packageDescription?.isNotEmpty ?? false)) ...[
