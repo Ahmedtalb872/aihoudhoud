@@ -234,14 +234,24 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
 
                 // Stage 2: the full wordmark, revealed once the background
-                // has settled into the brand gold.
+                // has settled into the brand gold. Spelled out in Latin
+                // script for French (and any other non-Arabic) locale,
+                // matching the app's own "AL HODHOD" icon branding, instead
+                // of a word French readers can't pronounce from Arabic
+                // script.
                 Opacity(
                   opacity: _wordmarkOpacity.value,
                   child: SlideTransition(
                     position: _wordmarkSlide,
-                    child: const Text(
-                      'الهدهد',
-                      style: TextStyle(
+                    child: Text(
+                      Provider.of<AppStateProvider>(
+                                context,
+                                listen: false,
+                              ).locale.languageCode ==
+                              'ar'
+                          ? 'الهدهد'
+                          : 'Al Hodhod',
+                      style: const TextStyle(
                         fontSize: 42,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
