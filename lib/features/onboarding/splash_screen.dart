@@ -35,12 +35,6 @@ class _SplashScreenState extends State<SplashScreen>
   late final Animation<Offset> _wordmarkSlide;
   late final Animation<double> _wordmarkCharProgress;
 
-  // Background: off-white while the badge is alone on screen, settling
-  // into the brand gold as the full name is revealed - the same "badge
-  // color takes over the screen" beat as the reference animation, done as
-  // a color crossfade instead of a literal circular reveal.
-  late final Animation<Color?> _backgroundColor;
-
   @override
   void initState() {
     super.initState();
@@ -99,16 +93,6 @@ class _SplashScreenState extends State<SplashScreen>
     _wordmarkCharProgress = CurvedAnimation(
       parent: _controller,
       curve: const Interval(0.45, 1.0, curve: Curves.linear),
-    );
-
-    _backgroundColor = ColorTween(
-      begin: AppColors.background,
-      end: AppColors.primary,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.3, 0.75, curve: Curves.easeInOut),
-      ),
     );
 
     // Holds on the fully-revealed wordmark for a beat before moving on, so
@@ -206,7 +190,7 @@ class _SplashScreenState extends State<SplashScreen>
       animation: _controller,
       builder: (context, _) {
         return Scaffold(
-          backgroundColor: _backgroundColor.value,
+          backgroundColor: AppColors.background,
           body: Center(
             child: Stack(
               alignment: Alignment.center,
@@ -279,7 +263,7 @@ class _SplashScreenState extends State<SplashScreen>
                             style: TextStyle(
                               fontSize: isArabic ? 42 : 30,
                               fontWeight: FontWeight.w900,
-                              color: Colors.white,
+                              color: AppColors.primary,
                               fontFamily: 'Cairo',
                             ),
                           ),
