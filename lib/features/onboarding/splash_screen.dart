@@ -230,26 +230,16 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
 
                 // Stage 2: the full wordmark, revealed once the background
-                // has settled into the brand gold. Spelled out in Latin
-                // script for French (and any other non-Arabic) locale,
-                // matching the app's own "AL HODHOD" icon branding, instead
-                // of a word French readers can't pronounce from Arabic
-                // script.
+                // has settled into the brand gold. Always spelled out in
+                // Latin script, matching the app's own "AL HODHOD" icon
+                // branding, regardless of the app's current language.
                 Opacity(
                   opacity: _wordmarkOpacity.value,
                   child: SlideTransition(
                     position: _wordmarkSlide,
                     child: Builder(
                       builder: (context) {
-                        final isArabic =
-                            Provider.of<AppStateProvider>(
-                              context,
-                              listen: false,
-                            ).locale.languageCode ==
-                            'ar';
-                        final fullText = isArabic
-                            ? 'الهدهد'
-                            : 'Al Hodhoud Captain';
+                        const fullText = 'Al Hodhoud Captain';
                         final visibleCount =
                             (_wordmarkCharProgress.value * fullText.length)
                                 .ceil()
@@ -260,8 +250,8 @@ class _SplashScreenState extends State<SplashScreen>
                           child: Text(
                             fullText.substring(0, visibleCount),
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: isArabic ? 42 : 30,
+                            style: const TextStyle(
+                              fontSize: 30,
                               fontWeight: FontWeight.w900,
                               color: AppColors.primary,
                               fontFamily: 'Cairo',
