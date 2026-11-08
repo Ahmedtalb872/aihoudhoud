@@ -28,9 +28,12 @@ class _SplashScreenState extends State<SplashScreen>
   late final Animation<double> _badgeScale;
   late final Animation<double> _badgeOpacity;
 
-  // Wordmark: fades/slides in once the badge has had a moment to register.
+  // Wordmark: fades/slides in once the badge has had a moment to register,
+  // then its letters are revealed one at a time (see _wordmarkCharProgress)
+  // for a "being typed" effect instead of the whole name popping in at once.
   late final Animation<double> _wordmarkOpacity;
   late final Animation<Offset> _wordmarkSlide;
+  late final Animation<double> _wordmarkCharProgress;
 
   // Background: off-white while the badge is alone on screen, settling
   // into the brand gold as the full name is revealed - the same "badge
@@ -43,7 +46,7 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1900),
+      duration: const Duration(milliseconds: 2400),
     )..forward();
 
     _badgeScale = TweenSequence<double>([
@@ -74,9 +77,12 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     ]).animate(_controller);
 
+    // Fast fade-in for the wordmark's container (so it doesn't just pop in
+    // before the first letter is typed), independent of _wordmarkCharCount
+    // below, which handles the actual letter-by-letter reveal.
     _wordmarkOpacity = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.5, 1.0, curve: Curves.easeOut),
+      curve: const Interval(0.45, 0.6, curve: Curves.easeOut),
     );
     _wordmarkSlide =
         Tween<Offset>(
@@ -85,9 +91,15 @@ class _SplashScreenState extends State<SplashScreen>
         ).animate(
           CurvedAnimation(
             parent: _controller,
-            curve: const Interval(0.5, 1.0, curve: Curves.easeOutCubic),
+            curve: const Interval(0.45, 0.65, curve: Curves.easeOutCubic),
           ),
         );
+    // Linear so each letter of the name takes roughly the same amount of
+    // time to appear, like it's being typed rather than wiped on unevenly.
+    _wordmarkCharProgress = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.45, 1.0, curve: Curves.linear),
+    );
 
     _backgroundColor = ColorTween(
       begin: AppColors.background,
@@ -95,14 +107,14 @@ class _SplashScreenState extends State<SplashScreen>
     ).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.35, 0.9, curve: Curves.easeInOut),
+        curve: const Interval(0.3, 0.75, curve: Curves.easeInOut),
       ),
     );
 
     // Holds on the fully-revealed wordmark for a beat before moving on, so
     // the name is actually readable rather than vanishing the instant the
     // entrance animation ends.
-    Timer(const Duration(milliseconds: 3100), _resumeSessionOrLogin);
+    Timer(const Duration(milliseconds: 3500), _resumeSessionOrLogin);
   }
 
   @override
@@ -251,10 +263,18 @@ class _SplashScreenState extends State<SplashScreen>
                               listen: false,
                             ).locale.languageCode ==
                             'ar';
+                        final fullText = isArabic
+                            ? 'الهدهد'
+                            : 'Al Hodhoud Captain';
+                        final visibleCount =
+                            (_wordmarkCharProgress.value * fullText.length)
+                                .ceil()
+                                .clamp(0, fullText.length)
+                                .toInt();
                         return Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 24),
                           child: Text(
-                            isArabic ? 'الهدهد' : 'Al Hodhoud Captain',
+                            fullText.substring(0, visibleCount),
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: isArabic ? 42 : 30,
