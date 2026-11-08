@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_repository.dart';
 import '../../providers/app_state_provider.dart';
@@ -38,9 +39,24 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+    // Four clearly separated phases instead of a crossfade - the badge
+    // fully finishes and disappears, THEN (after a beat of empty screen)
+    // the wordmark starts, so the two never visually overlap:
+    //   0 - 650ms    badge bounces in
+    //   650 - 1050ms badge holds, fully visible
+    //   1050 - 1450ms badge fades out
+    //   1450 - 1750ms empty gap
+    //   1750ms - end  wordmark fades in, typed out letter by letter
+    const totalMs = 2800;
+    const badgeBounceMs = 650;
+    const badgeHoldMs = 400;
+    const badgeFadeMs = 400;
+    const gapMs = 300;
+    const wordmarkStartMs = badgeBounceMs + badgeHoldMs + badgeFadeMs + gapMs;
+
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2400),
+      duration: const Duration(milliseconds: totalMs),
     )..forward();
 
     _badgeScale = TweenSequence<double>([
@@ -49,34 +65,56 @@ class _SplashScreenState extends State<SplashScreen>
           begin: 0.4,
           end: 1.0,
         ).chain(CurveTween(curve: Curves.elasticOut)),
-        weight: 55,
+        weight: badgeBounceMs.toDouble(),
+      ),
+      TweenSequenceItem(
+        tween: ConstantTween(1.0),
+        weight: badgeHoldMs.toDouble(),
       ),
       TweenSequenceItem(
         tween: Tween(
           begin: 1.0,
           end: 0.7,
         ).chain(CurveTween(curve: Curves.easeIn)),
-        weight: 45,
+        weight: badgeFadeMs.toDouble(),
+      ),
+      TweenSequenceItem(
+        tween: ConstantTween(0.7),
+        weight: (totalMs - badgeBounceMs - badgeHoldMs - badgeFadeMs)
+            .toDouble(),
       ),
     ]).animate(_controller);
 
     _badgeOpacity = TweenSequence<double>([
-      TweenSequenceItem(tween: ConstantTween(1.0), weight: 65),
+      TweenSequenceItem(
+        tween: ConstantTween(1.0),
+        weight: (badgeBounceMs + badgeHoldMs).toDouble(),
+      ),
       TweenSequenceItem(
         tween: Tween(
           begin: 1.0,
           end: 0.0,
         ).chain(CurveTween(curve: Curves.easeIn)),
-        weight: 35,
+        weight: badgeFadeMs.toDouble(),
+      ),
+      TweenSequenceItem(
+        tween: ConstantTween(0.0),
+        weight: (totalMs - badgeBounceMs - badgeHoldMs - badgeFadeMs)
+            .toDouble(),
       ),
     ]).animate(_controller);
 
     // Fast fade-in for the wordmark's container (so it doesn't just pop in
     // before the first letter is typed), independent of _wordmarkCharCount
-    // below, which handles the actual letter-by-letter reveal.
+    // below, which handles the actual letter-by-letter reveal. Starts only
+    // once the badge is fully gone and the gap has passed.
     _wordmarkOpacity = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.45, 0.6, curve: Curves.easeOut),
+      curve: Interval(
+        wordmarkStartMs / totalMs,
+        (wordmarkStartMs + 200) / totalMs,
+        curve: Curves.easeOut,
+      ),
     );
     _wordmarkSlide =
         Tween<Offset>(
@@ -85,20 +123,28 @@ class _SplashScreenState extends State<SplashScreen>
         ).animate(
           CurvedAnimation(
             parent: _controller,
-            curve: const Interval(0.45, 0.65, curve: Curves.easeOutCubic),
+            curve: Interval(
+              wordmarkStartMs / totalMs,
+              (wordmarkStartMs + 280) / totalMs,
+              curve: Curves.easeOutCubic,
+            ),
           ),
         );
     // Linear so each letter of the name takes roughly the same amount of
     // time to appear, like it's being typed rather than wiped on unevenly.
     _wordmarkCharProgress = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.45, 1.0, curve: Curves.linear),
+      curve: Interval(
+        wordmarkStartMs / totalMs,
+        1.0,
+        curve: Curves.linear,
+      ),
     );
 
     // Holds on the fully-revealed wordmark for a beat before moving on, so
     // the name is actually readable rather than vanishing the instant the
     // entrance animation ends.
-    Timer(const Duration(milliseconds: 3500), _resumeSessionOrLogin);
+    Timer(const Duration(milliseconds: totalMs + 900), _resumeSessionOrLogin);
   }
 
   @override
@@ -250,11 +296,16 @@ class _SplashScreenState extends State<SplashScreen>
                           child: Text(
                             fullText.substring(0, visibleCount),
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 30,
-                              fontWeight: FontWeight.w900,
+                            // Poppins - a clean, modern sans-serif built
+                            // for Latin-script wordmarks (the same
+                            // typeface used in the reference animation's
+                            // own CSS), instead of 'Cairo' which is tuned
+                            // for Arabic script.
+                            style: GoogleFonts.poppins(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
                               color: AppColors.primary,
-                              fontFamily: 'Cairo',
                             ),
                           ),
                         );
