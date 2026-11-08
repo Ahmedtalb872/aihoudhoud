@@ -112,13 +112,33 @@ class _CaptainForgotPasswordScreenState
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_step == 1) ..._buildStep1(),
-              if (_step == 2) ..._buildStep2(),
-              if (_step == 3) ..._buildStep3(),
-            ],
+          // Each step (phone -> code+password -> success) fades and slides
+          // in as its own entrance, instead of the whole form just
+          // appearing - the same "things actually move" feel as the
+          // reference animation, applied to step transitions since this
+          // screen (unlike the splash) has no single fixed sequence to
+          // animate once.
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 450),
+            transitionBuilder: (child, animation) {
+              final slide = Tween<Offset>(
+                begin: const Offset(0, 0.08),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(position: slide, child: child),
+              );
+            },
+            child: Column(
+              key: ValueKey(_step),
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (_step == 1) ..._buildStep1(),
+                if (_step == 2) ..._buildStep2(),
+                if (_step == 3) ..._buildStep3(),
+              ],
+            ),
           ),
         ),
       ),
@@ -134,7 +154,17 @@ class _CaptainForgotPasswordScreenState
   }) {
     return [
       const SizedBox(height: 8),
-      Center(child: NeumorphicIconBadge(icon: icon, color: iconColor)),
+      Center(
+        child: TweenAnimationBuilder<double>(
+          key: ValueKey(icon),
+          tween: Tween(begin: 0.3, end: 1.0),
+          duration: const Duration(milliseconds: 650),
+          curve: Curves.elasticOut,
+          builder: (context, scale, child) =>
+              Transform.scale(scale: scale, child: child),
+          child: NeumorphicIconBadge(icon: icon, color: iconColor),
+        ),
+      ),
       const SizedBox(height: 24),
       Text(
         eyebrow,
