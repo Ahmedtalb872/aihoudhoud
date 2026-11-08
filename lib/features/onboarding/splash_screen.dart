@@ -243,20 +243,28 @@ class _SplashScreenState extends State<SplashScreen>
                   opacity: _wordmarkOpacity.value,
                   child: SlideTransition(
                     position: _wordmarkSlide,
-                    child: Text(
-                      Provider.of<AppStateProvider>(
-                                context,
-                                listen: false,
-                              ).locale.languageCode ==
-                              'ar'
-                          ? 'الهدهد'
-                          : 'Al Hodhod',
-                      style: const TextStyle(
-                        fontSize: 42,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        fontFamily: 'Cairo',
-                      ),
+                    child: Builder(
+                      builder: (context) {
+                        final isArabic =
+                            Provider.of<AppStateProvider>(
+                              context,
+                              listen: false,
+                            ).locale.languageCode ==
+                            'ar';
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Text(
+                            isArabic ? 'الهدهد' : 'Al Hodhoud Captain',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: isArabic ? 42 : 30,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              fontFamily: 'Cairo',
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),
