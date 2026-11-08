@@ -3,13 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_repository.dart';
-import '../../l10n/generated/app_localizations.dart';
 import '../../providers/app_state_provider.dart';
 import '../captain/captain_home_screen.dart';
 import 'auth_choice_screen.dart';
 import 'pending_review_screen.dart';
-import 'widgets/splash_illustration.dart';
 
+/// Opening sequence: a small "H" badge (for "Al Hudhud") scales in, then
+/// morphs into the full wordmark as the background shifts to the brand
+/// gold, then the app resumes the captain's session (or sends them to the
+/// login/sign-up choice if there isn't one).
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -17,13 +19,96 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  // Badge: scales/fades in immediately, then scales back down as the
+  // wordmark takes over.
+  late final Animation<double> _badgeScale;
+  late final Animation<double> _badgeOpacity;
+
+  // Wordmark: fades/slides in once the badge has had a moment to register.
+  late final Animation<double> _wordmarkOpacity;
+  late final Animation<Offset> _wordmarkSlide;
+
+  // Background: off-white while the badge is alone on screen, settling
+  // into the brand gold as the full name is revealed - the same "badge
+  // color takes over the screen" beat as the reference animation, done as
+  // a color crossfade instead of a literal circular reveal.
+  late final Animation<Color?> _backgroundColor;
+
   @override
   void initState() {
     super.initState();
-    // Long enough to actually read the name/tagline before it moves on -
-    // was 2800ms, felt rushed with no entrance animation to fill that time.
-    Timer(const Duration(milliseconds: 4500), _resumeSessionOrLogin);
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1900),
+    )..forward();
+
+    _badgeScale = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 0.4,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.elasticOut)),
+        weight: 55,
+      ),
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 1.0,
+          end: 0.7,
+        ).chain(CurveTween(curve: Curves.easeIn)),
+        weight: 45,
+      ),
+    ]).animate(_controller);
+
+    _badgeOpacity = TweenSequence<double>([
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 65),
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 1.0,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
+        weight: 35,
+      ),
+    ]).animate(_controller);
+
+    _wordmarkOpacity = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.5, 1.0, curve: Curves.easeOut),
+    );
+    _wordmarkSlide =
+        Tween<Offset>(
+          begin: const Offset(0, 0.15),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.5, 1.0, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    _backgroundColor = ColorTween(
+      begin: AppColors.background,
+      end: AppColors.primary,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.35, 0.9, curve: Curves.easeInOut),
+      ),
+    );
+
+    // Holds on the fully-revealed wordmark for a beat before moving on, so
+    // the name is actually readable rather than vanishing the instant the
+    // entrance animation ends.
+    Timer(const Duration(milliseconds: 3100), _resumeSessionOrLogin);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   // Retries a flaky startup network call instead of treating the very first
@@ -105,80 +190,71 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // Matches splash_hero.png's own background tone, so there's no flash
-      // of a different color on the first frame before the image decodes.
-      backgroundColor: const Color(0xFFFCE8C8),
-      body: Stack(
-        children: [
-          // The reference artwork itself (logo, name, tagline, road+car,
-          // map-grid backdrop) cropped to exclude its baked-in status bar
-          // and its baked-in loading spinner/caption - those two are
-          // replaced below with the real status bar and a genuinely
-          // animated indicator instead of a static picture of one.
-          //
-          // BoxFit.cover here used to zoom the art to fill the full device
-          // height - since the crop already removed a chunk of the original
-          // canvas (status bar + footer), covering the *same* screen height
-          // with that shorter image needs more zoom than the reference
-          // photo ever had, making the logo/name look oversized compared to
-          // it. fitWidth scales by width only (matching the reference's own
-          // proportions) and just leaves the Scaffold's background - the
-          // same beige as the art's own background - showing below it,
-          // which the bottom wave then covers anyway.
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Image.asset(
-              'assets/images/splash_hero.png',
-              fit: BoxFit.fitWidth,
-              alignment: Alignment.topCenter,
-            ),
-          ),
-
-          // Real dark-teal footer band + live loading indicator, sitting
-          // where the artwork's own (now-cropped-out) spinner used to be -
-          // the only thing that actually moves on this screen.
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: SplashBottomWave(height: 70),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: MediaQuery.paddingOf(context).bottom + 18,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        return Scaffold(
+          backgroundColor: _backgroundColor.value,
+          body: Center(
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                const SizedBox(
-                  width: 30,
-                  height: 30,
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppColors.primary,
+                // Stage 1: the "H" badge - scales in with a little bounce,
+                // then shrinks away as the wordmark takes over.
+                Opacity(
+                  opacity: _badgeOpacity.value,
+                  child: Transform.scale(
+                    scale: _badgeScale.value,
+                    child: Container(
+                      width: 96,
+                      height: 96,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(26),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.12),
+                            blurRadius: 24,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text(
+                        'H',
+                        style: TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.primary,
+                          fontFamily: 'Cairo',
+                        ),
+                      ),
                     ),
-                    strokeWidth: 3,
-                    backgroundColor: Color(0x330B3D3A),
                   ),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  AppLocalizations.of(context)!.loadingApp,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                    fontFamily: 'Cairo',
+
+                // Stage 2: the full wordmark, revealed once the background
+                // has settled into the brand gold.
+                Opacity(
+                  opacity: _wordmarkOpacity.value,
+                  child: SlideTransition(
+                    position: _wordmarkSlide,
+                    child: const Text(
+                      'الهدهد',
+                      style: TextStyle(
+                        fontSize: 42,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

@@ -9,6 +9,8 @@ import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_exception.dart';
 import '../../core/supabase/auth_repository.dart';
 import '../../core/widgets/app_logo.dart';
+import '../../core/widgets/neumorphic_button.dart';
+import '../../core/widgets/otp_code_input.dart';
 import '../../providers/app_state_provider.dart';
 import '../captain/captain_home_screen.dart';
 import '../onboarding/pending_review_screen.dart';
@@ -156,14 +158,16 @@ class _CaptainRegisterStepperScreenState
   /// Shows the SMS code entry sheet, returns true once verified (and stores
   /// the now-created/logged-in profile in [_registeredProfile]).
   Future<bool> _showOtpSheet() async {
-    final codeController = TextEditingController();
+    final otpKey = GlobalKey<OtpCodeInputState>();
+    String otpCode = '';
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       isDismissible: false,
       enableDrag: false,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetContext) {
         bool isVerifying = false;
@@ -172,20 +176,21 @@ class _CaptainRegisterStepperScreenState
           builder: (sheetContext, setSheetState) {
             return Padding(
               padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
                     'أدخل رمز التحقق',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 17,
                       fontFamily: 'Cairo',
                       color: AppColors.darkText,
                     ),
@@ -193,29 +198,23 @@ class _CaptainRegisterStepperScreenState
                   const SizedBox(height: 6),
                   Text(
                     'أرسلنا رمزًا برسالة نصية إلى $_fullPhone',
+                    textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.secondaryText,
                       fontFamily: 'Cairo',
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: codeController,
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    autofocus: true,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      letterSpacing: 8,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    decoration: const InputDecoration(hintText: '- - - - - -'),
+                  const SizedBox(height: 22),
+                  OtpCodeInput(
+                    key: otpKey,
+                    onChanged: (code) => otpCode = code,
                   ),
                   if (error != null) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Text(
                       error!,
+                      textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: AppColors.error,
                         fontSize: 12,
@@ -223,12 +222,14 @@ class _CaptainRegisterStepperScreenState
                       ),
                     ),
                   ],
-                  const SizedBox(height: 16),
-                  ElevatedButton(
+                  const SizedBox(height: 20),
+                  NeumorphicButton(
+                    label: 'تحقق',
+                    isLoading: isVerifying,
                     onPressed: isVerifying
                         ? null
                         : () async {
-                            if (codeController.text.trim().length < 4) {
+                            if (otpCode.trim().length < 4) {
                               setSheetState(
                                 () => error = 'أدخل رمز التحقق كاملاً',
                               );
@@ -242,7 +243,7 @@ class _CaptainRegisterStepperScreenState
                               final profile = await _authRepository
                                   .verifySignUpOtp(
                                     phone: _fullPhone,
-                                    code: codeController.text.trim(),
+                                    code: otpCode.trim(),
                                   );
                               _registeredProfile = profile;
                               if (sheetContext.mounted) {
@@ -253,24 +254,18 @@ class _CaptainRegisterStepperScreenState
                                 isVerifying = false;
                                 error = e.message;
                               });
+                              otpKey.currentState?.clear();
                             }
                           },
-                    child: isVerifying
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              color: AppColors.darkText,
-                              strokeWidth: 2.5,
-                            ),
-                          )
-                        : const Text('تحقق'),
                   ),
                   TextButton(
                     onPressed: isVerifying
                         ? null
                         : () => Navigator.pop(sheetContext, false),
-                    child: const Text('إلغاء'),
+                    child: const Text(
+                      'إلغاء',
+                      style: TextStyle(fontFamily: 'Cairo'),
+                    ),
                   ),
                 ],
               ),
