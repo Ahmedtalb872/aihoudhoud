@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'core/constants/colors.dart';
 import 'core/theme/app_theme.dart';
 import 'core/supabase/supabase_config.dart';
@@ -13,6 +14,14 @@ import 'features/onboarding/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Every TextStyle in this app (via AppTheme.lightTheme and dozens of
+  // individual widgets) already names fontFamily: 'Cairo', but that family
+  // was never actually bundled or registered anywhere - it was silently
+  // falling back to the platform default font the whole time. Evaluating
+  // any GoogleFonts.cairo*() call registers the real "Cairo" family under
+  // that exact name, which every one of those existing references then
+  // picks up automatically - no need to touch each of those call sites.
+  GoogleFonts.cairo();
   await SupabaseConfig.initialize();
   await NewTripAlert.initialize();
   final appState = AppStateProvider();

@@ -847,14 +847,6 @@ class _CaptainRegisterStepperScreenState
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        _buildTextField(
-          'العنوان بالتفصيل',
-          _addressController,
-          hint: 'مثال: تفرغ زينة - كارفور موري سانتر',
-        ),
-        const SizedBox(height: 16),
-        _buildTextField('تاريخ الميلاد', _dobController, hint: 'YYYY-MM-DD'),
       ],
     );
   }
@@ -1388,11 +1380,7 @@ class _CaptainRegisterStepperScreenState
               children: [
                 _buildReviewRow('الاسم الكامل', _nameController.text),
                 _buildReviewRow('رقم الهاتف', _fullPhone),
-                _buildReviewRow(
-                  'المدينة والعنوان',
-                  '$_selectedCity - ${_addressController.text}',
-                ),
-                _buildReviewRow('تاريخ الميلاد', _dobController.text),
+                _buildReviewRow('المدينة', _selectedCity),
                 const Divider(height: 24),
                 _buildReviewRow(
                   'نوع المركبة',

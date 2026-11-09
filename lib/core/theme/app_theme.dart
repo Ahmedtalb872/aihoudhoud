@@ -15,8 +15,9 @@ class AppTheme {
         error: AppColors.error,
       ),
       scaffoldBackgroundColor: AppColors.background,
-      fontFamily:
-          'Cairo', // Falls back to system sans-serif if Cairo is not available
+      // Registered at startup via GoogleFonts.cairo() in main() - see the
+      // comment there for why a bare family name string works here.
+      fontFamily: 'Cairo',
 
       cardTheme: ThemeData.light().cardTheme.copyWith(
         color: AppColors.surface,
