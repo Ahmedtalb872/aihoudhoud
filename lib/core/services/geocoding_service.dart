@@ -8,9 +8,10 @@ import 'package:http/http.dart' as http;
 /// nothing useful about where to actually go.
 ///
 /// Uses the same Google Maps key already shipped for the map itself
-/// (see android/app/src/main/AndroidManifest.xml) - it must have the
-/// "Geocoding API" enabled in Google Cloud Console alongside the Maps SDK,
-/// or every lookup below fails closed to the coordinates-only fallback.
+/// (see android/app/src/main/AndroidManifest.xml) - it must have both
+/// "Places API" and "Geocoding API" enabled in Google Cloud Console
+/// alongside the Maps SDK, or every lookup below fails closed to the
+/// coordinates-only fallback.
 class GeocodingService {
   GeocodingService._();
 
@@ -21,13 +22,58 @@ class GeocodingService {
   // lookup every time a captain reopens a request card.
   static final Map<String, String?> _cache = {};
 
-  /// Returns something like "بالقرب من مسجد البركة، تفرغ زينة" or null if
-  /// no readable place name could be found nearby (caller should fall back
-  /// to showing the raw coordinates in that case).
+  /// Returns something like "بالقرب من صيدلية الأمل" (a real nearby
+  /// landmark's name, from Places Nearby Search) or, if nothing named is
+  /// close enough, "بالقرب من [شارع]، [حي]" (a shortened reverse-geocoded
+  /// address). Returns null if both lookups come up empty - caller should
+  /// fall back to showing the raw coordinates in that case.
   static Future<String?> nearbyPlaceLabel(double lat, double lng) async {
     final key = '${lat.toStringAsFixed(4)},${lng.toStringAsFixed(4)}';
     if (_cache.containsKey(key)) return _cache[key];
 
+    final landmark = await _nearestNamedPlace(lat, lng);
+    final label = landmark != null
+        ? 'بالقرب من $landmark'
+        : await _reverseGeocodedLabel(lat, lng);
+    _cache[key] = label;
+    return label;
+  }
+
+  // Places Nearby Search - ranked by distance, so results[0] is the
+  // closest actual business/landmark (a grocery store, pharmacy,
+  // hospital, mosque, ...) rather than just a street address.
+  static Future<String?> _nearestNamedPlace(double lat, double lng) async {
+    try {
+      final uri = Uri.https(
+        'maps.googleapis.com',
+        '/maps/api/place/nearbysearch/json',
+        {
+          'location': '$lat,$lng',
+          'rankby': 'distance',
+          'language': 'ar',
+          'key': _apiKey,
+        },
+      );
+      final response = await http
+          .get(uri)
+          .timeout(const Duration(seconds: 6));
+      if (response.statusCode != 200) return null;
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      if (body['status'] != 'OK') return null;
+      final results = body['results'] as List<dynamic>;
+      if (results.isEmpty) return null;
+      final nearest = results.first as Map<String, dynamic>;
+      final name = nearest['name'] as String?;
+      if (name == null || name.trim().isEmpty) return null;
+      return name.trim();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Reverse Geocoding fallback - used only when no named place turned up
+  // nearby (open land, a new neighborhood Places hasn't indexed yet).
+  static Future<String?> _reverseGeocodedLabel(double lat, double lng) async {
     try {
       final uri = Uri.https('maps.googleapis.com', '/maps/api/geocode/json', {
         'latlng': '$lat,$lng',
@@ -37,31 +83,16 @@ class GeocodingService {
       final response = await http
           .get(uri)
           .timeout(const Duration(seconds: 6));
-      if (response.statusCode != 200) {
-        _cache[key] = null;
-        return null;
-      }
+      if (response.statusCode != 200) return null;
       final body = jsonDecode(response.body) as Map<String, dynamic>;
-      if (body['status'] != 'OK') {
-        _cache[key] = null;
-        return null;
-      }
+      if (body['status'] != 'OK') return null;
       final results = body['results'] as List<dynamic>;
-      if (results.isEmpty) {
-        _cache[key] = null;
-        return null;
-      }
-      final formatted = (results.first as Map<String, dynamic>)['formatted_address']
-          as String?;
-      final label = formatted == null
-          ? null
-          : 'بالقرب من ${_shorten(formatted)}';
-      _cache[key] = label;
-      return label;
+      if (results.isEmpty) return null;
+      final formatted =
+          (results.first as Map<String, dynamic>)['formatted_address']
+              as String?;
+      return formatted == null ? null : 'بالقرب من ${_shorten(formatted)}';
     } catch (_) {
-      // Network hiccup or malformed response - the UI just shows coordinates
-      // instead, no need to surface this as an error to the captain.
-      _cache[key] = null;
       return null;
     }
   }
