@@ -121,7 +121,7 @@ class _DestinationRouteRowState extends State<DestinationRouteRow> {
                         fontSize: 11,
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),

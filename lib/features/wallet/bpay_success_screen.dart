@@ -75,7 +75,7 @@ class BpaySuccessScreen extends StatelessWidget {
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: AppColors.darkText,
-                    fontFamily: 'Cairo',
+                    fontFamily: 'El Messiri',
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -84,7 +84,7 @@ class BpaySuccessScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 13,
-                    fontFamily: 'Cairo',
+                    fontFamily: 'El Messiri',
                     color: AppColors.secondaryText,
                   ),
                 ),
@@ -107,7 +107,7 @@ class BpaySuccessScreen extends StatelessWidget {
                       const Text(
                         'مبلغ العملية',
                         style: TextStyle(
-                          fontFamily: 'Cairo',
+                          fontFamily: 'El Messiri',
                           fontSize: 12,
                           color: AppColors.secondaryText,
                         ),
@@ -119,7 +119,7 @@ class BpaySuccessScreen extends StatelessWidget {
                           fontSize: 32,
                           fontWeight: FontWeight.w900,
                           color: _accent,
-                          fontFamily: 'Cairo',
+                          fontFamily: 'El Messiri',
                         ),
                       ),
                     ],
@@ -142,7 +142,7 @@ class BpaySuccessScreen extends StatelessWidget {
                         const Text(
                           'رسالة البنك',
                           style: TextStyle(
-                            fontFamily: 'Cairo',
+                            fontFamily: 'El Messiri',
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: AppColors.secondaryText,
@@ -152,7 +152,7 @@ class BpaySuccessScreen extends StatelessWidget {
                         Text(
                           bankMessage.trim(),
                           style: const TextStyle(
-                            fontFamily: 'Cairo',
+                            fontFamily: 'El Messiri',
                             fontSize: 14,
                             color: AppColors.darkText,
                             height: 1.5,

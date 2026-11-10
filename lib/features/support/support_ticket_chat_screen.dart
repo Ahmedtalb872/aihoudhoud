@@ -74,7 +74,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
         const SnackBar(
           content: Text(
             'تعذر إرسال الرسالة الآن.',
-            style: TextStyle(fontFamily: 'Cairo'),
+            style: TextStyle(fontFamily: 'El Messiri'),
           ),
           backgroundColor: AppColors.error,
         ),
@@ -89,7 +89,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('محادثة الدعم', style: TextStyle(fontFamily: 'Cairo')),
+        title: const Text('محادثة الدعم', style: TextStyle(fontFamily: 'El Messiri')),
       ),
       body: Column(
         children: [
@@ -100,7 +100,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                       'اكتب رسالتك وسيرد عليك فريق الدعم في أقرب وقت',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                         color: AppColors.secondaryText,
                       ),
                     ),
@@ -144,7 +144,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                 child: Text(
                   'فريق الدعم',
                   style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'El Messiri',
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: AppColors.secondary,
@@ -154,7 +154,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
             Text(
               message.body,
               style: TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'El Messiri',
                 fontSize: 13,
                 color: isMine ? Colors.white : AppColors.darkText,
               ),

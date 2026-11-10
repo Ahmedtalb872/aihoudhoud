@@ -55,13 +55,13 @@ class NeumorphicTextField extends StatelessWidget {
               fontSize: 15,
               fontWeight: FontWeight.w600,
               color: AppColors.darkText,
-              fontFamily: 'Cairo',
+              fontFamily: 'El Messiri',
             ),
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: const TextStyle(
             color: AppColors.secondaryText,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
             fontWeight: FontWeight.normal,
           ),
           prefixIcon: prefixIcon,

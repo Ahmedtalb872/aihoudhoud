@@ -52,12 +52,12 @@ class MyTripsScreen extends StatelessWidget {
       labelStyle: TextStyle(
         fontWeight: FontWeight.bold,
         fontSize: 14,
-        fontFamily: 'Cairo',
+        fontFamily: 'El Messiri',
       ),
       unselectedLabelStyle: TextStyle(
         fontWeight: FontWeight.normal,
         fontSize: 14,
-        fontFamily: 'Cairo',
+        fontFamily: 'El Messiri',
       ),
       tabs: [
         Tab(text: 'الحالية'),
@@ -105,7 +105,7 @@ class _TripListTab extends StatelessWidget {
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: AppColors.darkText,
-                fontFamily: 'Cairo',
+                fontFamily: 'El Messiri',
               ),
             ),
             const SizedBox(height: 6),
@@ -114,7 +114,7 @@ class _TripListTab extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 color: AppColors.secondaryText,
-                fontFamily: 'Cairo',
+                fontFamily: 'El Messiri',
               ),
             ),
           ],
@@ -143,7 +143,7 @@ class _TripListTab extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.secondaryText,
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                       ),
                     ),
                     Container(
@@ -169,7 +169,7 @@ class _TripListTab extends StatelessWidget {
                               : trip.status == TripStatus.cancelled
                               ? AppColors.error
                               : AppColors.primary,
-                          fontFamily: 'Cairo',
+                          fontFamily: 'El Messiri',
                         ),
                       ),
                     ),
@@ -182,7 +182,7 @@ class _TripListTab extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 11,
                       color: AppColors.error,
-                      fontFamily: 'Cairo',
+                      fontFamily: 'El Messiri',
                     ),
                   ),
                 ],
@@ -221,7 +221,7 @@ class _TripListTab extends StatelessWidget {
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                               color: AppColors.darkText,
-                              fontFamily: 'Cairo',
+                              fontFamily: 'El Messiri',
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -237,7 +237,7 @@ class _TripListTab extends StatelessWidget {
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                               color: AppColors.darkText,
-                              fontFamily: 'Cairo',
+                              fontFamily: 'El Messiri',
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -262,7 +262,7 @@ class _TripListTab extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 11,
                             color: AppColors.secondaryText,
-                            fontFamily: 'Cairo',
+                            fontFamily: 'El Messiri',
                           ),
                         ),
                         Text(
@@ -271,7 +271,7 @@ class _TripListTab extends StatelessWidget {
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: AppColors.primary,
-                            fontFamily: 'Cairo',
+                            fontFamily: 'El Messiri',
                           ),
                         ),
                       ],
@@ -284,7 +284,7 @@ class _TripListTab extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 10,
                             color: AppColors.secondaryText,
-                            fontFamily: 'Cairo',
+                            fontFamily: 'El Messiri',
                           ),
                         ),
                         Text(
@@ -293,7 +293,7 @@ class _TripListTab extends StatelessWidget {
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: AppColors.darkText,
-                            fontFamily: 'Cairo',
+                            fontFamily: 'El Messiri',
                           ),
                         ),
                       ],
@@ -314,7 +314,7 @@ class _TripListTab extends StatelessWidget {
                             const SnackBar(
                               content: Text(
                                 'تم فتح تذكرة دعم لهذه الرحلة، سنقوم بالتواصل معك.',
-                                style: TextStyle(fontFamily: 'Cairo'),
+                                style: TextStyle(fontFamily: 'El Messiri'),
                               ),
                               backgroundColor: AppColors.primary,
                             ),
@@ -342,7 +342,7 @@ class _TripListTab extends StatelessWidget {
                             const SnackBar(
                               content: Text(
                                 'عرض تفاصيل الفاتورة والعمولة.',
-                                style: TextStyle(fontFamily: 'Cairo'),
+                                style: TextStyle(fontFamily: 'El Messiri'),
                               ),
                               backgroundColor: AppColors.primary,
                             ),

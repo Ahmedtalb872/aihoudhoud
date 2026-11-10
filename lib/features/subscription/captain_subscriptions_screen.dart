@@ -80,7 +80,7 @@ class _CaptainSubscriptionsScreenState
                     message,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'El Messiri',
                       color: AppColors.secondaryText,
                     ),
                   ),
@@ -102,7 +102,7 @@ class _CaptainSubscriptionsScreenState
                     'لا توجد عروض اشتراك حالياً',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'El Messiri',
                       fontWeight: FontWeight.bold,
                       color: AppColors.darkText,
                     ),
@@ -114,7 +114,7 @@ class _CaptainSubscriptionsScreenState
                       'عندما يبدأ زبون تفاوضاً معك على اشتراك شهري، سيظهر هنا.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                         fontSize: 12,
                         color: AppColors.secondaryText,
                       ),
@@ -191,7 +191,7 @@ class _SubscriptionTile extends StatelessWidget {
                     Text(
                       subscription.customerName,
                       style: const TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                         color: AppColors.darkText,
@@ -201,7 +201,7 @@ class _SubscriptionTile extends StatelessWidget {
                     Text(
                       subtitle,
                       style: const TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                         fontSize: 12,
                         color: AppColors.secondaryText,
                       ),
@@ -218,7 +218,7 @@ class _SubscriptionTile extends StatelessWidget {
                 child: Text(
                   statusText,
                   style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'El Messiri',
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     color: color,

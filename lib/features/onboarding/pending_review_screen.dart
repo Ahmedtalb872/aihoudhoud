@@ -42,7 +42,7 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
           SnackBar(
             content: Text(
               widget.warning!,
-              style: const TextStyle(fontFamily: 'Cairo'),
+              style: const TextStyle(fontFamily: 'El Messiri'),
             ),
             backgroundColor: AppColors.error,
             duration: const Duration(seconds: 5),
@@ -86,7 +86,7 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
               _isRejected
                   ? 'طلبك مرفوض حاليًا، راجع ملاحظة الإدارة أدناه.'
                   : 'لا يزال طلبك قيد المراجعة، حاول مرة أخرى لاحقًا.',
-              style: const TextStyle(fontFamily: 'Cairo'),
+              style: const TextStyle(fontFamily: 'El Messiri'),
             ),
           ),
         );
@@ -95,7 +95,7 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
       if (!mounted || silent) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.message, style: const TextStyle(fontFamily: 'Cairo')),
+          content: Text(e.message, style: const TextStyle(fontFamily: 'El Messiri')),
           backgroundColor: AppColors.error,
         ),
       );
@@ -146,7 +146,7 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: AppColors.darkText,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                 ),
               ),
               const SizedBox(height: 12),
@@ -158,7 +158,7 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
                 style: const TextStyle(
                   fontSize: 14,
                   color: AppColors.secondaryText,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                 ),
               ),
               if (!_isRejected) ...[
@@ -180,7 +180,7 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                       color: AppColors.primaryDark,
-                      fontFamily: 'Cairo',
+                      fontFamily: 'El Messiri',
                     ),
                   ),
                 ),
@@ -206,7 +206,7 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                           color: AppColors.error,
-                          fontFamily: 'Cairo',
+                          fontFamily: 'El Messiri',
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -215,7 +215,7 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
                         style: const TextStyle(
                           fontSize: 13,
                           color: AppColors.darkText,
-                          fontFamily: 'Cairo',
+                          fontFamily: 'El Messiri',
                         ),
                       ),
                     ],

@@ -92,7 +92,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      fontFamily: 'Cairo',
+                      fontFamily: 'El Messiri',
                     ),
                   ),
                   const Text(
@@ -100,7 +100,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     style: TextStyle(
                       fontSize: 10,
                       color: AppColors.success,
-                      fontFamily: 'Cairo',
+                      fontFamily: 'El Messiri',
                     ),
                   ),
                 ],
@@ -159,7 +159,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           style: TextStyle(
                             color: isMe ? Colors.white : AppColors.darkText,
                             fontSize: 14,
-                            fontFamily: 'Cairo',
+                            fontFamily: 'El Messiri',
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -173,7 +173,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                     ? Colors.white70
                                     : AppColors.secondaryText,
                                 fontSize: 9,
-                                fontFamily: 'Cairo',
+                                fontFamily: 'El Messiri',
                               ),
                             ),
                             if (isMe) ...[

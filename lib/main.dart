@@ -15,13 +15,14 @@ import 'features/onboarding/splash_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Every TextStyle in this app (via AppTheme.lightTheme and dozens of
-  // individual widgets) already names fontFamily: 'Cairo', but that family
-  // was never actually bundled or registered anywhere - it was silently
-  // falling back to the platform default font the whole time. Evaluating
-  // any GoogleFonts.cairo*() call registers the real "Cairo" family under
-  // that exact name, which every one of those existing references then
-  // picks up automatically - no need to touch each of those call sites.
-  GoogleFonts.cairo();
+  // individual widgets) names fontFamily: 'El Messiri', but that family is
+  // never actually bundled or registered anywhere on its own - it falls
+  // back to the platform default font unless something registers it first.
+  // Evaluating any GoogleFonts.elMessiri() call registers the real
+  // "El Messiri" family under that exact name, which every one of those
+  // existing references then picks up automatically - no need to touch
+  // each of those call sites.
+  GoogleFonts.elMessiri();
   await SupabaseConfig.initialize();
   await NewTripAlert.initialize();
   final appState = AppStateProvider();

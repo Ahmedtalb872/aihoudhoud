@@ -260,7 +260,7 @@ class _CallScreenState extends State<CallScreen> with SingleTickerProviderStateM
               Text(
                 widget.peerName,
                 style: const TextStyle(
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                   fontWeight: FontWeight.bold,
                   fontSize: 24,
                   color: Colors.white,
@@ -292,7 +292,7 @@ class _CallScreenState extends State<CallScreen> with SingleTickerProviderStateM
           Text(
             'مكالمة داخل التطبيق',
             style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'El Messiri',
               fontSize: 12,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -332,7 +332,7 @@ class _CallScreenState extends State<CallScreen> with SingleTickerProviderStateM
           Text(
             _statusText,
             style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'El Messiri',
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: Colors.white.withOpacity(0.95),
@@ -359,7 +359,7 @@ class _CallScreenState extends State<CallScreen> with SingleTickerProviderStateM
               child: Text(
                 widget.peerName.isNotEmpty ? widget.peerName.substring(0, 1) : '؟',
                 style: const TextStyle(
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                   fontWeight: FontWeight.bold,
                   fontSize: 38,
                   color: Colors.white,
@@ -535,7 +535,7 @@ class _CallButton extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
             fontSize: 12,
             color: Colors.white,
           ),

@@ -159,7 +159,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
         const SnackBar(
           content: Text(
             'تم حفظ التعديلات بنجاح.',
-            style: TextStyle(fontFamily: 'Cairo'),
+            style: TextStyle(fontFamily: 'El Messiri'),
           ),
           backgroundColor: AppColors.success,
         ),
@@ -192,7 +192,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
               ),
               title: const Text(
                 'التقاط صورة',
-                style: TextStyle(fontFamily: 'Cairo'),
+                style: TextStyle(fontFamily: 'El Messiri'),
               ),
               onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
             ),
@@ -203,7 +203,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
               ),
               title: const Text(
                 'اختيار من المعرض',
-                style: TextStyle(fontFamily: 'Cairo'),
+                style: TextStyle(fontFamily: 'El Messiri'),
               ),
               onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
             ),
@@ -247,7 +247,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
         const SnackBar(
           content: Text(
             'تم رفع المستند من جديد، وهو الآن قيد المراجعة.',
-            style: TextStyle(fontFamily: 'Cairo'),
+            style: TextStyle(fontFamily: 'El Messiri'),
           ),
           backgroundColor: AppColors.success,
         ),
@@ -260,7 +260,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
         const SnackBar(
           content: Text(
             'تعذر رفع المستند، حاول مرة أخرى.',
-            style: TextStyle(fontFamily: 'Cairo'),
+            style: TextStyle(fontFamily: 'El Messiri'),
           ),
           backgroundColor: AppColors.error,
         ),
@@ -295,7 +295,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: AppColors.darkText,
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -307,7 +307,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: AppColors.darkText,
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -325,7 +325,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                           style: const TextStyle(
                             color: AppColors.darkText,
                             fontSize: 16,
-                            fontFamily: 'Cairo',
+                            fontFamily: 'El Messiri',
                           ),
                           onChanged: (value) {
                             if (value != null) {
@@ -360,7 +360,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: AppColors.darkText,
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -390,7 +390,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: AppColors.darkText,
-                          fontFamily: 'Cairo',
+                          fontFamily: 'El Messiri',
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -428,7 +428,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: AppColors.darkText,
-                          fontFamily: 'Cairo',
+                          fontFamily: 'El Messiri',
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -446,7 +446,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                             style: const TextStyle(
                               color: AppColors.darkText,
                               fontSize: 16,
-                              fontFamily: 'Cairo',
+                              fontFamily: 'El Messiri',
                             ),
                             onChanged: (value) {
                               if (value != null) {
@@ -473,7 +473,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: AppColors.darkText,
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -482,7 +482,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.secondaryText,
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -511,7 +511,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: AppColors.darkText,
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -520,7 +520,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.secondaryText,
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -533,7 +533,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                         style: const TextStyle(
                           color: AppColors.error,
                           fontSize: 13,
-                          fontFamily: 'Cairo',
+                          fontFamily: 'El Messiri',
                         ),
                       ),
                     ],
@@ -582,7 +582,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                     color: AppColors.error,
-                    fontFamily: 'Cairo',
+                    fontFamily: 'El Messiri',
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -591,7 +591,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                   style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.darkText,
-                    fontFamily: 'Cairo',
+                    fontFamily: 'El Messiri',
                   ),
                 ),
               ],
@@ -648,7 +648,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: AppColors.darkText,
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                       ),
                     ),
                   ),
@@ -669,7 +669,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                             color: statusColor,
-                            fontFamily: 'Cairo',
+                            fontFamily: 'El Messiri',
                           ),
                         ),
                       ],
@@ -684,7 +684,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                   style: const TextStyle(
                     fontSize: 11,
                     color: AppColors.error,
-                    fontFamily: 'Cairo',
+                    fontFamily: 'El Messiri',
                   ),
                 ),
               ],
@@ -754,7 +754,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                 style: const TextStyle(
                   color: AppColors.darkText,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                   fontSize: 13,
                 ),
               ),
@@ -785,7 +785,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
             style: TextStyle(
               color: isSel ? Colors.white : AppColors.darkText,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Cairo',
+              fontFamily: 'El Messiri',
               fontSize: 12,
             ),
           ),
@@ -814,7 +814,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
             style: TextStyle(
               color: isSel ? Colors.white : AppColors.darkText,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Cairo',
+              fontFamily: 'El Messiri',
               fontSize: 12,
             ),
           ),
@@ -837,7 +837,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
             fontSize: 14,
             fontWeight: FontWeight.bold,
             color: AppColors.darkText,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
         const SizedBox(height: 8),

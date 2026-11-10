@@ -129,7 +129,7 @@ class OtpCodeInputState extends State<OtpCodeInput> {
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: AppColors.darkText,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                 ),
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: const InputDecoration(

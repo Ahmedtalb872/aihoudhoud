@@ -114,11 +114,11 @@ class _SubscriptionChatScreenState extends State<SubscriptionChatScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('قبول العرض', style: TextStyle(fontFamily: 'Cairo')),
+        title: const Text('قبول العرض', style: TextStyle(fontFamily: 'El Messiri')),
         content: Text(
           'سيُخصم المبلغ المتفق عليه (${_status?.proposedPrice?.toStringAsFixed(0) ?? '-'} أوقية) '
           'من محفظة الزبون فوراً، ويصبح الاشتراك نشطاً لمدة 30 يوماً. هل تريد المتابعة؟',
-          style: const TextStyle(fontFamily: 'Cairo'),
+          style: const TextStyle(fontFamily: 'El Messiri'),
         ),
         actions: [
           TextButton(
@@ -147,10 +147,10 @@ class _SubscriptionChatScreenState extends State<SubscriptionChatScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('رفض العرض', style: TextStyle(fontFamily: 'Cairo')),
+        title: const Text('رفض العرض', style: TextStyle(fontFamily: 'El Messiri')),
         content: const Text(
           'هل تريد إنهاء هذه المحادثة دون الاتفاق على اشتراك؟',
-          style: TextStyle(fontFamily: 'Cairo'),
+          style: TextStyle(fontFamily: 'El Messiri'),
         ),
         actions: [
           TextButton(
@@ -179,10 +179,10 @@ class _SubscriptionChatScreenState extends State<SubscriptionChatScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('إلغاء الاشتراك', style: TextStyle(fontFamily: 'Cairo')),
+        title: const Text('إلغاء الاشتراك', style: TextStyle(fontFamily: 'El Messiri')),
         content: const Text(
           'هل تريد إنهاء هذا الاشتراك النشط؟ إذا لم تُصرف كامل مستحقاتك بعد، سيراجع فريقنا المبلغ المتبقي.',
-          style: TextStyle(fontFamily: 'Cairo'),
+          style: TextStyle(fontFamily: 'El Messiri'),
         ),
         actions: [
           TextButton(
@@ -222,7 +222,7 @@ class _SubscriptionChatScreenState extends State<SubscriptionChatScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: const TextStyle(fontFamily: 'Cairo')),
+        content: Text(message, style: const TextStyle(fontFamily: 'El Messiri')),
         backgroundColor: AppColors.error,
       ),
     );
@@ -241,7 +241,7 @@ class _SubscriptionChatScreenState extends State<SubscriptionChatScreen> {
       appBar: AppBar(
         title: Text(
           status?.customerName ?? 'اشتراك شهري',
-          style: const TextStyle(fontFamily: 'Cairo'),
+          style: const TextStyle(fontFamily: 'El Messiri'),
         ),
       ),
       body: Column(
@@ -253,7 +253,7 @@ class _SubscriptionChatScreenState extends State<SubscriptionChatScreen> {
                     child: Text(
                       'لا رسائل بعد في هذه المحادثة',
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                         color: AppColors.secondaryText,
                       ),
                     ),
@@ -286,7 +286,7 @@ class _SubscriptionChatScreenState extends State<SubscriptionChatScreen> {
           'هذا الاشتراك قيد المراجعة من فريقنا - سنتواصل معك قريباً بخصوص المبلغ المحجوز.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
             fontSize: 12,
             fontWeight: FontWeight.bold,
             color: AppColors.warning,
@@ -334,7 +334,7 @@ class _SubscriptionChatScreenState extends State<SubscriptionChatScreen> {
         text,
         textAlign: TextAlign.center,
         style: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: 'El Messiri',
           fontSize: 12,
           fontWeight: FontWeight.bold,
           color: color,
@@ -395,7 +395,7 @@ class _SubscriptionChatScreenState extends State<SubscriptionChatScreen> {
                 'هل استلمت مباشرة اشتراك هذا الشهر من ${status.customerName}؟',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                   color: AppColors.darkText,
@@ -451,7 +451,7 @@ class _SubscriptionChatScreenState extends State<SubscriptionChatScreen> {
                 child: Text(
                   'عرض سعر',
                   style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'El Messiri',
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: AppColors.secondary,
@@ -461,7 +461,7 @@ class _SubscriptionChatScreenState extends State<SubscriptionChatScreen> {
             Text(
               message.body,
               style: TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'El Messiri',
                 fontSize: 13,
                 color: message.isOffer
                     ? AppColors.darkText

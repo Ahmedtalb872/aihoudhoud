@@ -147,7 +147,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
       SnackBar(
         content: const Text(
           'تم رفض الصلاحية سابقًا، فعّلها يدويًا من إعدادات الهاتف.',
-          style: TextStyle(fontFamily: 'Cairo'),
+          style: TextStyle(fontFamily: 'El Messiri'),
         ),
         action: SnackBarAction(label: 'الإعدادات', onPressed: openAppSettings),
       ),
@@ -182,7 +182,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: AppColors.darkText,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                 ),
               ),
               const SizedBox(height: 8),
@@ -191,7 +191,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                 style: TextStyle(
                   fontSize: 13,
                   color: AppColors.secondaryText,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                 ),
               ),
               const SizedBox(height: 28),
@@ -272,7 +272,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                     color: AppColors.darkText,
-                    fontFamily: 'Cairo',
+                    fontFamily: 'El Messiri',
                   ),
                 ),
               ),
@@ -284,7 +284,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
             style: TextStyle(
               fontSize: 12,
               color: AppColors.secondaryText,
-              fontFamily: 'Cairo',
+              fontFamily: 'El Messiri',
               height: 1.6,
             ),
           ),
@@ -340,7 +340,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                     color: AppColors.darkText,
-                    fontFamily: 'Cairo',
+                    fontFamily: 'El Messiri',
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -349,7 +349,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                   style: const TextStyle(
                     fontSize: 11,
                     color: AppColors.secondaryText,
-                    fontFamily: 'Cairo',
+                    fontFamily: 'El Messiri',
                   ),
                 ),
               ],

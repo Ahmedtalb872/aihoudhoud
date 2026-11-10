@@ -268,7 +268,7 @@ class _SplashScreenState extends State<SplashScreen>
                           fontSize: 48,
                           fontWeight: FontWeight.w900,
                           color: AppColors.primary,
-                          fontFamily: 'Cairo',
+                          fontFamily: 'El Messiri',
                         ),
                       ),
                     ),
@@ -299,7 +299,7 @@ class _SplashScreenState extends State<SplashScreen>
                             // Poppins - a clean, modern sans-serif built
                             // for Latin-script wordmarks (the same
                             // typeface used in the reference animation's
-                            // own CSS), instead of 'Cairo' which is tuned
+                            // own CSS), instead of 'El Messiri' which is tuned
                             // for Arabic script.
                             style: GoogleFonts.poppins(
                               fontSize: 28,

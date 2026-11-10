@@ -130,7 +130,7 @@ class _CaptainRegisterStepperScreenState
         const SnackBar(
           content: Text(
             'تم إرسال رمز التحقق عبر رسالة نصية.',
-            style: TextStyle(fontFamily: 'Cairo'),
+            style: TextStyle(fontFamily: 'El Messiri'),
           ),
           backgroundColor: AppColors.success,
         ),
@@ -146,7 +146,7 @@ class _CaptainRegisterStepperScreenState
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.message, style: const TextStyle(fontFamily: 'Cairo')),
+          content: Text(e.message, style: const TextStyle(fontFamily: 'El Messiri')),
           backgroundColor: AppColors.error,
         ),
       );
@@ -191,7 +191,7 @@ class _CaptainRegisterStepperScreenState
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 17,
-                      fontFamily: 'Cairo',
+                      fontFamily: 'El Messiri',
                       color: AppColors.darkText,
                     ),
                   ),
@@ -202,7 +202,7 @@ class _CaptainRegisterStepperScreenState
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.secondaryText,
-                      fontFamily: 'Cairo',
+                      fontFamily: 'El Messiri',
                     ),
                   ),
                   const SizedBox(height: 22),
@@ -218,7 +218,7 @@ class _CaptainRegisterStepperScreenState
                       style: const TextStyle(
                         color: AppColors.error,
                         fontSize: 12,
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                       ),
                     ),
                   ],
@@ -264,7 +264,7 @@ class _CaptainRegisterStepperScreenState
                         : () => Navigator.pop(sheetContext, false),
                     child: const Text(
                       'إلغاء',
-                      style: TextStyle(fontFamily: 'Cairo'),
+                      style: TextStyle(fontFamily: 'El Messiri'),
                     ),
                   ),
                 ],
@@ -292,7 +292,7 @@ class _CaptainRegisterStepperScreenState
         const SnackBar(
           content: Text(
             'الرجاء إدخال رقم لوحة السيارة',
-            style: TextStyle(fontFamily: 'Cairo'),
+            style: TextStyle(fontFamily: 'El Messiri'),
           ),
           backgroundColor: AppColors.error,
         ),
@@ -304,7 +304,7 @@ class _CaptainRegisterStepperScreenState
         const SnackBar(
           content: Text(
             'الرجاء إدخال رقم الهاتف المستخدم لاستلام المدفوعات',
-            style: TextStyle(fontFamily: 'Cairo'),
+            style: TextStyle(fontFamily: 'El Messiri'),
           ),
           backgroundColor: AppColors.error,
         ),
@@ -323,7 +323,7 @@ class _CaptainRegisterStepperScreenState
       const SnackBar(
         content: Text(
           'يرجى رفع جميع المستندات المطلوبة أولاً',
-          style: TextStyle(fontFamily: 'Cairo'),
+          style: TextStyle(fontFamily: 'El Messiri'),
         ),
         backgroundColor: AppColors.error,
       ),
@@ -347,7 +347,7 @@ class _CaptainRegisterStepperScreenState
     if (error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(error, style: const TextStyle(fontFamily: 'Cairo')),
+          content: Text(error, style: const TextStyle(fontFamily: 'El Messiri')),
           backgroundColor: AppColors.error,
         ),
       );
@@ -383,7 +383,7 @@ class _CaptainRegisterStepperScreenState
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
-                    fontFamily: 'Cairo',
+                    fontFamily: 'El Messiri',
                     color: AppColors.darkText,
                   ),
                 ),
@@ -396,7 +396,7 @@ class _CaptainRegisterStepperScreenState
               ),
               title: const Text(
                 'التقاط صورة',
-                style: TextStyle(fontFamily: 'Cairo'),
+                style: TextStyle(fontFamily: 'El Messiri'),
               ),
               onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
             ),
@@ -407,7 +407,7 @@ class _CaptainRegisterStepperScreenState
               ),
               title: const Text(
                 'اختيار من المعرض',
-                style: TextStyle(fontFamily: 'Cairo'),
+                style: TextStyle(fontFamily: 'El Messiri'),
               ),
               onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
             ),
@@ -448,7 +448,7 @@ class _CaptainRegisterStepperScreenState
         const SnackBar(
           content: Text(
             'تعذر الوصول للكاميرا أو المعرض. تحقق من صلاحيات التطبيق.',
-            style: TextStyle(fontFamily: 'Cairo'),
+            style: TextStyle(fontFamily: 'El Messiri'),
           ),
           backgroundColor: AppColors.error,
         ),
@@ -679,7 +679,7 @@ class _CaptainRegisterStepperScreenState
             fontSize: 12,
             fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
             color: isActive ? AppColors.primary : AppColors.secondaryText,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
       ],
@@ -722,7 +722,7 @@ class _CaptainRegisterStepperScreenState
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: AppColors.darkText,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
         const SizedBox(height: 16),
@@ -753,7 +753,7 @@ class _CaptainRegisterStepperScreenState
                 style: TextStyle(
                   fontSize: 12,
                   color: AppColors.success,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                 ),
               ),
             ],
@@ -797,7 +797,7 @@ class _CaptainRegisterStepperScreenState
             style: TextStyle(
               fontSize: 11,
               color: AppColors.secondaryText,
-              fontFamily: 'Cairo',
+              fontFamily: 'El Messiri',
             ),
           ),
         ],
@@ -809,7 +809,7 @@ class _CaptainRegisterStepperScreenState
             fontSize: 14,
             fontWeight: FontWeight.bold,
             color: AppColors.darkText,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
         const SizedBox(height: 8),
@@ -827,7 +827,7 @@ class _CaptainRegisterStepperScreenState
               style: const TextStyle(
                 color: AppColors.darkText,
                 fontSize: 16,
-                fontFamily: 'Cairo',
+                fontFamily: 'El Messiri',
               ),
               onChanged: (value) {
                 if (value != null) {
@@ -864,7 +864,7 @@ class _CaptainRegisterStepperScreenState
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: AppColors.darkText,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
         const SizedBox(height: 4),
@@ -875,7 +875,7 @@ class _CaptainRegisterStepperScreenState
           style: const TextStyle(
             fontSize: 12,
             color: AppColors.secondaryText,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
         const SizedBox(height: 20),
@@ -888,7 +888,7 @@ class _CaptainRegisterStepperScreenState
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: AppColors.darkText,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
         const SizedBox(height: 4),
@@ -897,7 +897,7 @@ class _CaptainRegisterStepperScreenState
           style: TextStyle(
             fontSize: 12,
             color: AppColors.secondaryText,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
         const SizedBox(height: 12),
@@ -932,7 +932,7 @@ class _CaptainRegisterStepperScreenState
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: AppColors.darkText,
-              fontFamily: 'Cairo',
+              fontFamily: 'El Messiri',
             ),
           ),
           const SizedBox(height: 8),
@@ -983,7 +983,7 @@ class _CaptainRegisterStepperScreenState
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: AppColors.darkText,
-              fontFamily: 'Cairo',
+              fontFamily: 'El Messiri',
             ),
           ),
           const SizedBox(height: 8),
@@ -1001,7 +1001,7 @@ class _CaptainRegisterStepperScreenState
                 style: const TextStyle(
                   color: AppColors.darkText,
                   fontSize: 16,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                 ),
                 onChanged: (value) {
                   if (value != null) {
@@ -1028,7 +1028,7 @@ class _CaptainRegisterStepperScreenState
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: AppColors.darkText,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
         const SizedBox(height: 4),
@@ -1037,7 +1037,7 @@ class _CaptainRegisterStepperScreenState
           style: TextStyle(
             fontSize: 12,
             color: AppColors.secondaryText,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
         const SizedBox(height: 12),
@@ -1082,7 +1082,7 @@ class _CaptainRegisterStepperScreenState
             style: TextStyle(
               color: isSel ? Colors.white : AppColors.darkText,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Cairo',
+              fontFamily: 'El Messiri',
               fontSize: 12,
             ),
           ),
@@ -1146,7 +1146,7 @@ class _CaptainRegisterStepperScreenState
                     style: const TextStyle(
                       color: AppColors.darkText,
                       fontWeight: FontWeight.bold,
-                      fontFamily: 'Cairo',
+                      fontFamily: 'El Messiri',
                       fontSize: 15,
                     ),
                   ),
@@ -1156,7 +1156,7 @@ class _CaptainRegisterStepperScreenState
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: AppColors.secondaryText,
-                      fontFamily: 'Cairo',
+                      fontFamily: 'El Messiri',
                       fontSize: 10,
                     ),
                   ),
@@ -1207,7 +1207,7 @@ class _CaptainRegisterStepperScreenState
                 style: TextStyle(
                   color: isSel ? Colors.white : AppColors.darkText,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                   fontSize: 13,
                 ),
               ),
@@ -1232,7 +1232,7 @@ class _CaptainRegisterStepperScreenState
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: AppColors.darkText,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
         const SizedBox(height: 8),
@@ -1241,7 +1241,7 @@ class _CaptainRegisterStepperScreenState
           style: TextStyle(
             fontSize: 12,
             color: AppColors.secondaryText,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
         const SizedBox(height: 20),
@@ -1308,7 +1308,7 @@ class _CaptainRegisterStepperScreenState
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                               color: AppColors.darkText,
-                              fontFamily: 'Cairo',
+                              fontFamily: 'El Messiri',
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -1321,7 +1321,7 @@ class _CaptainRegisterStepperScreenState
                               color: isUploaded
                                   ? AppColors.success
                                   : AppColors.secondaryText,
-                              fontFamily: 'Cairo',
+                              fontFamily: 'El Messiri',
                             ),
                           ),
                         ],
@@ -1366,7 +1366,7 @@ class _CaptainRegisterStepperScreenState
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: AppColors.darkText,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
         const SizedBox(height: 16),
@@ -1409,7 +1409,7 @@ class _CaptainRegisterStepperScreenState
                   'حالة المستندات المرفوعة:',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'Cairo',
+                    fontFamily: 'El Messiri',
                     fontSize: 13,
                   ),
                 ),
@@ -1433,7 +1433,7 @@ class _CaptainRegisterStepperScreenState
                           _docDisplayLabel(entry.key),
                           style: const TextStyle(
                             fontSize: 12,
-                            fontFamily: 'Cairo',
+                            fontFamily: 'El Messiri',
                             color: AppColors.secondaryText,
                           ),
                         ),
@@ -1476,7 +1476,7 @@ class _CaptainRegisterStepperScreenState
                 style: TextStyle(
                   fontSize: 12,
                   color: AppColors.darkText,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                 ),
               ),
             ),
@@ -1517,7 +1517,7 @@ class _CaptainRegisterStepperScreenState
               fontWeight: FontWeight.bold,
               fontSize: 13,
               color: AppColors.secondaryText,
-              fontFamily: 'Cairo',
+              fontFamily: 'El Messiri',
             ),
           ),
           Expanded(
@@ -1526,7 +1526,7 @@ class _CaptainRegisterStepperScreenState
               style: const TextStyle(
                 fontSize: 13,
                 color: AppColors.darkText,
-                fontFamily: 'Cairo',
+                fontFamily: 'El Messiri',
               ),
             ),
           ),
@@ -1551,7 +1551,7 @@ class _CaptainRegisterStepperScreenState
             fontSize: 14,
             fontWeight: FontWeight.bold,
             color: AppColors.darkText,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
         const SizedBox(height: 8),
@@ -1578,7 +1578,7 @@ class _CaptainRegisterStepperScreenState
             fontSize: 14,
             fontWeight: FontWeight.bold,
             color: AppColors.darkText,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
         const SizedBox(height: 8),

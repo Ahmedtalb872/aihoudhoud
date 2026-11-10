@@ -33,7 +33,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: const Text(
             'حذف الحساب نهائياً',
             style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'El Messiri',
               fontWeight: FontWeight.bold,
               color: AppColors.error,
             ),
@@ -41,7 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           content: const Text(
             'هل أنت متأكد من رغبتك في حذف حسابك؟ هذا الإجراء نهائي ولا يمكن الرجوع عنه وستفقد جميع بياناتك وأرصدة محفظتك.',
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 13),
+            style: TextStyle(fontFamily: 'El Messiri', fontSize: 13),
             textAlign: TextAlign.center,
           ),
           actions: [
@@ -77,7 +77,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.message, style: const TextStyle(fontFamily: 'Cairo')),
+          content: Text(e.message, style: const TextStyle(fontFamily: 'El Messiri')),
           backgroundColor: AppColors.error,
         ),
       );
@@ -118,7 +118,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: Text(
                       l10n.settingsAppLanguage,
                       style: const TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
@@ -127,7 +127,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       value: provider.locale.languageCode,
                       underline: Container(),
                       style: const TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                         fontSize: 13,
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,
@@ -157,14 +157,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: const Text(
                       'تفعيل الإشعارات',
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
                     ),
                     subtitle: const Text(
                       'استلام تحديثات الرحلات والعروض المتاحة.',
-                      style: TextStyle(fontFamily: 'Cairo', fontSize: 11),
+                      style: TextStyle(fontFamily: 'El Messiri', fontSize: 11),
                     ),
                     value: _notificationsEnabled,
                     onChanged: (bool value) {
@@ -181,14 +181,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: const Text(
                       'الوضع الداكن (Dark Mode)',
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
                     ),
                     subtitle: const Text(
                       'تفعيل مظهر مريح للعينين ليلاً (تجريبي).',
-                      style: TextStyle(fontFamily: 'Cairo', fontSize: 11),
+                      style: TextStyle(fontFamily: 'El Messiri', fontSize: 11),
                     ),
                     value: _darkModeEnabled,
                     onChanged: (bool value) {
@@ -199,7 +199,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         const SnackBar(
                           content: Text(
                             'الوضع الداكن سيتم دعمه بشكل كامل في التحديثات القادمة.',
-                            style: TextStyle(fontFamily: 'Cairo'),
+                            style: TextStyle(fontFamily: 'El Messiri'),
                           ),
                           duration: Duration(seconds: 1),
                         ),
@@ -214,14 +214,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: const Text(
                       'مشاركة الموقع الجغرافي',
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
                     ),
                     subtitle: const Text(
                       'السماح للتطبيق بمشاركة موقعك لتسهيل الالتقاء.',
-                      style: TextStyle(fontFamily: 'Cairo', fontSize: 11),
+                      style: TextStyle(fontFamily: 'El Messiri', fontSize: 11),
                     ),
                     value: _shareLocationEnabled,
                     onChanged: (bool value) {
@@ -242,7 +242,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: AppColors.darkText,
-                fontFamily: 'Cairo',
+                fontFamily: 'El Messiri',
               ),
             ),
             const SizedBox(height: 8),
@@ -256,7 +256,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     title: const Text(
                       'تغيير كلمة المرور',
-                      style: TextStyle(fontFamily: 'Cairo', fontSize: 14),
+                      style: TextStyle(fontFamily: 'El Messiri', fontSize: 14),
                     ),
                     trailing: const Icon(Icons.chevron_left_rounded),
                     onTap: () {
@@ -264,7 +264,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         const SnackBar(
                           content: Text(
                             'تم إرسال رابط تغيير كلمة المرور لهاتفك.',
-                            style: TextStyle(fontFamily: 'Cairo'),
+                            style: TextStyle(fontFamily: 'El Messiri'),
                           ),
                           backgroundColor: AppColors.primary,
                         ),
@@ -279,7 +279,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     title: const Text(
                       'سياسة الخصوصية',
-                      style: TextStyle(fontFamily: 'Cairo', fontSize: 14),
+                      style: TextStyle(fontFamily: 'El Messiri', fontSize: 14),
                     ),
                     trailing: const Icon(Icons.chevron_left_rounded),
                     onTap: () => launchUrl(
@@ -295,7 +295,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     title: const Text(
                       'شروط الاستخدام',
-                      style: TextStyle(fontFamily: 'Cairo', fontSize: 14),
+                      style: TextStyle(fontFamily: 'El Messiri', fontSize: 14),
                     ),
                     trailing: const Icon(Icons.chevron_left_rounded),
                     onTap: () => launchUrl(
@@ -312,7 +312,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: const Text(
                       'حذف الحساب نهائياً',
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                         fontSize: 14,
                         color: AppColors.error,
                       ),

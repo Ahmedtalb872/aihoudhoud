@@ -115,7 +115,7 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: AppColors.darkText,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                 ),
               ),
               const SizedBox(height: 8),
@@ -124,7 +124,7 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
                 style: const TextStyle(
                   fontSize: 14,
                   color: AppColors.secondaryText,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                 ),
               ),
               const SizedBox(height: 32),
@@ -135,7 +135,7 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: AppColors.darkText,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                 ),
               ),
               const SizedBox(height: 8),
@@ -150,7 +150,7 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
                     child: Text(
                       '+222',
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                         fontWeight: FontWeight.bold,
                         color: AppColors.darkText,
                       ),
@@ -167,7 +167,7 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: AppColors.darkText,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                 ),
               ),
               const SizedBox(height: 8),
@@ -209,7 +209,7 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
                   style: const TextStyle(
                     color: AppColors.error,
                     fontSize: 13,
-                    fontFamily: 'Cairo',
+                    fontFamily: 'El Messiri',
                   ),
                 ),
               ],
@@ -237,7 +237,7 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
                     l10n.wantToJoin,
                     style: const TextStyle(
                       color: AppColors.secondaryText,
-                      fontFamily: 'Cairo',
+                      fontFamily: 'El Messiri',
                     ),
                   ),
                   TextButton(

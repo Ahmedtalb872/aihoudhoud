@@ -28,7 +28,7 @@ class WalletRechargeOptionsScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                fontFamily: 'Cairo',
+                fontFamily: 'El Messiri',
                 color: AppColors.darkText,
               ),
             ),
@@ -37,7 +37,7 @@ class WalletRechargeOptionsScreen extends StatelessWidget {
               'أضف رصيدًا إلى محفظتك عبر إحدى خدمات الدفع التالية.',
               style: TextStyle(
                 fontSize: 13,
-                fontFamily: 'Cairo',
+                fontFamily: 'El Messiri',
                 color: AppColors.secondaryText,
               ),
             ),
@@ -133,7 +133,7 @@ class _RechargeOptionTile extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'El Messiri',
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                       color: AppColors.darkText,
@@ -143,7 +143,7 @@ class _RechargeOptionTile extends StatelessWidget {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'El Messiri',
                       fontSize: 12,
                       color: disabled
                           ? AppColors.warning
@@ -202,7 +202,7 @@ class _LetterLogo extends StatelessWidget {
           color: foreground,
           fontWeight: FontWeight.w900,
           fontSize: 22,
-          fontFamily: 'Cairo',
+          fontFamily: 'El Messiri',
           height: 1,
         ),
       ),

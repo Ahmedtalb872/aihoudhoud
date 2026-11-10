@@ -85,7 +85,7 @@ class _CollectPaymentSheetState extends State<_CollectPaymentSheet> {
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: AppColors.darkText,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                 ),
               ),
               const SizedBox(height: 4),
@@ -94,7 +94,7 @@ class _CollectPaymentSheetState extends State<_CollectPaymentSheet> {
                 style: TextStyle(
                   fontSize: 12,
                   color: AppColors.secondaryText,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                 ),
               ),
               const SizedBox(height: 16),
@@ -105,7 +105,7 @@ class _CollectPaymentSheetState extends State<_CollectPaymentSheet> {
                   decimal: true,
                 ),
                 style: const TextStyle(
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                   fontWeight: FontWeight.bold,
                 ),
                 decoration: InputDecoration(

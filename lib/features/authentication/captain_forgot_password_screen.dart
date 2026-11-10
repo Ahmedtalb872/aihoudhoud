@@ -174,7 +174,7 @@ class _CaptainForgotPasswordScreenState
           fontWeight: FontWeight.bold,
           letterSpacing: 1.2,
           color: AppColors.primaryDark,
-          fontFamily: 'Cairo',
+          fontFamily: 'El Messiri',
         ),
       ),
       const SizedBox(height: 6),
@@ -185,7 +185,7 @@ class _CaptainForgotPasswordScreenState
           fontSize: 21,
           fontWeight: FontWeight.bold,
           color: AppColors.darkText,
-          fontFamily: 'Cairo',
+          fontFamily: 'El Messiri',
         ),
       ),
       const SizedBox(height: 8),
@@ -195,7 +195,7 @@ class _CaptainForgotPasswordScreenState
         style: const TextStyle(
           fontSize: 13,
           color: AppColors.secondaryText,
-          fontFamily: 'Cairo',
+          fontFamily: 'El Messiri',
           height: 1.5,
         ),
       ),
@@ -223,7 +223,7 @@ class _CaptainForgotPasswordScreenState
           child: Text(
             '+222',
             style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'El Messiri',
               fontWeight: FontWeight.bold,
               color: AppColors.darkText,
             ),
@@ -265,7 +265,7 @@ class _CaptainForgotPasswordScreenState
                 }),
           child: const Text(
             'لم يصلني الرمز، تغيير الرقم',
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 12),
+            style: TextStyle(fontFamily: 'El Messiri', fontSize: 12),
           ),
         ),
       ),
@@ -278,7 +278,7 @@ class _CaptainForgotPasswordScreenState
             fontSize: 13,
             fontWeight: FontWeight.bold,
             color: AppColors.darkText,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
       ),
@@ -307,7 +307,7 @@ class _CaptainForgotPasswordScreenState
             fontSize: 13,
             fontWeight: FontWeight.bold,
             color: AppColors.darkText,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
       ),
@@ -364,7 +364,7 @@ class _CaptainForgotPasswordScreenState
         style: const TextStyle(
           color: AppColors.error,
           fontSize: 12,
-          fontFamily: 'Cairo',
+          fontFamily: 'El Messiri',
         ),
       ),
     ];

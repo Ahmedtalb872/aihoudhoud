@@ -261,7 +261,7 @@ class _RealMapWidgetState extends State<RealMapWidget>
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: AppColors.darkText,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                 ),
               ),
             ),
@@ -272,7 +272,7 @@ class _RealMapWidgetState extends State<RealMapWidget>
               ),
               title: const Text(
                 'نقطة البداية',
-                style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold),
+                style: TextStyle(fontFamily: 'El Messiri', fontWeight: FontWeight.bold),
               ),
               onTap: () {
                 Navigator.of(context).pop();
@@ -283,7 +283,7 @@ class _RealMapWidgetState extends State<RealMapWidget>
               leading: const Icon(Icons.flag_rounded, color: AppColors.error),
               title: const Text(
                 'نقطة النهاية',
-                style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold),
+                style: TextStyle(fontFamily: 'El Messiri', fontWeight: FontWeight.bold),
               ),
               onTap: () {
                 Navigator.of(context).pop();

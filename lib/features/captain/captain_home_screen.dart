@@ -283,7 +283,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                         color: AppColors.darkText,
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                       ),
                     ),
                   ],
@@ -361,7 +361,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
                           color: AppColors.darkText,
-                          fontFamily: 'Cairo',
+                          fontFamily: 'El Messiri',
                         ),
                       ),
                     ],
@@ -372,7 +372,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.secondaryText,
-                      fontFamily: 'Cairo',
+                      fontFamily: 'El Messiri',
                     ),
                   ),
                   if (trip.isDelivery &&
@@ -384,7 +384,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: AppColors.primaryDark,
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                       ),
                     ),
                   ],
@@ -425,7 +425,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             color: AppColors.secondaryText,
-                            fontFamily: 'Cairo',
+                            fontFamily: 'El Messiri',
                           ),
                         ),
                         Text(
@@ -434,7 +434,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                             color: AppColors.darkText,
-                            fontFamily: 'Cairo',
+                            fontFamily: 'El Messiri',
                           ),
                         ),
                       ],
@@ -467,7 +467,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                             style: TextStyle(
                               fontSize: 11,
                               color: AppColors.secondaryText,
-                              fontFamily: 'Cairo',
+                              fontFamily: 'El Messiri',
                             ),
                           ),
                           Text(
@@ -476,7 +476,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                               color: AppColors.primaryDark,
-                              fontFamily: 'Cairo',
+                              fontFamily: 'El Messiri',
                             ),
                           ),
                         ],
@@ -511,7 +511,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                                   content: Text(
                                     error,
                                     style: const TextStyle(
-                                      fontFamily: 'Cairo',
+                                      fontFamily: 'El Messiri',
                                     ),
                                   ),
                                   backgroundColor: AppColors.error,
@@ -538,7 +538,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
       style: const TextStyle(
         fontSize: 12,
         color: AppColors.secondaryText,
-        fontFamily: 'Cairo',
+        fontFamily: 'El Messiri',
       ),
     );
   }
@@ -641,7 +641,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                 Text(
                   provider.captainName,
                   style: const TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'El Messiri',
                     fontWeight: FontWeight.bold,
                     fontSize: 17,
                     color: Colors.white,
@@ -674,7 +674,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                       Text(
                         provider.isCaptainOnline ? 'متصل' : 'غير متصل',
                         style: TextStyle(
-                          fontFamily: 'Cairo',
+                          fontFamily: 'El Messiri',
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
                           color: provider.isCaptainOnline
@@ -689,7 +689,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
                 Text(
                   provider.captainPhone,
                   style: const TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'El Messiri',
                     fontSize: 13,
                     color: Colors.white,
                   ),
@@ -838,7 +838,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
               // sync with pubspec.yaml's version by hand if that changes.
               '${l10n.versionLabel} 1.0.1',
               style: TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'El Messiri',
                 fontSize: 12,
                 color: AppColors.secondaryText.withOpacity(0.8),
               ),
@@ -861,7 +861,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
       title: Text(
         title,
         style: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: 'El Messiri',
           fontWeight: FontWeight.bold,
           fontSize: 14,
           color: color == AppColors.error ? AppColors.error : AppColors.darkText,
@@ -870,7 +870,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
       subtitle: Text(
         subtitle,
         style: const TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: 'El Messiri',
           fontSize: 12,
           color: AppColors.secondaryText,
         ),
@@ -892,12 +892,12 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
       unselectedItemColor: AppColors.secondaryText,
       selectedLabelStyle: const TextStyle(
         fontWeight: FontWeight.bold,
-        fontFamily: 'Cairo',
+        fontFamily: 'El Messiri',
         fontSize: 11,
       ),
       unselectedLabelStyle: const TextStyle(
         fontWeight: FontWeight.normal,
-        fontFamily: 'Cairo',
+        fontFamily: 'El Messiri',
         fontSize: 11,
       ),
       onTap: (index) {

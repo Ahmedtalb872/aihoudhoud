@@ -15,9 +15,9 @@ class AppTheme {
         error: AppColors.error,
       ),
       scaffoldBackgroundColor: AppColors.background,
-      // Registered at startup via GoogleFonts.cairo() in main() - see the
-      // comment there for why a bare family name string works here.
-      fontFamily: 'Cairo',
+      // Registered at startup via GoogleFonts.elMessiri() in main() - see
+      // the comment there for why a bare family name string works here.
+      fontFamily: 'El Messiri',
 
       cardTheme: ThemeData.light().cardTheme.copyWith(
         color: AppColors.surface,
@@ -38,7 +38,7 @@ class AppTheme {
           textStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
       ),
@@ -54,7 +54,7 @@ class AppTheme {
           textStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
       ),
@@ -65,7 +65,7 @@ class AppTheme {
           textStyle: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
       ),
@@ -100,12 +100,12 @@ class AppTheme {
         hintStyle: const TextStyle(
           color: AppColors.secondaryText,
           fontSize: 14,
-          fontFamily: 'Cairo',
+          fontFamily: 'El Messiri',
         ),
         labelStyle: const TextStyle(
           color: AppColors.darkText,
           fontSize: 14,
-          fontFamily: 'Cairo',
+          fontFamily: 'El Messiri',
         ),
       ),
 
@@ -123,7 +123,7 @@ class AppTheme {
           color: AppColors.darkText,
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          fontFamily: 'Cairo',
+          fontFamily: 'El Messiri',
         ),
       ),
 

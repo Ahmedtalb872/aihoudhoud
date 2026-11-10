@@ -29,7 +29,7 @@ class AuthChoiceScreen extends StatelessWidget {
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: AppColors.darkText,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                 ),
               ),
               const SizedBox(height: 8),
@@ -39,7 +39,7 @@ class AuthChoiceScreen extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 14,
                   color: AppColors.secondaryText,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                 ),
               ),
               const SizedBox(height: 40),

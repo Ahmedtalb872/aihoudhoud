@@ -58,7 +58,7 @@ class NeumorphicButton extends StatelessWidget {
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: AppColors.darkText,
-                    fontFamily: 'Cairo',
+                    fontFamily: 'El Messiri',
                   ),
                 ),
         ),

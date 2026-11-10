@@ -61,7 +61,7 @@ class _CancelTripSheetState extends State<_CancelTripSheet> {
       const SnackBar(
         content: Text(
           'تم إلغاء المشوار.',
-          style: TextStyle(fontFamily: 'Cairo'),
+          style: TextStyle(fontFamily: 'El Messiri'),
         ),
         backgroundColor: AppColors.error,
       ),
@@ -87,7 +87,7 @@ class _CancelTripSheetState extends State<_CancelTripSheet> {
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: AppColors.darkText,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                 ),
               ),
               const SizedBox(height: 4),
@@ -96,7 +96,7 @@ class _CancelTripSheetState extends State<_CancelTripSheet> {
                 style: TextStyle(
                   fontSize: 12,
                   color: AppColors.secondaryText,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                 ),
               ),
               const SizedBox(height: 12),
@@ -108,7 +108,7 @@ class _CancelTripSheetState extends State<_CancelTripSheet> {
                   contentPadding: EdgeInsets.zero,
                   title: Text(
                     reason,
-                    style: const TextStyle(fontSize: 13, fontFamily: 'Cairo'),
+                    style: const TextStyle(fontSize: 13, fontFamily: 'El Messiri'),
                   ),
                   onChanged: (value) => setState(() => _selectedReason = value),
                 ),

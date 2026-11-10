@@ -223,7 +223,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: const TextStyle(fontFamily: 'Cairo')),
+        content: Text(message, style: const TextStyle(fontFamily: 'El Messiri')),
         backgroundColor: AppColors.error,
         duration: const Duration(seconds: 12),
       ),
@@ -295,7 +295,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                               color: AppColors.darkText,
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
-                              fontFamily: 'Cairo',
+                              fontFamily: 'El Messiri',
                             ),
                           ),
                         ),
@@ -323,7 +323,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                             style: const TextStyle(
                               fontSize: 9,
                               color: AppColors.secondaryText,
-                              fontFamily: 'Cairo',
+                              fontFamily: 'El Messiri',
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -367,7 +367,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                             color: AppColors.primary,
-                            fontFamily: 'Cairo',
+                            fontFamily: 'El Messiri',
                           ),
                         ),
                       ),
@@ -400,7 +400,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                               style: TextStyle(
                                 fontSize: 10,
                                 color: AppColors.secondaryText,
-                                fontFamily: 'Cairo',
+                                fontFamily: 'El Messiri',
                               ),
                             ),
                             Text(
@@ -409,7 +409,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
                                 color: AppColors.darkText,
-                                fontFamily: 'Cairo',
+                                fontFamily: 'El Messiri',
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -442,7 +442,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
-                                fontFamily: 'Cairo',
+                                fontFamily: 'El Messiri',
                               ),
                             ),
                             Text(
@@ -525,7 +525,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
               fontWeight: FontWeight.bold,
               fontSize: 13,
               color: AppColors.darkText,
-              fontFamily: 'Cairo',
+              fontFamily: 'El Messiri',
             ),
           ),
           Text(
@@ -533,7 +533,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
             style: const TextStyle(
               fontSize: 9,
               color: AppColors.secondaryText,
-              fontFamily: 'Cairo',
+              fontFamily: 'El Messiri',
             ),
           ),
         ],

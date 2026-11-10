@@ -96,7 +96,7 @@ class _CaptainActiveTripScreenState extends State<CaptainActiveTripScreen> {
               const Text(
                 'تم إكمال المشوار بنجاح!',
                 style: TextStyle(
-                  fontFamily: 'Cairo',
+                  fontFamily: 'El Messiri',
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -178,7 +178,7 @@ class _CaptainActiveTripScreenState extends State<CaptainActiveTripScreen> {
                     'إلغاء المشوار',
                     style: TextStyle(
                       color: AppColors.error,
-                      fontFamily: 'Cairo',
+                      fontFamily: 'El Messiri',
                     ),
                   ),
                 ),
@@ -232,7 +232,7 @@ class _CaptainActiveTripScreenState extends State<CaptainActiveTripScreen> {
                             style: TextStyle(
                               fontSize: 10,
                               color: AppColors.secondaryText,
-                              fontFamily: 'Cairo',
+                              fontFamily: 'El Messiri',
                             ),
                           ),
                         ],
@@ -278,7 +278,7 @@ class _CaptainActiveTripScreenState extends State<CaptainActiveTripScreen> {
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: AppColors.primaryDark,
-                        fontFamily: 'Cairo',
+                        fontFamily: 'El Messiri',
                       ),
                     ),
                   ],
@@ -306,7 +306,7 @@ class _CaptainActiveTripScreenState extends State<CaptainActiveTripScreen> {
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
-                                fontFamily: 'Cairo',
+                                fontFamily: 'El Messiri',
                               ),
                             ),
                             Text(
