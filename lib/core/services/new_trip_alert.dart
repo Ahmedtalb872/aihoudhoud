@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:vibration/vibration.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import '../../features/captain/captain_home_screen.dart';
+import 'navigation_service.dart';
 import 'trip_overlay.dart';
 
 /// Rings, vibrates, and posts a full-screen-style system notification when a
@@ -49,6 +51,13 @@ class NewTripAlert {
           android: AndroidInitializationSettings('@mipmap/ic_launcher'),
           iOS: DarwinInitializationSettings(),
         ),
+        // Without this, tapping the ringing new-trip notification just
+        // falls back to Android's default "launch the app" behavior, which
+        // doesn't stop the ringtone/vibration and can leave the captain
+        // looking at whatever screen the app happened to resume on instead
+        // of the dashboard where the incoming request actually shows -
+        // reported as the tap "doing nothing" or "getting stuck".
+        onDidReceiveNotificationResponse: _onNotificationTap,
       );
       _initialized = true;
       await _createGeneralChannel();
@@ -103,6 +112,20 @@ class NewTripAlert {
       // Not Android, or plugin doesn't support this on the current OS
       // version - the regular notification still works either way.
     }
+  }
+
+  // Tapping the ringing new-trip notification (or its full-screen intent)
+  // while the app process is alive - foreground or backgrounded - lands
+  // here. Stops the ring and takes the captain straight to the dashboard,
+  // which already shows the incoming request / active trip from provider
+  // state once there, rather than leaving navigation to Android's default
+  // behavior for the tap.
+  static void _onNotificationTap(NotificationResponse response) {
+    stop();
+    rootNavigatorKey.currentState?.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const CaptainHomeScreen()),
+      (route) => false,
+    );
   }
 
   // Keeps ringing/vibrating until stop() is called - callers must stop it

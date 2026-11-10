@@ -8,6 +8,7 @@ import 'core/theme/app_theme.dart';
 import 'core/supabase/supabase_config.dart';
 import 'core/services/new_trip_alert.dart';
 import 'core/services/push_notifications.dart';
+import 'core/services/navigation_service.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'providers/app_state_provider.dart';
 import 'features/onboarding/splash_screen.dart';
@@ -60,6 +61,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final locale = context.watch<AppStateProvider>().locale;
     return MaterialApp(
+      navigatorKey: rootNavigatorKey,
       title: 'الهدهد',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,

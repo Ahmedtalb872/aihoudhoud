@@ -399,13 +399,22 @@ class AppStateProvider extends ChangeNotifier {
   Future<void> restoreActiveTripIfAny() async {
     final uid = _userId;
     if (uid == null || _activeTrip != null) return;
-    try {
-      final row = await AuthRepository().getActiveTripForCaptain(uid);
-      if (row == null) return;
-      await _hydrateActiveTripFromRow(row);
-    } catch (_) {
-      // Best-effort - worst case the captain has to be told to check their
-      // trips manually; nothing here should block app startup.
+    // A single failed attempt used to give up for the rest of the app
+    // session - a captain reopening the app during a brief connectivity gap
+    // (the exact moment they're mid-trip and the network matters most) would
+    // see no trip at all, looking like it "disappeared", even though it was
+    // still active server-side the whole time. Mirrors splash_screen's own
+    // _withRetries treatment of the profile/captain fetch right before this.
+    for (var attempt = 0; attempt < 4; attempt++) {
+      try {
+        final row = await AuthRepository().getActiveTripForCaptain(uid);
+        if (row == null) return;
+        await _hydrateActiveTripFromRow(row);
+        return;
+      } catch (_) {
+        if (attempt == 3) return;
+        await Future.delayed(Duration(milliseconds: 800 * (attempt + 1)));
+      }
     }
   }
 
