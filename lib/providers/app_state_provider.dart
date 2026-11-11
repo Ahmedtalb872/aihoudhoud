@@ -12,7 +12,26 @@ import '../core/supabase/wallet_repository.dart';
 import '../core/services/new_trip_alert.dart';
 import '../core/services/push_notifications.dart';
 
-class AppStateProvider extends ChangeNotifier {
+class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
+  AppStateProvider() {
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  // Trip details editable after the captain already accepted (the customer
+  // changing the destination mid-ride, for example) only ever reached this
+  // app on the next cold start, via restoreActiveTripIfAny - a captain who
+  // just backgrounded the app and came back (or, on web, switched tabs and
+  // back) kept looking at whatever was loaded when they left, with no way
+  // to see an edit made in the meantime short of force-quitting. Re-syncing
+  // on every resume closes that gap without needing a standing Realtime
+  // subscription for the rest of the trip's fields.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      refreshActiveTripFromServer();
+    }
+  }
+
   // Auth state
   bool _isLoggedIn = false;
   String? _userId;
@@ -431,6 +450,37 @@ class AppStateProvider extends ChangeNotifier {
         if (attempt == 3) return;
         await Future.delayed(Duration(milliseconds: 800 * (attempt + 1)));
       }
+    }
+  }
+
+  // Picks up any edit made to the current trip's own row since it was last
+  // loaded - most notably the customer changing the destination/route
+  // mid-ride, but also price/payment-method corrections - called on every
+  // app resume (see didChangeAppLifecycleState) rather than only once at
+  // cold start, since backgrounding and coming back doesn't go through
+  // restoreActiveTripIfAny at all. A no-op if there's no active remote
+  // trip, or if the row has since moved to a terminal status (that's a
+  // separate concern from refreshing its details) or disappeared.
+  Future<void> refreshActiveTripFromServer() async {
+    final trip = _activeTrip;
+    if (trip == null || !trip.isRemote) return;
+    // An open ride's live meter (distance/idle time) is tracked locally by
+    // OpenRideActiveScreen's own position stream once boarded, and only
+    // ever persisted to the row every ~15s - re-hydrating from it here on
+    // every resume would roll the meter back to however stale that last
+    // write happened to be. Nothing about a fixed destination/price can
+    // change for an open ride anyway (it has neither), so there's nothing
+    // this refresh would do for that phase besides risk that rollback.
+    if (trip.isOpenRide && trip.status == TripStatus.started) return;
+    try {
+      final row = await AuthRepository().getTripById(trip.id);
+      if (row == null) return;
+      final status = row['status'] as String?;
+      if (status == 'completed' || status == 'cancelled') return;
+      await _hydrateActiveTripFromRow(row);
+    } catch (_) {
+      // Best-effort - the captain keeps seeing whatever was already
+      // loaded, same as if this had never been called.
     }
   }
 
@@ -1845,6 +1895,7 @@ class AppStateProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _countdownTimer?.cancel();
     _pendingRidesSubscription?.cancel();
     _openRideTicker?.cancel();

@@ -251,6 +251,21 @@ class AuthRepository {
     }
   }
 
+  /// A single trip row by id, regardless of its status - used to pick up
+  /// a server-side edit (the customer changing the destination mid-ride,
+  /// for example) to a trip the captain already has loaded locally, as
+  /// opposed to [getActiveTripForCaptain]'s status-filtered lookup.
+  Future<Map<String, dynamic>?> getTripById(String tripId) async {
+    try {
+      final rows = await _client.from('trips').select().eq('id', tripId).limit(1);
+      final list = rows as List;
+      if (list.isEmpty) return null;
+      return list.first as Map<String, dynamic>;
+    } on PostgrestException {
+      return null;
+    }
+  }
+
   /// The captain's completed/cancelled trips - "الرحلات" only ever showed
   /// what AppStateProvider had appended in-memory *this session*, so a
   /// fresh app launch always looked empty even though the trips table has
