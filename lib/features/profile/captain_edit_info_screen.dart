@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/captain_documents.dart';
 import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_exception.dart';
@@ -170,6 +171,19 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  // Opens the uploaded document full-size in the browser/system viewer -
+  // from there the captain can zoom in to check it's legible, or use the
+  // browser's own save/download action to keep a copy on their phone.
+  // Fetches a fresh signed URL rather than reusing the thumbnail's (which
+  // may be close to its 1-hour expiry by the time this is tapped).
+  Future<void> _openDocument(String docType) async {
+    final userId = _authRepository.currentUser?.id;
+    if (userId == null) return;
+    final url = await _authRepository.getDocumentSignedUrl(userId, docType);
+    if (url == null || !mounted) return;
+    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 
   Future<void> _reuploadDoc(String docType) async {
@@ -516,7 +530,7 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      'يُرفع كل مستند فور اختياره - لا حاجة لزر الحفظ بالأسفل لهذا القسم.',
+                      'يُرفع كل مستند فور اختياره - لا حاجة لزر الحفظ بالأسفل لهذا القسم. اضغط على الصورة المصغّرة لعرضها بالحجم الكامل أو تحميلها.',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.secondaryText,
@@ -648,30 +662,38 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
                   // photo - so there was no way to check it's really the
                   // right page/angle before an admin ever looked at it.
                   if (status != null && userId != null) ...[
-                    ClipRRect(
+                    Material(
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
-                      child: SizedBox(
-                        width: 44,
-                        height: 44,
-                        child: FutureBuilder<String?>(
-                          future: _authRepository.getDocumentSignedUrl(
-                            userId,
-                            docType,
+                      clipBehavior: Clip.antiAlias,
+                      // Tapping opens the full-size document in the
+                      // browser/system viewer, where the captain can zoom
+                      // in or use its own save action to keep a copy.
+                      child: InkWell(
+                        onTap: () => _openDocument(docType),
+                        child: SizedBox(
+                          width: 44,
+                          height: 44,
+                          child: FutureBuilder<String?>(
+                            future: _authRepository.getDocumentSignedUrl(
+                              userId,
+                              docType,
+                            ),
+                            builder: (context, snapshot) {
+                              final url = snapshot.data;
+                              if (url == null) {
+                                return const ColoredBox(
+                                  color: AppColors.background,
+                                  child: Icon(
+                                    Icons.image_outlined,
+                                    color: AppColors.secondaryText,
+                                    size: 20,
+                                  ),
+                                );
+                              }
+                              return Image.network(url, fit: BoxFit.cover);
+                            },
                           ),
-                          builder: (context, snapshot) {
-                            final url = snapshot.data;
-                            if (url == null) {
-                              return const ColoredBox(
-                                color: AppColors.background,
-                                child: Icon(
-                                  Icons.image_outlined,
-                                  color: AppColors.secondaryText,
-                                  size: 20,
-                                ),
-                              );
-                            }
-                            return Image.network(url, fit: BoxFit.cover);
-                          },
                         ),
                       ),
                     ),
