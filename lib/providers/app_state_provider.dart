@@ -87,6 +87,7 @@ class AppStateProvider extends ChangeNotifier {
   double _captainWalletBalance = 0.0;
   double _captainTodayEarnings = 0.0;
   int _captainTripsCount = 0;
+  double _captainRating = 5.0;
   final List<WalletTransaction> _captainTransactions = [];
 
   // The most recent in-flight server write to wallet_balance (a commission
@@ -184,6 +185,7 @@ class AppStateProvider extends ChangeNotifier {
   double get captainWalletBalance => _captainWalletBalance;
   double get captainTodayEarnings => _captainTodayEarnings;
   int get captainTripsCount => _captainTripsCount;
+  double get captainRating => _captainRating;
   List<WalletTransaction> get captainTransactions => _captainTransactions;
 
   Trip? get activeTrip => _activeTrip;
@@ -348,6 +350,14 @@ class AppStateProvider extends ChangeNotifier {
     final profileBalance = profile['wallet_balance'];
     if (profileBalance != null) {
       _captainWalletBalance = (profileBalance as num).toDouble();
+    }
+    final profileRating = profile['rating'];
+    if (profileRating != null) {
+      _captainRating = (profileRating as num).toDouble();
+    }
+    final profileTripsCount = profile['trips_count'];
+    if (profileTripsCount != null) {
+      _captainTripsCount = (profileTripsCount as num).toInt();
     }
     if (captain != null) {
       // Motorcycle isn't a separate column - it's just another value of

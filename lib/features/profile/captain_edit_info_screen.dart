@@ -630,6 +630,8 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
       statusIcon = Icons.timer_off_outlined;
     }
 
+    final userId = _authRepository.currentUser?.id;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Card(
@@ -641,6 +643,40 @@ class _CaptainEditInfoScreenState extends State<CaptainEditInfoScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  // A captain could only ever see a status pill for a
+                  // document they themselves uploaded, never the actual
+                  // photo - so there was no way to check it's really the
+                  // right page/angle before an admin ever looked at it.
+                  if (status != null && userId != null) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: FutureBuilder<String?>(
+                          future: _authRepository.getDocumentSignedUrl(
+                            userId,
+                            docType,
+                          ),
+                          builder: (context, snapshot) {
+                            final url = snapshot.data;
+                            if (url == null) {
+                              return const ColoredBox(
+                                color: AppColors.background,
+                                child: Icon(
+                                  Icons.image_outlined,
+                                  color: AppColors.secondaryText,
+                                  size: 20,
+                                ),
+                              );
+                            }
+                            return Image.network(url, fit: BoxFit.cover);
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
                   Expanded(
                     child: Text(
                       docLabel,

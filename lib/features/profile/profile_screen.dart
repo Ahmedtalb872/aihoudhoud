@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
+import '../../core/supabase/auth_repository.dart';
 import '../../providers/app_state_provider.dart';
-import '../../dummy_data/dummy_data.dart';
 
 class ProfileScreen extends StatelessWidget {
   final bool showAppBar;
@@ -12,10 +12,10 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<AppStateProvider>(context);
 
-    final avatarUrl = DummyData.dummyCaptain.user.avatar;
+    final userId = provider.userId;
     final userName = provider.captainName;
     final userPhone = provider.captainPhone;
-    final rating = DummyData.dummyCaptain.user.rating;
+    final rating = provider.captainRating;
     final tripsCount = provider.captainTripsCount;
 
     return Scaffold(
@@ -29,7 +29,7 @@ class ProfileScreen extends StatelessWidget {
 
             // Profile Header Card
             _buildProfileHeader(
-              avatarUrl,
+              userId,
               userName,
               userPhone,
               rating,
@@ -49,7 +49,7 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildProfileHeader(
-    String avatar,
+    String? userId,
     String name,
     String phone,
     double rating,
@@ -60,10 +60,30 @@ class ProfileScreen extends StatelessWidget {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            CircleAvatar(
-              radius: 46,
-              backgroundImage: NetworkImage(avatar),
-              backgroundColor: AppColors.background,
+            ClipOval(
+              child: SizedBox(
+                width: 92,
+                height: 92,
+                child: FutureBuilder<String?>(
+                  future: userId == null
+                      ? null
+                      : AuthRepository().getProfilePhotoUrl(userId),
+                  builder: (context, snapshot) {
+                    final url = snapshot.data;
+                    if (url == null) {
+                      return const ColoredBox(
+                        color: AppColors.background,
+                        child: Icon(
+                          Icons.person_rounded,
+                          color: AppColors.primary,
+                          size: 46,
+                        ),
+                      );
+                    }
+                    return Image.network(url, fit: BoxFit.cover);
+                  },
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             Text(
