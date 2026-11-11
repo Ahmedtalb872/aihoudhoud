@@ -15,8 +15,8 @@ class AppTheme {
         error: AppColors.error,
       ),
       scaffoldBackgroundColor: AppColors.background,
-      // Registered at startup via GoogleFonts.elMessiri() in main() - see
-      // the comment there for why a bare family name string works here.
+      // Bundled locally via pubspec.yaml's fonts: section (see the comment
+      // there) instead of fetched at runtime - loads instantly, no network.
       fontFamily: 'El Messiri',
 
       cardTheme: ThemeData.light().cardTheme.copyWith(

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_repository.dart';
 import '../../providers/app_state_provider.dart';
@@ -300,8 +299,11 @@ class _SplashScreenState extends State<SplashScreen>
                             // for Latin-script wordmarks (the same
                             // typeface used in the reference animation's
                             // own CSS), instead of 'El Messiri' which is tuned
-                            // for Arabic script.
-                            style: GoogleFonts.poppins(
+                            // for Arabic script. Bundled locally (see
+                            // pubspec.yaml) rather than fetched over the
+                            // network, so it's never late to appear here.
+                            style: const TextStyle(
+                              fontFamily: 'Poppins',
                               fontSize: 28,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.5,
