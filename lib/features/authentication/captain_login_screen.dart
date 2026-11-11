@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_exception.dart';
@@ -143,6 +144,11 @@ class _CaptainLoginScreenState extends State<CaptainLoginScreen> {
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
                 textAlign: TextAlign.left,
+                // Mauritanian phone numbers are 8 digits.
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(8),
+                ],
                 decoration: const InputDecoration(
                   hintText: '2XXXXXXXX',
                   prefixIcon: Padding(

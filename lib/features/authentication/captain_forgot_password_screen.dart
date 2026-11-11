@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/constants/colors.dart';
 import '../../core/supabase/auth_exception.dart';
 import '../../core/supabase/auth_repository.dart';
@@ -218,6 +219,13 @@ class _CaptainForgotPasswordScreenState
         textAlign: TextAlign.left,
         hintText: '2XXXXXXXX',
         onSubmitted: (_) => _sendCode(),
+        // Mauritanian phone numbers are 8 digits - without this, pasting
+        // or typing extra digits silently produced a number _fullPhone
+        // would never match against any real account.
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(8),
+        ],
         prefixIcon: const Padding(
           padding: EdgeInsets.symmetric(horizontal: 4),
           child: Text(

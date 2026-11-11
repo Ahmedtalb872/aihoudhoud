@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../constants/colors.dart';
 
 /// A [TextField] sitting inside a soft "pressed into the surface" container
@@ -14,6 +15,7 @@ class NeumorphicTextField extends StatelessWidget {
   final Widget? suffixIcon;
   final ValueChanged<String>? onSubmitted;
   final TextStyle? style;
+  final List<TextInputFormatter>? inputFormatters;
 
   const NeumorphicTextField({
     super.key,
@@ -26,6 +28,7 @@ class NeumorphicTextField extends StatelessWidget {
     this.suffixIcon,
     this.onSubmitted,
     this.style,
+    this.inputFormatters,
   });
 
   @override
@@ -49,6 +52,7 @@ class NeumorphicTextField extends StatelessWidget {
         keyboardType: keyboardType,
         textAlign: textAlign,
         onSubmitted: onSubmitted,
+        inputFormatters: inputFormatters,
         style:
             style ??
             const TextStyle(
@@ -64,6 +68,12 @@ class NeumorphicTextField extends StatelessWidget {
             fontFamily: 'El Messiri',
             fontWeight: FontWeight.normal,
           ),
+          // Without this, Flutter reserves its default ~48px-tall box for
+          // prefixIcon regardless of how small its actual content is,
+          // pinning a short prefix like "+222" to the top of that box
+          // instead of centering it next to the input text - visible as
+          // the prefix floating noticeably above the typed/hint number.
+          prefixIconConstraints: const BoxConstraints(minWidth: 0),
           prefixIcon: prefixIcon,
           suffixIcon: suffixIcon,
           border: InputBorder.none,

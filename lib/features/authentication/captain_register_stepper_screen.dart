@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -1587,6 +1588,11 @@ class _CaptainRegisterStepperScreenState
           readOnly: readOnly,
           keyboardType: TextInputType.phone,
           textAlign: TextAlign.left,
+          // Mauritanian phone numbers are 8 digits.
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(8),
+          ],
           style: const TextStyle(
             fontSize: 16,
             letterSpacing: 1.5,
