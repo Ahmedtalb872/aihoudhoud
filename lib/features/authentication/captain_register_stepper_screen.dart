@@ -46,8 +46,14 @@ class _CaptainRegisterStepperScreenState
   final _dobController = TextEditingController(text: '1990-01-01');
 
   // Step 2 Controllers
-  String _vehicleCategory = 'car'; // car, motorcycle
-  String _carType = 'economy'; // economy, comfort, family
+  // No default - a captain silently registered as a car captain without
+  // ever actually choosing that would end up unable to receive the right
+  // kind of requests (or wrongly eligible for delivery) with no obvious
+  // reason why. _validateStep2() blocks moving on until one is picked.
+  String? _vehicleCategory;
+  String _carType = 'economy'; // economy, comfort, family - the only option
+  // offered at registration (see _buildStep2Vehicle), so there's nothing
+  // real to choose between yet; kept defaulted unlike vehicleCategory.
   // Empty, not pre-filled - these are optional (the hint text on each field
   // already shows a "مثال: ..." example), so a captain who skips them
   // shouldn't end up with a fake vehicle on file that they never actually
@@ -288,6 +294,18 @@ class _CaptainRegisterStepperScreenState
   // the payout phone because it's how the company actually pays the
   // captain.
   bool _validateStep2() {
+    if (_vehicleCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'الرجاء اختيار نوع مركبتك (سيارة أو دراجة نارية)',
+            style: TextStyle(fontFamily: 'El Messiri'),
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return false;
+    }
     if (_carPlateController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
