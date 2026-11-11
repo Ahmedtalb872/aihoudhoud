@@ -9,11 +9,14 @@ import '../services/directions_service.dart';
 class RealMapWidget extends StatefulWidget {
   final TripStatus? status;
   final bool showRoute;
-  final bool animateCar;
   final double? pickupLat;
   final double? pickupLng;
   final double? destLat;
   final double? destLng;
+  // The captain's real live GPS fix (see AppStateProvider.myLat/myLng, or an
+  // open ride's own position stream) - shown as the car marker and, once a
+  // trip is under way, used as the route's starting point instead of the
+  // pickup point, so both match where the captain actually is.
   final double? carLat;
   final double? carLng;
   final List<LatLng>? routePolyline;
@@ -25,7 +28,6 @@ class RealMapWidget extends StatefulWidget {
     super.key,
     this.status,
     this.showRoute = false,
-    this.animateCar = false,
     this.pickupLat,
     this.pickupLng,
     this.destLat,
@@ -42,8 +44,7 @@ class RealMapWidget extends StatefulWidget {
   State<RealMapWidget> createState() => _RealMapWidgetState();
 }
 
-class _RealMapWidgetState extends State<RealMapWidget>
-    with SingleTickerProviderStateMixin {
+class _RealMapWidgetState extends State<RealMapWidget> {
   GoogleMapController? _mapController;
   LatLng _currentCenter = const LatLng(18.0858, -15.9785); // Nouakchott center
   bool _isLoadingLocation = false;
@@ -58,8 +59,14 @@ class _RealMapWidgetState extends State<RealMapWidget>
   // couple of seconds it takes the real route to arrive.
   bool _routeFetchFailed = false;
 
-  late AnimationController _carController;
-  late Animation<double> _carAnimation;
+  // What the last (successful or in-flight) fetch was for - re-fetching on
+  // every single GPS update while driving would hammer the Directions API
+  // for a route that's barely changed; only the endpoints' reference
+  // (destination swap) or a real amount of movement should trigger another
+  // call. See _fetchRouteIfNeeded.
+  LatLng? _lastFetchOrigin;
+  LatLng? _lastFetchDestination;
+  static const double _minMetersBeforeRefetch = 120;
 
   @override
   void initState() {
@@ -74,37 +81,77 @@ class _RealMapWidgetState extends State<RealMapWidget>
       _determinePosition();
     }
 
-    _carController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 15),
-    );
-
-    _carAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _carController, curve: Curves.easeInOut));
-
-    if (widget.animateCar) {
-      _carController.repeat();
-    }
-
     _fetchRouteIfNeeded();
+  }
+
+  // The route's real origin/destination for the trip's current phase -
+  // heading to the passenger routes from the captain's live position to
+  // the pickup point; once the trip is under way it routes from the
+  // captain's live position to the actual destination. Falls back to the
+  // plain pickup->destination overview (no live fix yet, or this is just
+  // an incoming-request preview with no status/car at all).
+  ({LatLng origin, LatLng destination})? _routeEndpoints() {
+    if (!widget.showRoute) return null;
+    final hasCar = widget.carLat != null && widget.carLng != null;
+    final hasPickup = widget.pickupLat != null && widget.pickupLng != null;
+    final hasDest = widget.destLat != null && widget.destLng != null;
+    final headingToPickup =
+        widget.status == TripStatus.accepted ||
+        widget.status == TripStatus.enRoute;
+    final tripUnderWay =
+        widget.status == TripStatus.arrived ||
+        widget.status == TripStatus.started;
+
+    if (hasCar && headingToPickup && hasPickup) {
+      return (
+        origin: LatLng(widget.carLat!, widget.carLng!),
+        destination: LatLng(widget.pickupLat!, widget.pickupLng!),
+      );
+    }
+    if (hasCar && tripUnderWay && hasDest) {
+      return (
+        origin: LatLng(widget.carLat!, widget.carLng!),
+        destination: LatLng(widget.destLat!, widget.destLng!),
+      );
+    }
+    if (hasPickup && hasDest) {
+      return (
+        origin: LatLng(widget.pickupLat!, widget.pickupLng!),
+        destination: LatLng(widget.destLat!, widget.destLng!),
+      );
+    }
+    return null;
   }
 
   void _fetchRouteIfNeeded() {
     if (widget.routePolyline != null) return; // caller already supplied one
-    if (!widget.showRoute) return;
-    final pLat = widget.pickupLat;
-    final pLng = widget.pickupLng;
-    final dLat = widget.destLat;
-    final dLng = widget.destLng;
-    if (pLat == null || pLng == null || dLat == null || dLng == null) return;
+    final endpoints = _routeEndpoints();
+    if (endpoints == null) return;
 
+    final lastOrigin = _lastFetchOrigin;
+    final lastDest = _lastFetchDestination;
+    if (lastOrigin != null && lastDest != null) {
+      final sameDestination =
+          lastDest.latitude == endpoints.destination.latitude &&
+          lastDest.longitude == endpoints.destination.longitude;
+      final movedMeters = Geolocator.distanceBetween(
+        lastOrigin.latitude,
+        lastOrigin.longitude,
+        endpoints.origin.latitude,
+        endpoints.origin.longitude,
+      );
+      if (sameDestination && movedMeters < _minMetersBeforeRefetch) {
+        return; // Barely moved since the last fetch - not worth another call.
+      }
+    }
+
+    _lastFetchOrigin = endpoints.origin;
+    _lastFetchDestination = endpoints.destination;
     DirectionsService.fetchRoute(
-      originLat: pLat,
-      originLng: pLng,
-      destLat: dLat,
-      destLng: dLng,
+      originLat: endpoints.origin.latitude,
+      originLng: endpoints.origin.longitude,
+      destLat: endpoints.destination.latitude,
+      destLng: endpoints.destination.longitude,
     ).then((route) {
       if (!mounted) return;
       if (route == null || route.isEmpty) {
@@ -121,22 +168,25 @@ class _RealMapWidgetState extends State<RealMapWidget>
   @override
   void didUpdateWidget(covariant RealMapWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.animateCar != oldWidget.animateCar) {
-      if (widget.animateCar) {
-        _carController.repeat();
-      } else {
-        _carController.stop();
-      }
-    }
 
-    // Auto-center map if new locations are provided - fit both pickup and
-    // destination when there's a route to show, otherwise just zoom to the
-    // pickup point on its own.
+    // Auto-center map when the pickup/destination pair itself changes (a
+    // different request/trip) - fit both when there's a route to show,
+    // otherwise just zoom to the pickup point on its own. Not triggered by
+    // every carLat/carLng tick - panning the camera out from under a
+    // captain who's mid-pinch-zoom on their own position would be worse
+    // than leaving it where they left it.
     final locationsChanged =
         oldWidget.pickupLat != widget.pickupLat ||
         oldWidget.pickupLng != widget.pickupLng ||
         oldWidget.destLat != widget.destLat ||
         oldWidget.destLng != widget.destLng;
+    // The route's effective endpoints also change when the trip moves
+    // between phases (heading to pickup -> under way) even though
+    // pickup/dest themselves didn't - that's worth both a re-fit and
+    // discarding the stale route immediately (not just waiting for the
+    // movement-based refetch, since the destination itself just swapped).
+    final phaseChanged = oldWidget.status != widget.status;
+
     if (locationsChanged) {
       final bounds = _boundsForRoute();
       if (bounds != null) {
@@ -145,19 +195,17 @@ class _RealMapWidgetState extends State<RealMapWidget>
         final newLoc = LatLng(widget.pickupLat!, widget.pickupLng!);
         _mapController?.animateCamera(CameraUpdate.newLatLngZoom(newLoc, 14.0));
       }
-      // Stale route from the old pickup/destination pair - clear it and
-      // fetch again for the new one. No fallback line while this is in
-      // flight; _routeFetchFailed only flips back on if this fetch fails.
+    }
+    if (locationsChanged || phaseChanged) {
+      // Stale route from the old endpoints - clear it and fetch again.
+      // No fallback line while this is in flight; _routeFetchFailed only
+      // flips back on if this fetch fails.
       _fetchedRoute = null;
       _routeFetchFailed = false;
-      _fetchRouteIfNeeded();
+      _lastFetchOrigin = null;
+      _lastFetchDestination = null;
     }
-  }
-
-  @override
-  void dispose() {
-    _carController.dispose();
-    super.dispose();
+    _fetchRouteIfNeeded();
   }
 
   // Only turns on the blue "my location" dot if permission is already
@@ -297,20 +345,18 @@ class _RealMapWidgetState extends State<RealMapWidget>
     );
   }
 
-  // Bounds covering both pickup and destination, so the camera can fit the
-  // whole route instead of just centering on the pickup point at a fixed
-  // zoom - which cuts off the destination whenever it's more than a couple
-  // of km away.
+  // Bounds covering the route's actual current endpoints (see
+  // _routeEndpoints) - the captain's live position and wherever they're
+  // headed right now - so the camera fits what's actually being
+  // navigated, not always the pickup/destination pair regardless of trip
+  // phase.
   LatLngBounds? _boundsForRoute() {
-    if (!widget.showRoute ||
-        widget.pickupLat == null ||
-        widget.pickupLng == null ||
-        widget.destLat == null ||
-        widget.destLng == null) {
-      return null;
-    }
-    final lats = [widget.pickupLat!, widget.destLat!]..sort();
-    final lngs = [widget.pickupLng!, widget.destLng!]..sort();
+    final endpoints = _routeEndpoints();
+    if (endpoints == null) return null;
+    final lats = [endpoints.origin.latitude, endpoints.destination.latitude]
+      ..sort();
+    final lngs = [endpoints.origin.longitude, endpoints.destination.longitude]
+      ..sort();
     return LatLngBounds(
       southwest: LatLng(lats.first, lngs.first),
       northeast: LatLng(lats.last, lngs.last),
@@ -324,15 +370,11 @@ class _RealMapWidgetState extends State<RealMapWidget>
     // in flight - the straight-line fallback is reserved for when it
     // actually fails, not for the couple of seconds it normally takes.
     List<LatLng> polylinePoints = widget.routePolyline ?? _fetchedRoute ?? [];
-    if (polylinePoints.isEmpty &&
-        _routeFetchFailed &&
-        widget.showRoute &&
-        widget.pickupLat != null &&
-        widget.destLat != null) {
-      polylinePoints = [
-        LatLng(widget.pickupLat!, widget.pickupLng!),
-        LatLng(widget.destLat!, widget.destLng!),
-      ];
+    if (polylinePoints.isEmpty && _routeFetchFailed) {
+      final endpoints = _routeEndpoints();
+      if (endpoints != null) {
+        polylinePoints = [endpoints.origin, endpoints.destination];
+      }
     }
 
     return Stack(
@@ -437,6 +479,9 @@ class _RealMapWidgetState extends State<RealMapWidget>
       );
     }
 
+    // The captain's real live position - absent entirely (no fallback
+    // simulation) until an actual GPS fix comes in from the caller, so this
+    // never shows a car somewhere the captain isn't really at.
     if (widget.carLat != null && widget.carLng != null) {
       markers.add(
         Marker(
@@ -447,53 +492,9 @@ class _RealMapWidgetState extends State<RealMapWidget>
           ),
         ),
       );
-    } else if (widget.animateCar &&
-        widget.showRoute &&
-        widget.pickupLat != null &&
-        widget.destLat != null) {
-      // Animate a simulated car between pickup and destination - only once
-      // the trip is actually under way (animateCar is only passed true by
-      // the active-trip screens), so a preview map showing an incoming
-      // request doesn't get a car marker sitting on top of the pickup pin.
-      markers.add(
-        Marker(
-          markerId: const MarkerId('car'),
-          position: _getSimulatedCarLocation(),
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            BitmapDescriptor.hueOrange,
-          ),
-        ),
-      );
     }
 
     return markers;
-  }
-
-  LatLng _getSimulatedCarLocation() {
-    if (widget.pickupLat == null || widget.destLat == null) {
-      return _currentCenter;
-    }
-
-    double t = _carAnimation.value;
-
-    if (widget.status == TripStatus.started) {
-      // Move from pickup to destination
-      double lat =
-          widget.pickupLat! + (widget.destLat! - widget.pickupLat!) * t;
-      double lng =
-          widget.pickupLng! + (widget.destLng! - widget.pickupLng!) * t;
-      return LatLng(lat, lng);
-    } else if (widget.status == TripStatus.accepted ||
-        widget.status == TripStatus.enRoute) {
-      // Simulate coming to pickup
-      double fakeStartLat = widget.pickupLat! - 0.01;
-      double fakeStartLng = widget.pickupLng! - 0.01;
-      double lat = fakeStartLat + (widget.pickupLat! - fakeStartLat) * t;
-      double lng = fakeStartLng + (widget.pickupLng! - fakeStartLng) * t;
-      return LatLng(lat, lng);
-    }
-
-    return LatLng(widget.pickupLat!, widget.pickupLng!);
   }
 
   Widget _buildMapButton(IconData icon, VoidCallback onTap) {

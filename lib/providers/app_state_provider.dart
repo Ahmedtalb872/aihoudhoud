@@ -177,6 +177,12 @@ class AppStateProvider extends ChangeNotifier {
   String get captainEmail => _captainEmail;
 
   bool get isCaptainOnline => _isCaptainOnline;
+  // The captain's own last known GPS fix (see _startOnlinePresenceTracking)
+  // - null until the first fix comes in, or if location tracking isn't
+  // running (offline and no active trip). Lets the active-trip map show
+  // the captain's real position instead of a simulated one.
+  double? get myLat => _myLat;
+  double? get myLng => _myLng;
   String get captainName => _captainName;
   String get captainPhone => _captainPhone;
   String get vehicleCategory => _vehicleCategory;
@@ -850,6 +856,10 @@ class AppStateProvider extends ChangeNotifier {
             // fix to compare against (or the captain has simply moved
             // closer to one since) - re-evaluate now that it's fresh.
             _maybeShowNextPendingRide();
+            // Lets the active-trip map redraw the captain's marker (and
+            // re-route) at the new position - distanceFilter: 50 above
+            // already keeps this from firing on every tiny GPS jitter.
+            notifyListeners();
           });
     } catch (_) {
       // No GPS available; presence tracking just doesn't start.

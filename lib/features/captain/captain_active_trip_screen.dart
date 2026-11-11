@@ -198,7 +198,13 @@ class _CaptainActiveTripScreenState extends State<CaptainActiveTripScreen> {
                     pickupLng: trip.pickupLng,
                     destLat: trip.destLat,
                     destLng: trip.destLng,
-                    animateCar: true,
+                    // The captain's real GPS fix (kept live by
+                    // AppStateProvider's own presence-tracking stream
+                    // while a trip is active) - used for the car marker
+                    // and, while heading to pickup or already under way,
+                    // as the route's actual starting point.
+                    carLat: provider.myLat,
+                    carLng: provider.myLng,
                   ),
 
                   // Float ETA indicator
