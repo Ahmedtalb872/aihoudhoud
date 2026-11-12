@@ -4,7 +4,7 @@ const String kPrivacyPolicyUrl =
     'https://ahmedtalb872.github.io/aihoudhoud/privacy.html';
 
 /// Same deal as kPrivacyPolicyUrl above, for web/terms.html - what a captain
-/// is actually agreeing to when they tick "أوافق على شروط كابتن الهدهد" at
+/// is actually agreeing to when they tick "أوافق على شروط كابتن TRENDE" at
 /// the end of registration.
 const String kTermsUrl =
     'https://ahmedtalb872.github.io/aihoudhoud/terms.html';

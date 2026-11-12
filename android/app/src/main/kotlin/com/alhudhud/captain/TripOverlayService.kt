@@ -60,7 +60,7 @@ class TripOverlayService : Service() {
             )
         }
         val notification = NotificationCompat.Builder(this, SERVICE_CHANNEL_ID)
-            .setContentTitle("الهدهد")
+            .setContentTitle("TRENDE")
             .setSmallIcon(applicationInfo.icon)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)

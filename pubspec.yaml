@@ -89,7 +89,7 @@ flutter_launcher_icons:
   web:
     generate: true
     background_color: "#ffffff"
-    theme_color: "#0f766e"
+    theme_color: "#0B7A3E"
   windows:
     generate: true
   macos:
@@ -151,7 +151,3 @@ flutter:
         # Variable font covering the full weight range used across the
         # app (normal/w600/bold) from a single file.
         - asset: assets/fonts/ElMessiri-Variable.ttf
-    - family: Poppins
-      fonts:
-        - asset: assets/fonts/Poppins-Bold.ttf
-          weight: 700

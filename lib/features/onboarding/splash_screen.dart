@@ -8,10 +8,10 @@ import '../captain/captain_home_screen.dart';
 import 'auth_choice_screen.dart';
 import 'pending_review_screen.dart';
 
-/// Opening sequence: a small "H" badge (for "Al Hudhud") scales in, then
-/// morphs into the full wordmark as the background shifts to the brand
-/// gold, then the app resumes the captain's session (or sends them to the
-/// login/sign-up choice if there isn't one).
+/// Opening sequence: the TRENDE logo (icon + wordmark already combined in
+/// one mark, unlike the previous brand's separate "H" badge + typed-out
+/// name) bounces in, holds for a beat, then the app resumes the captain's
+/// session (or sends them to the login/sign-up choice if there isn't one).
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -22,128 +22,44 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-
-  // Badge: scales/fades in immediately, then scales back down as the
-  // wordmark takes over.
-  late final Animation<double> _badgeScale;
-  late final Animation<double> _badgeOpacity;
-
-  // Wordmark: fades/slides in once the badge has had a moment to register,
-  // then its letters are revealed one at a time (see _wordmarkCharProgress)
-  // for a "being typed" effect instead of the whole name popping in at once.
-  late final Animation<double> _wordmarkOpacity;
-  late final Animation<Offset> _wordmarkSlide;
-  late final Animation<double> _wordmarkCharProgress;
+  late final Animation<double> _logoScale;
+  late final Animation<double> _logoOpacity;
 
   @override
   void initState() {
     super.initState();
-    // Four clearly separated phases instead of a crossfade - the badge
-    // fully finishes and disappears, THEN (after a beat of empty screen)
-    // the wordmark starts, so the two never visually overlap:
-    //   0 - 650ms    badge bounces in
-    //   650 - 1050ms badge holds, fully visible
-    //   1050 - 1450ms badge fades out
-    //   1450 - 1750ms empty gap
-    //   1750ms - end  wordmark fades in, typed out letter by letter
-    const totalMs = 2800;
-    const badgeBounceMs = 650;
-    const badgeHoldMs = 400;
-    const badgeFadeMs = 400;
-    const gapMs = 300;
-    const wordmarkStartMs = badgeBounceMs + badgeHoldMs + badgeFadeMs + gapMs;
+    //   0 - 650ms    logo bounces in
+    //   650ms - end  holds, fully visible, so it's actually readable
+    //                rather than the screen moving on the instant the
+    //                entrance animation finishes
+    const totalMs = 1600;
+    const logoBounceMs = 650;
 
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: totalMs),
     )..forward();
 
-    _badgeScale = TweenSequence<double>([
+    _logoScale = TweenSequence<double>([
       TweenSequenceItem(
         tween: Tween(
           begin: 0.4,
           end: 1.0,
         ).chain(CurveTween(curve: Curves.elasticOut)),
-        weight: badgeBounceMs.toDouble(),
+        weight: logoBounceMs.toDouble(),
       ),
       TweenSequenceItem(
         tween: ConstantTween(1.0),
-        weight: badgeHoldMs.toDouble(),
-      ),
-      TweenSequenceItem(
-        tween: Tween(
-          begin: 1.0,
-          end: 0.7,
-        ).chain(CurveTween(curve: Curves.easeIn)),
-        weight: badgeFadeMs.toDouble(),
-      ),
-      TweenSequenceItem(
-        tween: ConstantTween(0.7),
-        weight: (totalMs - badgeBounceMs - badgeHoldMs - badgeFadeMs)
-            .toDouble(),
+        weight: (totalMs - logoBounceMs).toDouble(),
       ),
     ]).animate(_controller);
 
-    _badgeOpacity = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: ConstantTween(1.0),
-        weight: (badgeBounceMs + badgeHoldMs).toDouble(),
-      ),
-      TweenSequenceItem(
-        tween: Tween(
-          begin: 1.0,
-          end: 0.0,
-        ).chain(CurveTween(curve: Curves.easeIn)),
-        weight: badgeFadeMs.toDouble(),
-      ),
-      TweenSequenceItem(
-        tween: ConstantTween(0.0),
-        weight: (totalMs - badgeBounceMs - badgeHoldMs - badgeFadeMs)
-            .toDouble(),
-      ),
-    ]).animate(_controller);
-
-    // Fast fade-in for the wordmark's container (so it doesn't just pop in
-    // before the first letter is typed), independent of _wordmarkCharCount
-    // below, which handles the actual letter-by-letter reveal. Starts only
-    // once the badge is fully gone and the gap has passed.
-    _wordmarkOpacity = CurvedAnimation(
+    _logoOpacity = CurvedAnimation(
       parent: _controller,
-      curve: Interval(
-        wordmarkStartMs / totalMs,
-        (wordmarkStartMs + 200) / totalMs,
-        curve: Curves.easeOut,
-      ),
-    );
-    _wordmarkSlide =
-        Tween<Offset>(
-          begin: const Offset(0, 0.15),
-          end: Offset.zero,
-        ).animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: Interval(
-              wordmarkStartMs / totalMs,
-              (wordmarkStartMs + 280) / totalMs,
-              curve: Curves.easeOutCubic,
-            ),
-          ),
-        );
-    // Linear so each letter of the name takes roughly the same amount of
-    // time to appear, like it's being typed rather than wiped on unevenly.
-    _wordmarkCharProgress = CurvedAnimation(
-      parent: _controller,
-      curve: Interval(
-        wordmarkStartMs / totalMs,
-        1.0,
-        curve: Curves.linear,
-      ),
+      curve: const Interval(0.0, 0.25, curve: Curves.easeOut),
     );
 
-    // Holds on the fully-revealed wordmark for a beat before moving on, so
-    // the name is actually readable rather than vanishing the instant the
-    // entrance animation ends.
-    Timer(const Duration(milliseconds: totalMs + 900), _resumeSessionOrLogin);
+    Timer(const Duration(milliseconds: totalMs + 500), _resumeSessionOrLogin);
   }
 
   @override
@@ -237,85 +153,15 @@ class _SplashScreenState extends State<SplashScreen>
         return Scaffold(
           backgroundColor: AppColors.background,
           body: Center(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Stage 1: the "H" badge - scales in with a little bounce,
-                // then shrinks away as the wordmark takes over.
-                Opacity(
-                  opacity: _badgeOpacity.value,
-                  child: Transform.scale(
-                    scale: _badgeScale.value,
-                    child: Container(
-                      width: 96,
-                      height: 96,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(26),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.12),
-                            blurRadius: 24,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      alignment: Alignment.center,
-                      child: const Text(
-                        'H',
-                        style: TextStyle(
-                          fontSize: 48,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.primary,
-                          fontFamily: 'El Messiri',
-                        ),
-                      ),
-                    ),
-                  ),
+            child: Opacity(
+              opacity: _logoOpacity.value,
+              child: Transform.scale(
+                scale: _logoScale.value,
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  width: 220,
                 ),
-
-                // Stage 2: the full wordmark, revealed once the background
-                // has settled into the brand gold. Always spelled out in
-                // Latin script, matching the app's own "AL HODHOD" icon
-                // branding, regardless of the app's current language.
-                Opacity(
-                  opacity: _wordmarkOpacity.value,
-                  child: SlideTransition(
-                    position: _wordmarkSlide,
-                    child: Builder(
-                      builder: (context) {
-                        const fullText = 'Al Hodhoud Captain';
-                        final visibleCount =
-                            (_wordmarkCharProgress.value * fullText.length)
-                                .ceil()
-                                .clamp(0, fullText.length)
-                                .toInt();
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: Text(
-                            fullText.substring(0, visibleCount),
-                            textAlign: TextAlign.center,
-                            // Poppins - a clean, modern sans-serif built
-                            // for Latin-script wordmarks (the same
-                            // typeface used in the reference animation's
-                            // own CSS), instead of 'El Messiri' which is tuned
-                            // for Arabic script. Bundled locally (see
-                            // pubspec.yaml) rather than fetched over the
-                            // network, so it's never late to appear here.
-                            style: const TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 28,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.5,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         );

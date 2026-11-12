@@ -29,6 +29,13 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Regenerate app icons
+        # pubspec.yaml's flutter_launcher_icons config (web: generate: true)
+        # only takes effect when this actually runs - without it, a logo
+        # change here wouldn't touch the already-committed web/icons/*.png
+        # files the PWA manifest/favicon point at.
+        run: dart run flutter_launcher_icons
+
       - name: Write Supabase config
         run: |
           cat > env.json <<'EOF'

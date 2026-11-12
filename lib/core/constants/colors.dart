@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Brand gold from the الهدهد logo. Text/icons placed on top of a primary
-  // fill use darkText (not white) for contrast - gold is too light for white
-  // text to read well on. primaryDark is a deeper gold for text/borders/
-  // icons sitting on white backgrounds, where the bright primary itself
-  // would be too low-contrast.
-  static const Color primary = Color(0xFFED9E35);
-  static const Color primaryDark = Color(0xFFA6650C);
-  static const Color secondary = Color(0xFF14B8A6);
-  static const Color accent = Color(0xFFFFC107);
+  // Brand green/black from the TRENDE logo (sampled directly from its
+  // artwork), replacing the previous gold scheme after the app's rebrand.
+  // primaryDark is a deeper green for text/borders/icons sitting on white
+  // backgrounds, where the brighter primary itself would be low-contrast.
+  static const Color primary = Color(0xFF0B7A3E);
+  static const Color primaryDark = Color(0xFF0E4A2C);
+  static const Color secondary = Color(0xFF1C1C1C);
+  static const Color accent = Color(0xFF22C55E);
   static const Color background = Color(0xFFF8FAFC);
   static const Color surface = Color(0xFFFFFFFF);
 

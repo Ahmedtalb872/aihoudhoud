@@ -57,6 +57,17 @@ jobs:
           }
           EOF
 
+      - name: Regenerate app icons and native splash screen
+        # pubspec.yaml's flutter_launcher_icons/flutter_native_splash config
+        # only takes effect when these generators actually run - changing
+        # the source image or colors there doesn't retroactively touch the
+        # already-committed generated platform files (mipmaps, Android
+        # launch_background.xml, iOS LaunchImage, ...), so a logo/rebrand
+        # change needs this step to actually reach the built app.
+        run: |
+          dart run flutter_launcher_icons
+          dart run flutter_native_splash:create
+
       - name: Write Android release signing config
         # Reconstructs the release keystore from repository secrets instead
         # of committing it - see android/.gitignore. Skipped entirely if the

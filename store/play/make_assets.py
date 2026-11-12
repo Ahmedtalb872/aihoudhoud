@@ -9,12 +9,13 @@ OUT   = HERE
 FONT  = os.path.join(HERE, "fonts/cairo800.ttf")
 FONT6 = os.path.join(HERE, "fonts/cairo600.ttf")
 
-GOLD      = (237, 158,  53)
-GOLD_DEEP = (166, 101,  12)
-TEAL      = ( 16,  78,  85)
-NAVY      = ( 15,  23,  42)
-CREAM_HI  = (255, 250, 240)
-CREAM_LO  = (250, 226, 190)
+# TRENDE brand green/black (see lib/core/constants/colors.dart) - replaced
+# the previous gold scheme after the app's rebrand from الهدهد.
+BRAND      = ( 11, 122,  62)
+BRAND_DEEP = ( 14,  74,  44)
+NAVY       = ( 15,  23,  42)
+CREAM_HI   = (255, 250, 240)
+CREAM_LO   = (250, 226, 190)
 
 def trim(im):
     """Crop the logo down to its non-transparent bounding box."""
@@ -37,9 +38,9 @@ logo = trim(Image.open(SRC).convert("RGBA"))
 S = 512
 icon = vgrad((S, S), CREAM_HI, CREAM_LO).convert("RGBA")
 
-# a soft gold halo behind the mark so it lifts off the background
+# a soft green halo behind the mark so it lifts off the background
 halo = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-ImageDraw.Draw(halo).ellipse([70, 70, S - 70, S - 70], fill=GOLD + (58,))
+ImageDraw.Draw(halo).ellipse([70, 70, S - 70, S - 70], fill=BRAND + (58,))
 icon = Image.alpha_composite(icon, halo.filter(ImageFilter.GaussianBlur(46)))
 
 box = int(S * 0.78)
@@ -53,12 +54,12 @@ icon.convert("RGB").save(f"{OUT}/icon_512.png")
 # 1024x500. Play crops the edges on some surfaces, so everything that
 # matters stays inside the middle ~80%.
 W, H = 1024, 500
-feat = vgrad((W, H), (11, 58, 64), (7, 32, 38)).convert("RGBA")
+feat = vgrad((W, H), (10, 36, 22), (6, 18, 11)).convert("RGBA")
 
 glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
 gd = ImageDraw.Draw(glow)
-gd.ellipse([W - 620, -220, W - 20, 380], fill=GOLD + (70,))
-gd.ellipse([-180, H - 200, 320, H + 220], fill=(20, 184, 166, 45))
+gd.ellipse([W - 620, -220, W - 20, 380], fill=BRAND + (70,))
+gd.ellipse([-180, H - 200, 320, H + 220], fill=BRAND_DEEP + (55,))
 feat = Image.alpha_composite(feat, glow.filter(ImageFilter.GaussianBlur(120)))
 
 # logo on the right (RTL layout: mark leads, text follows to its left)
@@ -73,15 +74,16 @@ sub   = ImageFont.truetype(FONT6, 40)
 tag   = ImageFont.truetype(FONT6, 30)
 
 tx = W - lm.width - 128           # right edge of the text column
-d.text((tx, 150), "الهدهد", font=title, fill=(255, 252, 245), anchor="rs",
-       language="ar", direction="rtl")
-d.text((tx, 218), "تطبيق الكابتن", font=sub, fill=GOLD, anchor="rs",
+# "TRENDE" is the brand name as written on the logo itself (Latin, not
+# transliterated) - drawn LTR unlike the Arabic subtitle/tagline below it.
+d.text((tx, 150), "TRENDE", font=title, fill=(255, 252, 245), anchor="rs")
+d.text((tx, 218), "تطبيق الكابتن", font=sub, fill=BRAND, anchor="rs",
        language="ar", direction="rtl")
 d.text((tx, 300), "اقبل الطلبات · وصّل الركاب · اربح يوميًا", font=tag,
        fill=(178, 205, 208), anchor="rs", language="ar", direction="rtl")
 
-d.rounded_rectangle([tx - 250, 336, tx, 396], radius=30, fill=GOLD)
-d.text((tx - 125, 375), "موريتانيا", font=tag, fill=(38, 24, 4), anchor="ms",
+d.rounded_rectangle([tx - 250, 336, tx, 396], radius=30, fill=BRAND)
+d.text((tx - 125, 375), "موريتانيا", font=tag, fill=(245, 255, 248), anchor="ms",
        language="ar", direction="rtl")
 
 feat.convert("RGB").save(f"{OUT}/feature_graphic_1024x500.png")

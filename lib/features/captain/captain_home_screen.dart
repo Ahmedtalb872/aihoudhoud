@@ -173,7 +173,7 @@ class _CaptainHomeScreenState extends State<CaptainHomeScreen> {
               alignment: Alignment.center,
               children: [
                 const Text(
-                  'Al-Hudhud Driver',
+                  'TRENDE Driver',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 19,

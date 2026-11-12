@@ -129,7 +129,7 @@ class _OpenRideActiveScreenState extends State<OpenRideActiveScreen> {
               accuracy: LocationAccuracy.high,
               distanceFilter: 5,
               foregroundNotificationConfig: const ForegroundNotificationConfig(
-                notificationTitle: 'الهدهد',
+                notificationTitle: 'TRENDE',
                 notificationText: 'مشوار جارٍ الآن',
                 enableWakeLock: true,
               ),

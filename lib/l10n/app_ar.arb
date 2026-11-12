@@ -4,7 +4,7 @@
   "loadingApp": "جاري فتح تطبيق",
   "@loadingApp": {"description": "Splash screen loading caption"},
 
-  "authWelcomeTitle": "أهلاً بك في الهدهد",
+  "authWelcomeTitle": "أهلاً بك في TRENDE",
   "authWelcomeSubtitle": "سجل دخولك إن كان لديك حساب كابتن، أو أنشئ حسابًا جديدًا للانضمام.",
   "loginButton": "تسجيل الدخول",
   "createAccountButton": "إنشاء حساب كابتن جديد",
