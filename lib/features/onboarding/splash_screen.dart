@@ -8,9 +8,10 @@ import '../captain/captain_home_screen.dart';
 import 'auth_choice_screen.dart';
 import 'pending_review_screen.dart';
 
-/// Opening sequence: the TRENDE logo (icon + wordmark already combined in
-/// one mark, unlike the previous brand's separate "H" badge + typed-out
-/// name) bounces in, holds for a beat, then the app resumes the captain's
+/// Opening sequence: a small "T" badge (for "TRENDE") scales in, holds,
+/// then fades out - after a beat of empty screen, the full "TRENDE
+/// Captain" wordmark fades in and types itself out letter by letter. Once
+/// that's finished and held for a moment, the app resumes the captain's
 /// session (or sends them to the login/sign-up choice if there isn't one).
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -22,44 +23,128 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<double> _logoScale;
-  late final Animation<double> _logoOpacity;
+
+  // Badge: scales/fades in immediately, then fades out as the wordmark
+  // takes over.
+  late final Animation<double> _badgeScale;
+  late final Animation<double> _badgeOpacity;
+
+  // Wordmark: fades/slides in once the badge has had a moment to register,
+  // then its letters are revealed one at a time (see _wordmarkCharProgress)
+  // for a "being typed" effect instead of the whole name popping in at once.
+  late final Animation<double> _wordmarkOpacity;
+  late final Animation<Offset> _wordmarkSlide;
+  late final Animation<double> _wordmarkCharProgress;
 
   @override
   void initState() {
     super.initState();
-    //   0 - 650ms    logo bounces in
-    //   650ms - end  holds, fully visible, so it's actually readable
-    //                rather than the screen moving on the instant the
-    //                entrance animation finishes
-    const totalMs = 1600;
-    const logoBounceMs = 650;
+    // Four clearly separated phases instead of a crossfade - the badge
+    // fully finishes and disappears, THEN (after a beat of empty screen)
+    // the wordmark starts, so the two never visually overlap:
+    //   0 - 650ms    badge bounces in
+    //   650 - 1050ms badge holds, fully visible
+    //   1050 - 1450ms badge fades out
+    //   1450 - 1750ms empty gap
+    //   1750ms - end  wordmark fades in, typed out letter by letter
+    const totalMs = 2800;
+    const badgeBounceMs = 650;
+    const badgeHoldMs = 400;
+    const badgeFadeMs = 400;
+    const gapMs = 300;
+    const wordmarkStartMs = badgeBounceMs + badgeHoldMs + badgeFadeMs + gapMs;
 
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: totalMs),
     )..forward();
 
-    _logoScale = TweenSequence<double>([
+    _badgeScale = TweenSequence<double>([
       TweenSequenceItem(
         tween: Tween(
           begin: 0.4,
           end: 1.0,
         ).chain(CurveTween(curve: Curves.elasticOut)),
-        weight: logoBounceMs.toDouble(),
+        weight: badgeBounceMs.toDouble(),
       ),
       TweenSequenceItem(
         tween: ConstantTween(1.0),
-        weight: (totalMs - logoBounceMs).toDouble(),
+        weight: badgeHoldMs.toDouble(),
+      ),
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 1.0,
+          end: 0.7,
+        ).chain(CurveTween(curve: Curves.easeIn)),
+        weight: badgeFadeMs.toDouble(),
+      ),
+      TweenSequenceItem(
+        tween: ConstantTween(0.7),
+        weight: (totalMs - badgeBounceMs - badgeHoldMs - badgeFadeMs)
+            .toDouble(),
       ),
     ]).animate(_controller);
 
-    _logoOpacity = CurvedAnimation(
+    _badgeOpacity = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: ConstantTween(1.0),
+        weight: (badgeBounceMs + badgeHoldMs).toDouble(),
+      ),
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 1.0,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
+        weight: badgeFadeMs.toDouble(),
+      ),
+      TweenSequenceItem(
+        tween: ConstantTween(0.0),
+        weight: (totalMs - badgeBounceMs - badgeHoldMs - badgeFadeMs)
+            .toDouble(),
+      ),
+    ]).animate(_controller);
+
+    // Fast fade-in for the wordmark's container (so it doesn't just pop in
+    // before the first letter is typed), independent of _wordmarkCharProgress
+    // below, which handles the actual letter-by-letter reveal. Starts only
+    // once the badge is fully gone and the gap has passed.
+    _wordmarkOpacity = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.0, 0.25, curve: Curves.easeOut),
+      curve: Interval(
+        wordmarkStartMs / totalMs,
+        (wordmarkStartMs + 200) / totalMs,
+        curve: Curves.easeOut,
+      ),
+    );
+    _wordmarkSlide =
+        Tween<Offset>(
+          begin: const Offset(0, 0.15),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: Interval(
+              wordmarkStartMs / totalMs,
+              (wordmarkStartMs + 280) / totalMs,
+              curve: Curves.easeOutCubic,
+            ),
+          ),
+        );
+    // Linear so each letter of the name takes roughly the same amount of
+    // time to appear, like it's being typed rather than wiped on unevenly.
+    _wordmarkCharProgress = CurvedAnimation(
+      parent: _controller,
+      curve: Interval(
+        wordmarkStartMs / totalMs,
+        1.0,
+        curve: Curves.linear,
+      ),
     );
 
-    Timer(const Duration(milliseconds: totalMs + 500), _resumeSessionOrLogin);
+    // Holds on the fully-revealed wordmark for a beat before moving on, so
+    // the name is actually readable rather than vanishing the instant the
+    // entrance animation ends.
+    Timer(const Duration(milliseconds: totalMs + 900), _resumeSessionOrLogin);
   }
 
   @override
@@ -153,15 +238,75 @@ class _SplashScreenState extends State<SplashScreen>
         return Scaffold(
           backgroundColor: AppColors.background,
           body: Center(
-            child: Opacity(
-              opacity: _logoOpacity.value,
-              child: Transform.scale(
-                scale: _logoScale.value,
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  width: 220,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Stage 1: the "T" badge - scales in with a little bounce,
+                // then fades away as the wordmark takes over.
+                Opacity(
+                  opacity: _badgeOpacity.value,
+                  child: Transform.scale(
+                    scale: _badgeScale.value,
+                    child: Container(
+                      width: 96,
+                      height: 96,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(26),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.12),
+                            blurRadius: 24,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text(
+                        'T',
+                        style: TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.primary,
+                          fontFamily: 'El Messiri',
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+
+                // Stage 2: the full wordmark, typed out letter by letter.
+                Opacity(
+                  opacity: _wordmarkOpacity.value,
+                  child: SlideTransition(
+                    position: _wordmarkSlide,
+                    child: Builder(
+                      builder: (context) {
+                        const fullText = 'TRENDE Captain';
+                        final visibleCount =
+                            (_wordmarkCharProgress.value * fullText.length)
+                                .ceil()
+                                .clamp(0, fullText.length)
+                                .toInt();
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Text(
+                            fullText.substring(0, visibleCount),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontFamily: 'El Messiri',
+                              fontSize: 28,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         );
