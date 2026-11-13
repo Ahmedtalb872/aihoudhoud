@@ -439,6 +439,21 @@ class AuthRepository {
     }
   }
 
+  /// Releases a trip the captain already accepted (but hasn't started -
+  /// picked up the passenger - yet) back into the open pool for another
+  /// captain to take, via the `captain_release_trip` RPC. Best-effort: a
+  /// failure here (the trip already moved past 'arrived' server-side, say)
+  /// just means it stays assigned to this captain server-side even though
+  /// they've already moved on locally - not worth surfacing as an error on
+  /// what's already a "give up on this trip" action.
+  Future<void> releaseTrip(String tripId) async {
+    try {
+      await _client.rpc('captain_release_trip', params: {'p_trip_id': tripId});
+    } on PostgrestException catch (e) {
+      debugPrint('releaseTrip failed: ${e.message}');
+    }
+  }
+
   Future<void> signOut() async {
     if (!SupabaseConfig.isReady) return;
     await _client.auth.signOut();

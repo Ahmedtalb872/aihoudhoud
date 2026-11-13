@@ -1682,15 +1682,15 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (_activeTrip == null) return;
 
     if (_activeTrip!.isRemote) {
-      _updateRemoteTripStatus(
-        _activeTrip!.id,
-        'cancelled',
-        extra: {
-          'cancelled_at': DateTime.now().toIso8601String(),
-          'cancelled_by': 'captain',
-          'cancellation_reason': reason,
-        },
-      );
+      // Releases the trip back into the open pool (captain_id cleared,
+      // status back to 'searching') instead of marking it 'cancelled'
+      // outright - the customer still wants a ride, and another online
+      // captain can now see and accept it exactly like a brand new
+      // request (see captain_release_trip, 0031_captain_release_trip.sql).
+      // The cancellation itself (reason, who cancelled) only needs to be
+      // recorded in this captain's own trip history below, not on the
+      // trip row, which is "clean" again for whoever takes it next.
+      AuthRepository().releaseTrip(_activeTrip!.id);
     }
 
     final cancelledTrip = Trip(
