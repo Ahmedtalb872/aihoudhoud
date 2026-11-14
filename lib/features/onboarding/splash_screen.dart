@@ -8,8 +8,8 @@ import '../captain/captain_home_screen.dart';
 import 'auth_choice_screen.dart';
 import 'pending_review_screen.dart';
 
-/// Opening sequence: a small "T" badge (for "TRENDE") scales in, holds,
-/// then fades out - after a beat of empty screen, the full "TRENDE
+/// Opening sequence: a small "T" badge (for "Trend Ride") scales in, holds,
+/// then fades out - after a beat of empty screen, the full "Trend Ride
 /// Captain" wordmark fades in and types itself out letter by letter. Once
 /// that's finished and held for a moment, the app resumes the captain's
 /// session (or sends them to the login/sign-up choice if there isn't one).
@@ -282,7 +282,7 @@ class _SplashScreenState extends State<SplashScreen>
                     position: _wordmarkSlide,
                     child: Builder(
                       builder: (context) {
-                        const fullText = 'TRENDE Captain';
+                        const fullText = 'Trend Ride Driver';
                         final visibleCount =
                             (_wordmarkCharProgress.value * fullText.length)
                                 .ceil()

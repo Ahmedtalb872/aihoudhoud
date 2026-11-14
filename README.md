@@ -1,6 +1,6 @@
 # alhudhud (Captain app)
 
-This is the captain/driver app for TRENDE. It shares its Supabase backend
+This is the captain/driver app for Trend Ride. It shares its Supabase backend
 (auth + database) with a separate customer-facing app, but this codebase only
 implements the captain-side screens and flows — there is no customer login
 or booking UI here.

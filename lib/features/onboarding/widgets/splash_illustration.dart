@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Deep teal pulled from the TRENDE logo's own car/feather shade - matches
+/// Deep teal pulled from the Trend Ride logo's own car/feather shade - matches
 /// splash_hero.png's own footer band color exactly, so this live wave reads
 /// as a continuation of that artwork rather than a visibly different color.
 const Color _kDeepTeal = Color(0xFF0B3D3A);

@@ -52,7 +52,7 @@ class MyApp extends StatelessWidget {
     final locale = context.watch<AppStateProvider>().locale;
     return MaterialApp(
       navigatorKey: rootNavigatorKey,
-      title: 'TRENDE',
+      title: 'Trend Ride',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
 

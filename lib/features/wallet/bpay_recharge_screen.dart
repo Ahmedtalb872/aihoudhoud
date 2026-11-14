@@ -164,7 +164,7 @@ class _BpayRechargeScreenState extends State<BpayRechargeScreen> {
                     Row(
                       children: [
                         const Text(
-                          'كود Bpay TRENDE: ',
+                          'كود Bpay Trend Ride: ',
                           style: TextStyle(
                             fontSize: 15,
                             fontFamily: 'El Messiri',

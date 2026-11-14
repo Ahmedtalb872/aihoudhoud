@@ -30,7 +30,7 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <application
-        android:label="TRENDE Captain"
+        android:label="Trend Ride Driver"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <!-- Google Maps SDK for Android. Restrict this key in Google Cloud

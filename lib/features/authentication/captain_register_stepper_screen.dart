@@ -1491,7 +1491,7 @@ class _CaptainRegisterStepperScreenState
             ),
             const Expanded(
               child: Text(
-                'أقر بأن جميع البيانات والمستندات المرفوعة صحيحة وأوافق على شروط كابتن TRENDE.',
+                'أقر بأن جميع البيانات والمستندات المرفوعة صحيحة وأوافق على شروط كابتن Trend Ride.',
                 style: TextStyle(
                   fontSize: 12,
                   color: AppColors.darkText,

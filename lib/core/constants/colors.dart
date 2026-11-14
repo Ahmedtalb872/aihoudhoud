@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Brand green/black from the TRENDE logo (sampled directly from its
-  // artwork), replacing the previous gold scheme after the app's rebrand.
-  // primaryDark is a deeper green for text/borders/icons sitting on white
-  // backgrounds, where the brighter primary itself would be low-contrast.
-  static const Color primary = Color(0xFF0B7A3E);
-  static const Color primaryDark = Color(0xFF0E4A2C);
+  // Brand colors sampled from the current Trend Ride Driver logo (a neon
+  // green ring + gold "TAXI"/"Ride" accents on a near-black circular
+  // badge) - primary is the logo's vivid neon green, primaryDark a deeper
+  // shade of it for text/borders/icons sitting on white backgrounds where
+  // the brighter primary itself would be low-contrast, and accent is the
+  // logo's gold highlight color.
+  static const Color primary = Color(0xFF2E9E15);
+  static const Color primaryDark = Color(0xFF175C0C);
   static const Color secondary = Color(0xFF1C1C1C);
-  static const Color accent = Color(0xFF22C55E);
+  static const Color accent = Color(0xFFF5D000);
   static const Color background = Color(0xFFF8FAFC);
   static const Color surface = Color(0xFFFFFFFF);
 

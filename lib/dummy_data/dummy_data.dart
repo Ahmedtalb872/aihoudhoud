@@ -96,7 +96,7 @@ class DummyData {
       id: 'tx_202',
       amount: 30.0,
       type: TransactionType.commission,
-      title: 'عمولة تطبيق TRENDE لرحلة #trip_201',
+      title: 'عمولة تطبيق Trend Ride لرحلة #trip_201',
       date: '2026-07-10 12:48',
       isCredit: false,
     ),

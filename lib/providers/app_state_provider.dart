@@ -536,7 +536,7 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
         (row['estimated_duration_minutes'] as num?)?.toInt() ?? 0;
     final price = (row['estimated_price'] as num?)?.toDouble() ?? 0.0;
     final paymentMethod = row['payment_method'] == 'wallet'
-        ? 'محفظة TRENDE'
+        ? 'محفظة Trend Ride'
         : 'نقداً';
     final vehicleType = switch (row['vehicle_type']) {
       'comfort' => VehicleType.comfort,
@@ -697,7 +697,7 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
       duration: (row['estimated_duration_minutes'] as num?)?.toInt() ?? 0,
       price: price,
       paymentMethod: row['payment_method'] == 'wallet'
-          ? 'محفظة TRENDE'
+          ? 'محفظة Trend Ride'
           : 'نقداً',
       status: row['status'] == 'cancelled'
           ? TripStatus.cancelled
@@ -871,13 +871,13 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
       // so the text can't just say "بانتظار الطلبات" - that would be wrong
       // for most of a trip's duration, since captains almost always go
       // online before ever accepting a request).
-      const notificationText = 'TRENDE نشط - جارٍ تتبع موقعك';
+      const notificationText = 'Trend Ride نشط - جارٍ تتبع موقعك';
       final LocationSettings locationSettings = isAndroid
           ? AndroidSettings(
               accuracy: LocationAccuracy.high,
               distanceFilter: 50,
               foregroundNotificationConfig: const ForegroundNotificationConfig(
-                notificationTitle: 'TRENDE',
+                notificationTitle: 'Trend Ride',
                 notificationText: notificationText,
                 enableWakeLock: true,
               ),
@@ -1195,7 +1195,7 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
     final price = (row['estimated_price'] as num?)?.toDouble() ?? 0.0;
     final paymentMethod = row['payment_method'] == 'wallet'
-        ? 'محفظة TRENDE'
+        ? 'محفظة Trend Ride'
         : 'نقداً';
     final vehicleType = switch (row['vehicle_type']) {
       'comfort' => VehicleType.comfort,
@@ -1614,7 +1614,7 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
 
     // The captain collects the full fare directly (cash, or the customer's
     // own payment method) - the app never holds it. The captain's own
-    // TRENDE wallet only tracks what they owe the company, so completing a
+    // Trend Ride wallet only tracks what they owe the company, so completing a
     // trip deducts the commission from it rather than crediting anything;
     // "today's earnings" still reflects their real net profit for display.
     _captainWalletBalance -= commission;

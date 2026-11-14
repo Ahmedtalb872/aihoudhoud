@@ -174,7 +174,7 @@ class _PendingReviewScreenState extends State<PendingReviewScreen> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Text(
-                    'نرحب بك كابتن بيننا! أنت على بعد خطوة من الانضمام لأسرة TRENDE، أكمل ملفك معنا وترقب التفعيل.',
+                    'نرحب بك كابتن بيننا! أنت على بعد خطوة من الانضمام لأسرة Trend Ride، أكمل ملفك معنا وترقب التفعيل.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,

@@ -9,7 +9,7 @@
 | `feature_graphic_1024x500.png` | 1024 × 500 | الصورة المميزة (Feature graphic) |
 
 كلاهما PNG بدون شفافية، ومولَّدان من `assets/images/logo_icon.png`
-بألوان العلامة في `lib/core/constants/colors.dart` (الأخضر `#0B7A3E`).
+بألوان العلامة في `lib/core/constants/colors.dart` (الأخضر `#2E9E15`).
 لإعادة توليدهما بعد أي تغيير في الشعار، شغّل `make_assets.py` في هذا المجلد.
 
 ## لقطات الشاشة (غير مرفقة هنا)

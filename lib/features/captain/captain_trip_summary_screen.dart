@@ -74,7 +74,7 @@ class _CaptainTripSummaryScreenState extends State<CaptainTripSummaryScreen> {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'فخورين بك، شريك TRENDE',
+                  'فخورين بك، شريك Trend Ride',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
