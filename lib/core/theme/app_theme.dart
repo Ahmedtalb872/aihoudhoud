@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../constants/colors.dart';
 
 class AppTheme {
@@ -14,21 +15,21 @@ class AppTheme {
         error: AppColors.error,
       ),
       scaffoldBackgroundColor: AppColors.background,
-      fontFamily: 'Cairo', // Falls back to system sans-serif if Cairo is not available
-      
+      // Bundled locally via pubspec.yaml's fonts: section (see the comment
+      // there) instead of fetched at runtime - loads instantly, no network.
+      fontFamily: 'El Messiri',
+
       cardTheme: ThemeData.light().cardTheme.copyWith(
         color: AppColors.surface,
         elevation: 2,
         shadowColor: AppColors.darkText.withValues(alpha: 0.08),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
-      
+
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.darkText,
           elevation: 0,
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(
@@ -37,15 +38,15 @@ class AppTheme {
           textStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
       ),
-      
+
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          side: const BorderSide(color: AppColors.primary, width: 1.5),
+          foregroundColor: AppColors.primaryDark,
+          side: const BorderSide(color: AppColors.primaryDark, width: 1.5),
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
@@ -53,26 +54,29 @@ class AppTheme {
           textStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
       ),
-      
+
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: AppColors.primaryDark,
           textStyle: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            fontFamily: 'Cairo',
+            fontFamily: 'El Messiri',
           ),
         ),
       ),
-      
+
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 18,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
           borderSide: const BorderSide(color: AppColors.border, width: 1),
@@ -83,7 +87,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: const BorderSide(color: AppColors.primaryDark, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
@@ -96,28 +100,33 @@ class AppTheme {
         hintStyle: const TextStyle(
           color: AppColors.secondaryText,
           fontSize: 14,
-          fontFamily: 'Cairo',
+          fontFamily: 'El Messiri',
         ),
         labelStyle: const TextStyle(
           color: AppColors.darkText,
           fontSize: 14,
-          fontFamily: 'Cairo',
+          fontFamily: 'El Messiri',
         ),
       ),
-      
+
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.surface,
+        backgroundColor: AppColors.primary,
         foregroundColor: AppColors.darkText,
         elevation: 0,
         centerTitle: true,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: AppColors.primary,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+        ),
         titleTextStyle: TextStyle(
           color: AppColors.darkText,
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          fontFamily: 'Cairo',
+          fontFamily: 'El Messiri',
         ),
       ),
-      
+
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: AppColors.surface,
         elevation: 8,

@@ -71,11 +71,7 @@ class CustomStateWidget extends StatelessWidget {
                 color: AppColors.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                icon,
-                size: 64,
-                color: AppColors.primary,
-              ),
+              child: Icon(icon, size: 64, color: AppColors.primary),
             ),
             const SizedBox(height: 24),
             Text(
@@ -84,7 +80,7 @@ class CustomStateWidget extends StatelessWidget {
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: AppColors.darkText,
-                fontFamily: 'Cairo',
+                fontFamily: 'El Messiri',
               ),
               textAlign: TextAlign.center,
             ),
@@ -94,7 +90,7 @@ class CustomStateWidget extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.secondaryText,
-                fontFamily: 'Cairo',
+                fontFamily: 'El Messiri',
               ),
               textAlign: TextAlign.center,
             ),
